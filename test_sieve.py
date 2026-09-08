@@ -14,6 +14,7 @@ import argparse
 import os
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(HERE, "sieve")   # overridden by --binary
@@ -502,6 +503,181 @@ test_window_exhaustive_small.slow = True
 
 
 # --------------------------------------------------------------------------
+# Record gap search (--gaps)
+# --------------------------------------------------------------------------
+
+# Published terms, taken from the OEIS b-files. The scan below reaches 2e6,
+# so these are every term of each sequence up to that point.
+OEIS_A002386 = [2, 3, 7, 23, 89, 113, 523, 887, 1129, 1327, 9551, 15683,
+                19609, 31397, 155921, 360653, 370261, 492113, 1349533, 1357201]
+OEIS_A023186 = [2, 5, 23, 53, 211, 1847, 2179, 3967, 16033, 24281, 38501,
+                58831, 203713, 206699, 413353, 1272749]
+OEIS_A096265 = [2, 3, 5, 7, 23, 53, 89, 113, 211, 1129, 1327, 2179, 2503,
+                5623, 9587, 14107, 19609, 19661, 31397, 31469, 38501, 58831,
+                155921, 360749, 370261, 396833, 1357201, 1561919]
+
+GAP_LIMIT = 2000000
+
+
+def read_results(prefix):
+    """Read the per-kind results files and the checkpoint file."""
+    records = {}
+    for kind in ("gap", "lonely", "aloof"):
+        rows = []
+        path = f"{prefix}-{kind}.txt"
+        if os.path.exists(path):
+            for line in open(path):
+                if line.startswith("#") or not line.strip():
+                    continue
+                rows.append(tuple(int(x) for x in line.split()))
+        records[kind] = rows
+    checkpoints = []
+    path = f"{prefix}-progress.txt"
+    if os.path.exists(path):
+        for line in open(path):
+            f = line.split()
+            if f and f[0] == "CHECKPOINT":
+                checkpoints.append(f[1:])
+    return records, checkpoints
+
+
+def run_gap_search(prefix, limit, extra=()):
+    proc = run_sieve("--gaps", "--out", prefix, *extra, str(limit), timeout=120)
+    if proc.returncode != 0:
+        raise SieveError(f"sieve --gaps ... {limit}: exit {proc.returncode}, "
+                         f"stderr={proc.stderr.strip()[:200]!r}")
+    return proc
+
+
+@test
+def test_gap_search_reproduces_oeis():
+    """--gaps reproduces A002386, A023186 and A096265 from scratch"""
+    with tempfile.TemporaryDirectory() as d:
+        prefix = os.path.join(d, "g")
+        run_gap_search(prefix, GAP_LIMIT)
+        records, checkpoints = read_results(prefix)
+
+        for kind, expected, name in (("gap", OEIS_A002386, "A002386"),
+                                     ("lonely", OEIS_A023186, "A023186"),
+                                     ("aloof", OEIS_A096265, "A096265")):
+            got = [r[1] for r in records[kind]]   # column 2 is the prime
+            if got != expected:
+                for i, (a, b) in enumerate(zip(got, expected)):
+                    if a != b:
+                        raise SieveError(f"{kind} ({name}) differs at term "
+                                         f"{i+1}: got {a}, OEIS has {b}")
+                raise SieveError(f"{kind} ({name}): found {len(got)} terms, "
+                                 f"OEIS has {len(expected)} below {GAP_LIMIT}")
+        if not checkpoints:
+            raise SieveError("no CHECKPOINT line was written")
+
+
+@test
+def test_gap_search_resume_is_lossless():
+    """A killed and resumed search yields the same records as one pass"""
+    # The whole point of the results file: stopping must not lose or
+    # duplicate a record, and must not shift the thresholds.
+    with tempfile.TemporaryDirectory() as d:
+        whole = os.path.join(d, "whole")
+        run_gap_search(whole, GAP_LIMIT)
+
+        staged = os.path.join(d, "staged")
+        for stop in (700000, 1300000, GAP_LIMIT):
+            run_gap_search(staged, stop)
+
+        a, _ = read_results(whole)
+        b, _ = read_results(staged)
+        for kind in ("gap", "lonely", "aloof"):
+            if a[kind] != b[kind]:
+                raise SieveError(f"{kind}: resumed run differs from one pass\n"
+                                 f"  one pass: {a[kind][:6]}\n"
+                                 f"  resumed : {b[kind][:6]}")
+
+
+@test
+def test_gap_search_checkpoint_round_trips():
+    """A checkpoint carries enough state to continue exactly"""
+    with tempfile.TemporaryDirectory() as d:
+        prefix = os.path.join(d, "g")
+        run_gap_search(prefix, 500000)
+        _, checkpoints = read_results(prefix)
+        if not checkpoints:
+            raise SieveError("no checkpoint written")
+
+        last = checkpoints[-1]
+        if len(last) < 4:
+            raise SieveError(f"checkpoint has {len(last)} fields, expected >=4: "
+                             f"{last}")
+        p_prev, p_last = int(last[0]), int(last[1])
+        if not (p_prev < p_last):
+            raise SieveError(f"checkpoint primes out of order: {p_prev}, {p_last}")
+        for p in (p_prev, p_last):
+            if not is_prime_miller_rabin(p):
+                raise SieveError(f"checkpoint holds a non-prime: {p}")
+
+
+@test
+def test_gap_results_files_are_separate():
+    """Each sequence gets its own results file, plus a progress file"""
+    # Results files hold only results, so they stay directly comparable to an
+    # OEIS b-file; restart state lives apart from them.
+    with tempfile.TemporaryDirectory() as d:
+        prefix = os.path.join(d, "g")
+        run_gap_search(prefix, 500000)
+        for kind in ("gap", "lonely", "aloof", "progress"):
+            path = f"{prefix}-{kind}.txt"
+            if not os.path.exists(path):
+                raise SieveError(f"missing output file {os.path.basename(path)}")
+        for kind in ("gap", "lonely", "aloof"):
+            for line in open(f"{prefix}-{kind}.txt"):
+                if line.startswith("#") or not line.strip():
+                    continue
+                if len(line.split()) != 7:
+                    raise SieveError(f"{kind}: malformed results line {line!r}")
+                if "CHECKPOINT" in line:
+                    raise SieveError(f"{kind}: checkpoint leaked into results")
+
+
+@test
+def test_gap_records_carry_verifiable_neighbours():
+    """Every record line holds a genuine prime triple"""
+    # The neighbour columns exist so a line can be checked on its own; verify
+    # they really are the adjacent primes, independently of the sieve.
+    with tempfile.TemporaryDirectory() as d:
+        prefix = os.path.join(d, "g")
+        run_gap_search(prefix, 200000)
+        records, _ = read_results(prefix)
+        checked = 0
+        for kind in ("gap", "lonely", "aloof"):
+            for n, p, value, below, above, prev, nxt in records[kind]:
+                if prev == 0:
+                    continue                      # p = 2 has no lower neighbour
+                for q in (prev, p, nxt):
+                    if not is_prime_miller_rabin(q):
+                        raise SieveError(f"{kind} #{n}: {q} is not prime")
+                if p - prev != below or nxt - p != above:
+                    raise SieveError(f"{kind} #{n}: neighbours {prev},{nxt} "
+                                     f"disagree with gaps {below},{above}")
+                for q in range(prev + 1, p):
+                    if is_prime_miller_rabin(q):
+                        raise SieveError(f"{kind} #{n}: {q} lies between "
+                                         f"{prev} and {p}")
+                checked += 1
+        if checked < 20:
+            raise SieveError(f"only {checked} records checked -- too few")
+
+
+@test
+def test_gap_search_requires_out_file():
+    """--gaps without --out is an error"""
+    proc = run_sieve("--gaps", "1000", timeout=10)
+    if proc.returncode == 0:
+        raise SieveError("sieve --gaps without --out: expected non-zero exit")
+    if "--out" not in proc.stderr:
+        raise SieveError(f"unhelpful error: {proc.stderr.strip()!r}")
+
+
+# --------------------------------------------------------------------------
 # --count mode
 # --------------------------------------------------------------------------
 
@@ -610,7 +786,8 @@ def test_help_flags():
         text = proc.stdout + proc.stderr
         if "Usage:" not in text:
             raise SieveError(f"sieve {flag}: no usage text in output")
-        for documented in ("--count", "--repeat", "--from", "<limit>"):
+        for documented in ("--count", "--repeat", "--from", "--gaps",
+                           "--out", "<limit>"):
             if documented not in text:
                 raise SieveError(f"sieve {flag}: {documented} is undocumented")
 

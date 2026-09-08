@@ -3,7 +3,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <limits.h>
 #include <ctype.h>
+#include <time.h>
+#include <signal.h>
 
 /*
  * MODULO-210 PACKING SCHEME PARAMETERS:
@@ -175,7 +178,8 @@ void init_wheel(void) {
 /** Prints the --help documentation. **/
 void show_help(const char *prog) {
     fprintf(stderr,
-            "Usage: %s [--help] [--count] [--from <lo>] [<limit>]\n\n"
+            "Usage: %s [--help] [--count] [--from <lo>] [<limit>]\n"
+            "       %s --gaps --out <prefix> [--from <lo>] [--checkpoint <s>] [<limit>]\n\n"
             "High-performance Prime Sieve using Modulo-210 wheel factorization.\n\n"
             "Arguments:\n"
             "  <limit>          Upper limit for prime search (default: 500).\n\n"
@@ -189,24 +193,53 @@ void show_help(const char *prog) {
             "                   rather than with <limit>.\n"
             "  --repeat, -r <n> Run the sieve <n> times, reporting once. For\n"
             "                   benchmarking: it amortises process startup, which\n"
-            "                   otherwise dwarfs the sieve at small limits.\n\n"
+            "                   otherwise dwarfs the sieve at small limits.\n"
+            "  --gaps           Search for record prime gaps, and for record\n"
+            "                   'lonely' primes (max distance to the NEARER\n"
+            "                   neighbour, OEIS A023186) and 'aloof' primes\n"
+            "                   (max distance between BOTH neighbours, A096265).\n"
+            "  --out <prefix>   Output prefix for --gaps. Writes results to\n"
+            "                   <prefix>-gap.txt, -lonely.txt and -aloof.txt\n"
+            "                   (one record per line, carrying both neighbour\n"
+            "                   primes so each line is self-contained proof),\n"
+            "                   and <prefix>-progress.txt\n"
+            "                   for checkpoints. Every line is flushed, so a\n"
+            "                   killed run resumes without losing work.\n"
+            "  --checkpoint <s> Seconds between progress lines and checkpoints\n"
+            "                   (default 15).\n\n"
             "Technical Details:\n"
             "  - Modulo M = 210. Excludes all direct multiples of primes (2,3,5,7).\n"
             "  - Memory footprint: Exactly 6 bytes per modulus block (~phi(210)/8 compressed).\n"
             "  - Composites are marked with a precomputed %d-step mask pattern,\n"
             "    so the inner loop needs no division and touches %d bits at a time.",
-            prog, PATTERN_STEPS, SIEVE_WORD_BITS);
+            prog, prog, PATTERN_STEPS, SIEVE_WORD_BITS);
 }
 
 /** Parses command line arguments safely. **/
 void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
-                unsigned long *repeat, unsigned long *from, int *has_from) {
+                unsigned long *repeat, unsigned long *from, int *has_from,
+                int *gaps, const char **out_path, double *ck_secs) {
     for (int i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
             show_help(argv[0]);
             exit(0);
         } else if ((strcmp(argv[i], "--count") == 0) || (strcmp(argv[i], "-c") == 0)) {
             *count_only = 1;
+        } else if (strcmp(argv[i], "--gaps") == 0) {
+            *gaps = 1;
+        } else if (strcmp(argv[i], "--out") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Error: --out needs a file name prefix.\n");
+                exit(1);
+            }
+            *out_path = argv[++i];
+        } else if (strcmp(argv[i], "--checkpoint") == 0) {
+            if (i + 1 >= argc || !isdigit((unsigned char)argv[i + 1][0])) {
+                fprintf(stderr, "Error: --checkpoint needs a number of seconds.\n");
+                exit(1);
+            }
+            *ck_secs = atof(argv[++i]);
+            if (*ck_secs < 1) *ck_secs = 1;
         } else if ((strcmp(argv[i], "--from") == 0) || (strcmp(argv[i], "-f") == 0)) {
             if (i + 1 >= argc || !isdigit((unsigned char)argv[i + 1][0])) {
                 fprintf(stderr, "Error: %s needs a lower bound.\n", argv[i]);
@@ -589,6 +622,349 @@ unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
     return found;
 }
 
+
+/* ===================================================================== *
+ * RECORD GAP SEARCH
+ *
+ * Scans upward in cache-sized segments, streaming consecutive primes and
+ * recording three kinds of record:
+ *
+ *   gap     a record difference between consecutive primes   (OEIS A005250)
+ *   lonely  record distance to the NEARER neighbour          (OEIS A023186)
+ *   aloof   record total distance between BOTH neighbours    (OEIS A096265)
+ *
+ * --out <prefix> writes four files:
+ *
+ *   <prefix>-gap.txt       results only, one record per line
+ *   <prefix>-lonely.txt      "
+ *   <prefix>-aloof.txt       "
+ *   <prefix>-progress.txt  checkpoints, for resuming
+ *
+ * Results lines are
+ *
+ *   <n> <prime> <value> <gap_below> <gap_above> <prev_prime> <next_prime>
+ *
+ * so the first two columns are an OEIS b-file, and the last two make each
+ * line self-contained proof: a reader can confirm all three of prev, prime
+ * and next are prime and that nothing lies between them, without recomputing
+ * anything. Every line is flushed as it is written, so killing the run loses
+ * nothing that was printed.
+ *
+ * Resuming splits its state between the two kinds of file: the scan position
+ * comes from the last checkpoint, but the record thresholds come from the
+ * results files. That combination is self-correcting. If the run died after
+ * writing a record but before the next checkpoint, the rescan re-reaches that
+ * record and finds it does not *exceed* the threshold it already set, so it
+ * is not written twice -- and no record can be lost, because records only
+ * ever increase.
+ *
+ * Seeding a search to extend a published sequence is therefore just a matter
+ * of writing its known terms into the results file first.
+ * ===================================================================== */
+
+#define SEG_WORDS  65536u          /* segment bitmap: 512 KB at 64-bit words */
+
+typedef struct {
+    FILE *out;
+    unsigned long best;            /* largest value recorded so far */
+    unsigned long count;           /* records written */
+} record_file;
+
+typedef struct {
+    unsigned long p_prev, p_last;  /* trailing two primes of the stream */
+    unsigned long primes;
+    double seconds;
+    int resumed;
+    record_file gap, lonely, aloof;
+    FILE *progress;
+} gap_state;
+
+/* Set by SIGINT/SIGTERM so the scan stops at a segment edge and checkpoints,
+ * rather than being cut off mid-segment. */
+static volatile sig_atomic_t stop_requested = 0;
+static void on_signal(int sig) { (void)sig; stop_requested = 1; }
+
+/** Smallest wheel candidate >= v, with its block and slot. **/
+static unsigned long wheel_ceil(unsigned long v, unsigned long *blk, int *bi) {
+    unsigned long b = v / MODULUS;
+    int i = ceil_idx[v % MODULUS];
+    if (i == WHEEL_SLOTS) { i = 0; ++b; }
+    *blk = b; *bi = i;
+    return b * MODULUS + wheel_res[i];
+}
+
+/** Largest wheel candidate <= v, or 0 if there is none. **/
+static unsigned long wheel_floor(unsigned long v) {
+    if (v < 1) return 0;
+    unsigned long b = v / MODULUS;
+    int i = ceil_idx[v % MODULUS];
+    if (i == WHEEL_SLOTS || wheel_res[i] > v % MODULUS) {
+        if (i == 0) { if (b == 0) return 0; i = WHEEL_SLOTS - 1; --b; }
+        else --i;
+    }
+    return b * MODULUS + wheel_res[i];
+}
+
+/* Sieving primes, regrown as the scan advances. */
+typedef struct { unsigned long *p; size_t n; unsigned long limit; } base_set;
+
+static void base_set_ensure(base_set *bs, unsigned long need) {
+    if (bs->p != NULL && bs->limit >= need) return;
+
+    unsigned long m = need + need / 4 + 1024;   /* headroom: regrow rarely */
+    size_t words;
+    WORD *buf = self_sieve(m, &words);
+
+    for (int pass = 0; pass < 2; ++pass) {
+        size_t k = 0;
+        for (unsigned long b = 0; b * MODULUS <= m; ++b) {
+            for (int i = 0; i < WHEEL_SLOTS; ++i) {
+                unsigned long v = b * MODULUS + wheel_res[i];
+                if (v > m) break;
+                if (v < 11) continue;
+                unsigned long s = b * WHEEL_SLOTS + (unsigned long)i;
+                if (((buf[s / BITS_PER_WORD] >> (s % BITS_PER_WORD)) & 1) == 0) {
+                    if (pass == 1) bs->p[k] = v;
+                    ++k;
+                }
+            }
+        }
+        if (pass == 0) {
+            free(bs->p);
+            bs->p = malloc(k * sizeof(unsigned long));
+            if (bs->p == NULL) {
+                fprintf(stderr, "out of memory: %zu sieving primes\n", k);
+                exit(1);
+            }
+        } else {
+            bs->n = k;
+        }
+    }
+    bs->limit = m;
+    free(buf);
+}
+
+/** Open one results file, recovering its threshold and count from what is
+ *  already there. */
+static void rf_open(record_file *rf, const char *prefix, const char *kind) {
+    char path[1024];
+    snprintf(path, sizeof path, "%s-%s.txt", prefix, kind);
+
+    rf->best = 0;
+    rf->count = 0;
+
+    FILE *r = fopen(path, "r");
+    if (r != NULL) {
+        char line[512];
+        while (fgets(line, sizeof line, r) != NULL) {
+            unsigned long n, p, v;
+            if (line[0] == '#') continue;
+            if (sscanf(line, "%lu %lu %lu", &n, &p, &v) == 3) {
+                if (v > rf->best) rf->best = v;
+                ++rf->count;
+            }
+        }
+        fclose(r);
+    }
+
+    rf->out = fopen(path, "a");
+    if (rf->out == NULL) { perror(path); exit(1); }
+    if (rf->count == 0) {
+        fprintf(rf->out, "# %s records: <n> <prime> <value> <gap_below> "
+                         "<gap_above> <prev_prime> <next_prime>\n", kind);
+        fflush(rf->out);
+    }
+}
+
+static void rf_write(record_file *rf, const char *kind, unsigned long p,
+                     unsigned long value, unsigned long below,
+                     unsigned long above, unsigned long prev,
+                     unsigned long next) {
+    rf->best = value;
+    ++rf->count;
+    fprintf(rf->out, "%lu %lu %lu %lu %lu %lu %lu\n",
+            rf->count, p, value, below, above, prev, next);
+    fflush(rf->out);
+
+    fprintf(stderr, "  *** %-6s record #%lu: p=%lu  value=%lu  "
+                    "(%lu < %lu < %lu)\n",
+            kind, rf->count, p, value, prev, p, next);
+    fflush(stderr);
+}
+
+static void gap_checkpoint(gap_state *st) {
+    fprintf(st->progress,
+            "CHECKPOINT %lu %lu %lu %.1f  gap=%lu lonely=%lu aloof=%lu\n",
+            st->p_prev, st->p_last, st->primes, st->seconds,
+            st->gap.best, st->lonely.best, st->aloof.best);
+    fflush(st->progress);
+}
+
+/** Feed one prime into the stream, emitting any record it completes. **/
+static void gap_feed(gap_state *st, unsigned long q) {
+    ++st->primes;
+
+    if (st->p_last != 0) {
+        unsigned long gap = q - st->p_last;
+        unsigned long down = (st->p_prev != 0) ? st->p_last - st->p_prev : 0;
+
+        if (gap > st->gap.best) {
+            /* The record concerns the pair (p_last, q); the lower neighbour
+             * is carried along so every line holds a full prime triple. */
+            rf_write(&st->gap, "gap", st->p_last, gap, down, gap,
+                     st->p_prev, q);
+        }
+
+        if (st->p_prev != 0 || st->p_last == 2) {
+            /* p_last is the centre; it now has both neighbours. The one
+             * exception is 2, which has no lower neighbour -- OEIS A023186
+             * and A096265 both take it as a(1) using its single gap to 3. */
+            unsigned long below = (st->p_prev != 0) ? st->p_last - st->p_prev : gap;
+            unsigned long above = gap;
+            unsigned long near = (below < above) ? below : above;
+            unsigned long total = (st->p_prev != 0) ? below + above : above;
+
+            if (near > st->lonely.best) {
+                rf_write(&st->lonely, "lonely", st->p_last, near, below, above,
+                         st->p_prev, q);
+            }
+            if (total > st->aloof.best) {
+                rf_write(&st->aloof, "aloof", st->p_last, total, below, above,
+                         st->p_prev, q);
+            }
+        }
+    }
+    st->p_prev = st->p_last;
+    st->p_last = q;
+}
+
+static void gap_search(unsigned long lo, unsigned long hi,
+                       const char *prefix, double ck_secs) {
+    gap_state st;
+    memset(&st, 0, sizeof st);
+
+    /* Thresholds come from the results files; position from the checkpoint. */
+    rf_open(&st.gap, prefix, "gap");
+    rf_open(&st.lonely, prefix, "lonely");
+    rf_open(&st.aloof, prefix, "aloof");
+
+    char path[1024];
+    snprintf(path, sizeof path, "%s-progress.txt", prefix);
+    FILE *pr = fopen(path, "r");
+    if (pr != NULL) {
+        char line[512];
+        while (fgets(line, sizeof line, pr) != NULL) {
+            unsigned long a, b, n;
+            double s;
+            if (sscanf(line, "CHECKPOINT %lu %lu %lu %lf", &a, &b, &n, &s) == 4) {
+                st.p_prev = a; st.p_last = b; st.primes = n; st.seconds = s;
+                st.resumed = 1;
+            }
+        }
+        fclose(pr);
+    }
+    st.progress = fopen(path, "a");
+    if (st.progress == NULL) { perror(path); exit(1); }
+
+    unsigned long pos = st.resumed ? st.p_last + 1 : lo;
+    if (st.resumed) {
+        fprintf(stderr, "resuming at %lu  (records: gap %lu, lonely %lu, "
+                        "aloof %lu; thresholds %lu / %lu / %lu)\n",
+                pos, st.gap.count, st.lonely.count, st.aloof.count,
+                st.gap.best, st.lonely.best, st.aloof.best);
+    } else {
+        fprintf(st.progress, "# CHECKPOINT <p_prev> <p_last> <primes> <seconds>\n");
+        fflush(st.progress);
+    }
+
+    signal(SIGINT, on_signal);
+    signal(SIGTERM, on_signal);
+
+    /* The wheel omits 2, 3, 5 and 7, so feed them by hand when starting low. */
+    const unsigned long small[] = {2, 3, 5, 7};
+    for (int i = 0; i < 4; ++i) {
+        if (small[i] >= pos && small[i] <= hi) gap_feed(&st, small[i]);
+    }
+
+    WORD *buf = malloc(SEG_WORDS * sizeof(WORD));
+    if (buf == NULL) { fprintf(stderr, "out of memory: segment buffer\n"); exit(1); }
+    base_set bs;
+    memset(&bs, 0, sizeof bs);
+
+    unsigned long span = (unsigned long)(SEG_WORDS - 4) * BITS_PER_WORD
+                       * MODULUS / WHEEL_SLOTS;
+    double t_start = (double)clock() / CLOCKS_PER_SEC;
+    double base_seconds = st.seconds;
+    double next_ck = ck_secs, t_mark = 0.0;
+    unsigned long pos_at_mark = pos;
+
+    unsigned long seg_lo = (pos < 11) ? 11 : pos;
+    while (seg_lo <= hi && !stop_requested) {
+        unsigned long seg_hi = (hi - seg_lo < span) ? hi : seg_lo + span;
+
+        base_set_ensure(&bs, isqrt_floor(seg_hi));
+
+        unsigned long blk; int bi;
+        unsigned long v_lo = wheel_ceil(seg_lo, &blk, &bi);
+        unsigned long v_hi = wheel_floor(seg_hi);
+
+        if (v_lo <= seg_hi && v_hi >= v_lo) {
+            unsigned long s_lo = slot_of(v_lo), s_hi = slot_of(v_hi);
+            unsigned long word_base = s_lo / BITS_PER_WORD;
+            size_t nwords = (size_t)(s_hi / BITS_PER_WORD - word_base) + 2;
+
+            memset(buf, 0, nwords * sizeof(WORD));
+            for (size_t i = 0; i < bs.n; ++i) {
+                mark_prime(buf, word_base, (unsigned long)nwords - 1,
+                           bs.p[i], v_lo, v_hi);
+            }
+
+            unsigned long v = v_lo;
+            for (unsigned long s = s_lo; s <= s_hi; ++s) {
+                unsigned long w = s / BITS_PER_WORD - word_base;
+                if (((buf[w] >> (s % BITS_PER_WORD)) & 1) == 0) {
+                    gap_feed(&st, v);
+                }
+                if (++bi == WHEEL_SLOTS) { bi = 0; ++blk; }
+                v = blk * MODULUS + wheel_res[bi];
+            }
+        }
+
+        double now = (double)clock() / CLOCKS_PER_SEC - t_start;
+        if (now >= next_ck || seg_hi == hi) {
+            double rate = (now - t_mark) > 0
+                        ? (double)(seg_hi - pos_at_mark) / (now - t_mark) : 0.0;
+            st.seconds = base_seconds + now;
+            fprintf(stderr,
+                    "[%8.0fs] pos %.6e  %.2e nums/s  %lu primes  "
+                    "best: gap %lu lonely %lu aloof %lu\n",
+                    st.seconds, (double)seg_hi, rate, st.primes,
+                    st.gap.best, st.lonely.best, st.aloof.best);
+            fflush(stderr);
+            gap_checkpoint(&st);
+            next_ck = now + ck_secs;
+            pos_at_mark = seg_hi;
+            t_mark = now;
+        }
+
+        if (seg_hi == hi) break;
+        seg_lo = seg_hi + 1;
+    }
+
+    st.seconds = base_seconds + (double)clock() / CLOCKS_PER_SEC - t_start;
+    gap_checkpoint(&st);
+    if (stop_requested) {
+        fprintf(stderr, "stopped by signal; checkpointed at %lu\n", st.p_last);
+    }
+
+    free(buf);
+    free(bs.p);
+    fclose(st.gap.out);
+    fclose(st.lonely.out);
+    fclose(st.aloof.out);
+    fclose(st.progress);
+}
+
 /* Keeps the optimiser from discarding the repeated --repeat passes. */
 static volatile unsigned long bench_sink;
 
@@ -598,13 +974,26 @@ int main(int argc, char *argv[]) {
     unsigned long repeat = 1;
     unsigned long from = 0;
     int has_from = 0;
+    int gaps = 0;
+    const char *out_path = NULL;
+    double ck_secs = 15.0;
 
     /* Initialize dense packing map: residues [0..209] -> bit-slot [0..47]. */
     init_wheel();
 
-    parse_args(argc, argv, &limit, &count_only, &repeat, &from, &has_from);
+    parse_args(argc, argv, &limit, &count_only, &repeat, &from, &has_from,
+               &gaps, &out_path, &ck_secs);
 
-    if (has_from) {
+    if (gaps) {
+        if (out_path == NULL) {
+            fprintf(stderr, "Error: --gaps needs --out <prefix>.\n");
+            exit(1);
+        }
+        /* Without an explicit limit, run to the end of the range. */
+        unsigned long end = (limit == 500 && !has_from) ? ULONG_MAX : limit;
+        if (limit == 500) end = ULONG_MAX;
+        gap_search(has_from ? from : 0, end, out_path, ck_secs);
+    } else if (has_from) {
         for (unsigned long r = 1; r < repeat; ++r) {
             bench_sink += sieve_window(from, limit, OUT_NONE);
         }

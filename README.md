@@ -6,9 +6,14 @@ windowed sieving (`./sieve --from <lo> <hi>`) exactly across the whole 64-bit
 range.
 
 ```
+./sieve 1000000                       # primes up to 1e6
+./sieve --count --from 1e12-ish ...   # primes in a window (see below)
+./sieve --gaps --out run 1e13         # hunt record prime gaps
+
 make            # build ./sieve
-make test       # 28 tests
-make test-slow  # 32 tests, including 1e6/1e7 range checks and the 2^63 window
+make test       # 34 tests
+make test-slow  # 38 tests, including 1e6/1e7 range checks and the 2^63 window
+make test-widths# the suite against WORD_BITS 8, 16, 32 and 64
 make bench      # time it against the reference implementation
 ```
 
@@ -272,13 +277,96 @@ Against the 64-bit ceiling of `10^19.3`, that is short by about `10^118`. No
 sieve of any design reaches it -- the limit is not precision or memory, it is
 that such runs do not exist below roughly `10^137`.
 
+### 9. Record gaps, and OEIS
+
+`--gaps` streams consecutive primes upward and records three kinds of record.
+All three are catalogued in OEIS, and the sieve reproduces each of them exactly
+from scratch (a test asserts this against the published b-files):
+
+| what | OEIS | first terms |
+|------|------|-------------|
+| Prime gaps themselves | [A001223](https://oeis.org/A001223) | 1, 2, 2, 4, 2, 4, 2, 4, 6, 2, … |
+| Record gap **sizes** | [A005250](https://oeis.org/A005250) | 1, 2, 4, 6, 8, 14, 18, 20, 22, 34, … |
+| Record gap, **lower end** | [A002386](https://oeis.org/A002386) | 2, 3, 7, 23, 89, 113, 523, 887, … |
+| Record gap, **upper end** | [A000101](https://oeis.org/A000101) | 3, 5, 11, 29, 97, 127, 541, 907, … |
+| Record gap, **prime index** | [A005669](https://oeis.org/A005669) | 1, 2, 4, 9, 24, 30, 99, 154, … |
+| Record **merit**, (q−p)/log p | [A111870](https://oeis.org/A111870) | 2, 3, 7, 113, 1129, 1327, 19609, … |
+
+Two sequences ask a different question -- not "how big is the gap after p?" but
+"how isolated is p?":
+
+| what | OEIS | definition | first terms |
+|------|------|------------|-------------|
+| **Lonely** primes | [A023186](https://oeis.org/A023186) | record of **min**(gap below, gap above) | 2, 5, 23, 53, 211, 1847, 2179, … |
+| **Aloof** primes | [A096265](https://oeis.org/A096265) | record of `nextprime(p) − prevprime(p)` | 2, 3, 5, 7, 23, 53, 89, 113, 211, … |
+
+A prime can be aloof without being lonely, when its two gaps are lopsided.
+Record *values* for the lonely primes are [A120937](https://oeis.org/A120937);
+Erdős and Surányi call them *reclusive primes* and proved there are infinitely
+many. Related: [A058867](https://oeis.org/A058867) and
+[A054342](https://oeis.org/A054342) (equidistant lonely primes),
+[A051650](https://oeis.org/A051650) (the same idea over all integers).
+
+**Why these sequences are so short.** A record gap of size *g* needs one
+prime-free run; a lonely prime at distance *d* needs a clear run of *d* on
+**both** sides, whose probability is the *square*. So lonely-distance *d* costs
+what a gap of *2d* costs, and inverting the usual first-occurrence estimate:
+
+```
+first gap of size v      at   x ~ e^sqrt(v)
+first lonely of dist v   at   x ~ e^sqrt(2v)  =  (e^sqrt(v))^sqrt(2)
+```
+
+The *location* is raised to the power sqrt(2). Measured against records to 1e8,
+both fit the same law once 2*d* is used for lonely (`ln(p)/sqrt(g) = 1.32`,
+`ln(p)/sqrt(2d) = 1.25`), and comparing where each distance value first appears
+as a gap versus as a lonely prime gives a mean exponent of **1.37** against the
+predicted 1.41. Growth is ~1.83x per record for gaps and ~2.08x for lonely --
+which is exactly why A023186 needs only 56 terms to reach 9.4e14.
+
+**A new term.** A096265 was published to a(55) = 929,156,727,137. An exhaustive
+scan upward from there found
+
+```
+a(56) = 1032148488557    span 678    prevprime 1032148488143, nextprime 1032148488821
+```
+
+in about two minutes at ~1.15e9 numbers/sec, beating the previous record span
+of 624. All three primes and the absence of any prime between them were
+confirmed with a deterministic Miller-Rabin test, independently of the sieve.
+
+**Output files.** `--out <prefix>` writes results and restart state apart, so
+the results files stay directly comparable to an OEIS b-file:
+
+```
+<prefix>-gap.txt        <n> <prime> <value> <gap_below> <gap_above> <prev> <next>
+<prefix>-lonely.txt     same
+<prefix>-aloof.txt      same
+<prefix>-progress.txt   CHECKPOINT <p_prev> <p_last> <primes> <seconds> ...
+```
+
+Each record line carries both neighbouring primes, so it is self-contained
+proof: a reader can verify all three are prime and that nothing lies between,
+without recomputing the scan. Every line is flushed as written, and SIGINT or
+SIGTERM stops at a segment edge and checkpoints, so a run can be killed and
+resumed at any time.
+
+Resuming splits its state deliberately: the **position** comes from the last
+checkpoint, but the **thresholds** come from the results files. That is
+self-correcting -- if the run died after writing a record but before the next
+checkpoint, the rescan re-reaches that record, finds it does not *exceed* the
+threshold it already set, and does not write it twice. Nothing can be lost
+either, because records only ever increase. Seeding a search to extend a
+published sequence is then just a matter of writing its known terms into the
+results file first.
+
 ---
 
 ## Layout
 
 ```
 sieve.c            the sieve
-test_sieve.py      32 tests; --slow adds range checks, --binary tests a variant
+test_sieve.py      34 tests; --slow adds range checks, --binary tests a variant
 bench.py           timing harness, compares against reference/mod30
 Makefile           all, test, test-slow, test-widths, bench, reference, clean
 reference/         Mike Koss's 2021 mod-30 drag-race entry, kept verbatim
