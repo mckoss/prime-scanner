@@ -1,6 +1,4 @@
 # Build artifacts
 sieve
 sieve_bin
-sieve_test_bin
 *.o
-temp.sieve
