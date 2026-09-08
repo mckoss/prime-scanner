@@ -366,8 +366,22 @@ results file first.
 
 ```
 python3 pgaps.py --to 9.41e14 --jobs 8 --out verify   # --from defaults to 0
+python3 pgaps.py --jobs 8 --out run                   # open-ended, Ctrl-C to stop
 python3 check_oeis.py verify --scanned 9.41e14
 ```
+
+Omitting `--to` runs open-ended in **rolling rounds**, like `./sieve --gaps`.
+Each round is a bounded slice sized for about `--round-seconds` of wall time,
+sharded, scanned and then merged; the frontier advances and the next round
+begins. Ctrl-C finishes cleanly: workers checkpoint, what is provably covered
+is merged, and re-running the same command resumes -- first any half-finished
+round, then onward from the frontier.
+
+Results are only merged **below the contiguous frontier**. A worker stopped
+mid-shard leaves a hole, and merging across a hole can promote a later,
+smaller value to "record" when the real one sits in the gap. So the frontier
+walks the shards in order and stops at the first incomplete one, regardless of
+how far later shards ran ahead.
 
 **The merge is not bookkeeping, it is the correctness argument.** A record is
 a running maximum over the whole scan, so a worker covering [1e13, 2e13]

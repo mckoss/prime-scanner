@@ -206,14 +206,39 @@ def monitor(out, procs, ranges, interval=15):
     return True
 
 
-def merge(out, lo, seed):
-    """Apply the running-maximum rule across every worker's candidates."""
+def safe_frontier(out, ranges):
+    """Highest point below which coverage is provably contiguous.
+
+    A worker stopped mid-shard leaves a hole, and merging across a hole can
+    promote a later, smaller value to "record" when the real one sits in the
+    gap. So results are only final below the lowest point any worker has
+    reached.
+    """
+    front = ranges[0][0]
+    for i, (a, b) in enumerate(ranges):
+        if is_done(out, i):
+            front = b                      # this shard is fully covered
+            continue
+        # First incomplete shard: coverage ends where it has reached, and
+        # nothing beyond it counts even if later shards ran ahead.
+        return max(front, position_of(out, i) or a)
+    return front
+
+
+def merge(out, lo, seed, upto=None):
+    """Apply the running-maximum rule across every worker's candidates.
+
+    Incremental: records already in <out> are kept and act as the threshold,
+    so rounds can be merged one after another.
+    """
     os.makedirs(out, exist_ok=True)
     summary = {}
     for kind in KINDS:
-        cands = []
+        cands = read_records(os.path.join(out, f"{kind}.txt"))
         for d in sorted(os.listdir(os.path.join(out, "shards"))):
             cands += read_records(os.path.join(out, "shards", d, f"{kind}.txt"))
+        if upto is not None:
+            cands = [r for r in cands if r[1] <= upto]
 
         # Drop the seed rows (they sit below the search start) and dedupe the
         # overlap regions, where two workers see the same centre prime.
@@ -228,6 +253,8 @@ def merge(out, lo, seed):
 
         best = seed[kind][2] if seed.get(kind) else 0
         kept = [seed[kind]] if seed.get(kind) else []
+        if kept and uniq and uniq[0][1] <= kept[0][1]:
+            kept = []           # the seed row is already among the candidates
         for r in uniq:
             if r[2] > best:
                 best = r[2]
@@ -256,6 +283,32 @@ def verify_coverage(out, ranges):
     return holes
 
 
+def run_round(out, lo, hi, jobs, seed, checkpoint):
+    """Scan [lo, hi) across `jobs` workers. Returns (finished, frontier)."""
+    ranges = prepare(out, jobs, lo, hi, seed)
+    pending = [(i, r) for i, r in enumerate(ranges) if not is_done(out, i)]
+    if pending:
+        if len(pending) < len(ranges):
+            print(f"    {len(ranges) - len(pending)} worker(s) already complete")
+        procs = launch(out, [r for _, r in pending], checkpoint,
+                       [i for i, _ in pending])
+        finished = monitor(out, procs, ranges)
+        for i, p, log in procs:
+            if p.poll() == 0:
+                mark_done(out, i)
+            log.close()
+    else:
+        finished = True
+    return finished, safe_frontier(out, ranges), ranges
+
+
+def clear_shards(out):
+    import shutil
+    d = os.path.join(out, "shards")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -263,8 +316,11 @@ def main():
                     help="range start (default 0, i.e. derive every record "
                          "from scratch)")
     ap.add_argument("--to", dest="hi", type=float,
-                    help="range end (required: the range must be bounded to "
-                         "be split across workers)")
+                    help="range end. Omit to run open-ended in rolling rounds "
+                         "until interrupted, like ./sieve --gaps")
+    ap.add_argument("--round-seconds", type=int, default=600,
+                    help="target wall time per round when --to is omitted "
+                         "(default 600); each round ends in a merge")
     ap.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
                     help="worker processes (default: all cores). Prefer the "
                          "number of FREE performance cores; efficiency cores "
@@ -282,54 +338,84 @@ def main():
     if not os.path.exists(BINARY):
         sys.exit("./sieve not built -- run 'make' first")
 
+    os.makedirs(args.out, exist_ok=True)
     seed = seed_from(args.seed)
-    meta = os.path.join(args.out, "range.txt")
+    state = os.path.join(args.out, "round.txt")
 
     if args.merge_only:
-        if not os.path.exists(meta):
-            sys.exit(f"{meta} missing -- cannot merge without the original range")
-        lo, hi, jobs = (int(x) for x in open(meta).read().split())
+        if not os.path.exists(state):
+            sys.exit(f"{state} missing -- nothing to merge")
+        lo, hi, jobs = (int(x) for x in open(state).read().split())
         ranges = prepare(args.out, jobs, lo, hi, seed)
+        front = safe_frontier(args.out, ranges)
+        summary = merge(args.out, None, seed, upto=front)
+        for kind, (n, k, best) in summary.items():
+            print(f"    {kind:<7} {n:>5} candidates -> {k:>3} records   best {best}")
+        return 0
+
+    # An unfinished round takes precedence: resume it before advancing.
+    resume = None
+    if os.path.exists(state):
+        a, b, j = (int(x) for x in open(state).read().split())
+        ranges = prepare(args.out, j, a, b, seed)
+        if any(not is_done(args.out, i) for i in range(j)):
+            resume = (a, b, j)
+
+    lo = int(args.lo)
+    frontier_file = os.path.join(args.out, "frontier.txt")
+    if os.path.exists(frontier_file):
+        lo = max(lo, int(open(frontier_file).read().strip()))
+
+    bounded = args.hi is not None
+    hi_final = int(args.hi) if bounded else None
+    if bounded and lo >= hi_final:
+        print("  nothing to do: frontier is already at or past --to")
+        return 0
+
+    if resume:
+        where = f"resuming round [{resume[0]:,}, {resume[1]:,})"
+    elif bounded:
+        where = f"scanning [{lo:,}, {hi_final:,})"
     else:
-        if args.hi is None:
-            sys.exit("--to is required (the range must be bounded to shard it); "
-                     "--from defaults to 0")
-        lo, hi = int(args.lo), int(args.hi)
-        os.makedirs(args.out, exist_ok=True)
-        open(meta, "w").write(f"{lo} {hi} {args.jobs}\n")
-        ranges = prepare(args.out, args.jobs, lo, hi, seed)
+        where = f"scanning from {lo:,}, open-ended"
+    print(f"  {where} across {args.jobs} workers")
+    for kind in KINDS:
+        row = seed.get(kind)
+        print(f"    {kind:<7} seed threshold {row[2] if row else 0}")
 
-        print(f"  scanning [{lo:,}, {hi:,}) across {args.jobs} workers")
-        for kind in KINDS:
-            row = seed.get(kind)
-            print(f"    {kind:<7} threshold {row[2] if row else 0}")
-        # A worker resumed after completing would rescan nothing; skip it.
-        pending = [(i, r) for i, r in enumerate(ranges) if not is_done(args.out, i)]
-        if len(pending) < len(ranges):
-            print(f"    {len(ranges) - len(pending)} worker(s) already complete")
-        procs = launch(args.out, [r for _, r in pending],
-                       args.checkpoint, [i for i, _ in pending])
-        finished = monitor(args.out, procs, ranges)
-        for i, p, log in procs:
-            if p.poll() == 0:
-                mark_done(args.out, i)
-            log.close()
+    while True:
+        if resume:
+            a, b, jobs = resume
+            resume = None
+            print(f"\n  resuming round [{a:,}, {b:,})")
+        else:
+            jobs = args.jobs
+            a = lo
+            if bounded:
+                b = hi_final
+            else:
+                # Size the round for roughly --round-seconds of wall time.
+                b = a + max(int(jobs * scan_rate(a) * args.round_seconds), 10**6)
+            clear_shards(args.out)
+            open(state, "w").write(f"{a} {b} {jobs}\n")
+            print(f"\n  round [{a:,}, {b:,})")
+
+        finished, front, ranges = run_round(args.out, a, b, jobs, seed,
+                                            args.checkpoint)
+        summary = merge(args.out, None, seed, upto=front)
+        open(frontier_file, "w").write(f"{front}\n")
+        print(f"  merged up to {front:,}")
+        for kind, (n, k, best) in summary.items():
+            print(f"    {kind:<7} {n:>5} candidates -> {k:>3} records   best {best}")
+
         if not finished:
-            print("  workers checkpointed; re-run the same command to resume")
-
-    holes = verify_coverage(args.out, ranges)
-    if holes:
-        print(f"\n  INCOMPLETE: {len(holes)} worker(s) short of their range:")
-        for i, a, b, pos in holes[:5]:
-            print(f"    worker {i}: reached {pos} of [{a}, {b})")
-        print("  merging anyway, but the result is NOT a verified record set")
-
-    print("\n  merging:")
-    summary = merge(args.out, lo, seed)
-    for kind, (n, k, best) in summary.items():
-        print(f"    {kind:<7} {n:>5} candidates -> {k:>3} records   best {best}")
-    print(f"\n  results in {args.out}/")
-    return 1 if holes else 0
+            print("\n  interrupted; workers checkpointed. Re-run the same "
+                  "command to continue.")
+            return 0
+        lo = b
+        if bounded and lo >= hi_final:
+            print(f"\n  complete. results in {args.out}/")
+            return 0
 
 
 if __name__ == "__main__":
