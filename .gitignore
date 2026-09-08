@@ -1,4 +1,3 @@
 # Build artifacts
 sieve
-sieve_bin
 *.o
