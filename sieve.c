@@ -23,19 +23,61 @@
 #define BLOCK_BYTES     6
 #define WHEEL_SLOTS     48
 
+/*
+ * WORD SIZE:
+ * Which width wins depends on the limit, and not by much. Measured here
+ * (ms per pass, sieve only, Apple arm64):
+ *
+ *            1e5     1e6     1e7     1e9
+ *   16-bit  0.014   0.116   1.599   329.0
+ *   32-bit  0.016   0.107   1.448   310.8
+ *   64-bit  0.024   0.115   1.362   296.4
+ *
+ * Narrow words build the mark pattern faster (fewer entries); wide words
+ * merge more bits per store. 32 is the default because it is never the worst
+ * at any size. Override with: make WORD_BITS=64
+ */
+#ifndef SIEVE_WORD_BITS
+#define SIEVE_WORD_BITS 32
+#endif
+#if   SIEVE_WORD_BITS == 8
+typedef uint8_t  WORD;
+#elif SIEVE_WORD_BITS == 16
+typedef uint16_t WORD;
+#elif SIEVE_WORD_BITS == 32
+typedef uint32_t WORD;
+#elif SIEVE_WORD_BITS == 64
 typedef uint64_t WORD;
+#else
+#error "SIEVE_WORD_BITS must be 8, 16, 32 or 64"
+#endif
+
 #define BITS_PER_WORD   ((unsigned long)(sizeof(WORD) * 8))
+
+#if SIEVE_WORD_BITS == 64
+#define POPCOUNT(w) __builtin_popcountll(w)
+#else
+#define POPCOUNT(w) __builtin_popcount(w)
+#endif
 
 /*
  * MARKING PATTERN LENGTH:
  * Stepping a prime p through consecutive wheel residues advances the slot
  * index by exactly 48*p bits per 48 steps. For the *word* offsets and bit
- * masks to recur, that advance must also be a whole number of 64-bit words:
- * 48*p*m = 0 (mod 64) needs m = 4, since p is always odd. So the pattern
- * repeats every 4*48 = 192 steps, advancing exactly 3*p words.
+ * masks to recur, that advance must also be a whole number of words:
+ * 48*p*m = 0 (mod W). Since p is odd and 48 contributes 2^4, this needs
+ * m = max(1, W/16). So the pattern is 48*m steps, advancing 48*m/W words:
+ *
+ *   W = 8   ->   48 steps, 6*p words       W = 32  ->   96 steps, 3*p words
+ *   W = 16  ->   48 steps, 3*p words       W = 64  ->  192 steps, 3*p words
  */
-#define PATTERN_STEPS   (4 * WHEEL_SLOTS)
-#define PATTERN_WORDS   3
+#if SIEVE_WORD_BITS <= 16
+#define PATTERN_MULT    1
+#else
+#define PATTERN_MULT    (SIEVE_WORD_BITS / 16)
+#endif
+#define PATTERN_STEPS   (WHEEL_SLOTS * PATTERN_MULT)
+#define PATTERN_WORDS   (PATTERN_STEPS / SIEVE_WORD_BITS)
 
 /* How the reconstructed primes are reported. OUT_NONE still does all the
  * sieving work and returns the count; it exists so --repeat can time repeated
@@ -92,9 +134,9 @@ void show_help(const char *prog) {
             "Technical Details:\n"
             "  - Modulo M = 210. Excludes all direct multiples of primes (2,3,5,7).\n"
             "  - Memory footprint: Exactly 6 bytes per modulus block (~phi(210)/8 compressed).\n"
-            "  - Composites are marked with a precomputed 192-step mask pattern,\n"
-            "    so the inner loop needs no division and touches 64 bits at a time.",
-            prog);
+            "  - Composites are marked with a precomputed %d-step mask pattern,\n"
+            "    so the inner loop needs no division and touches %d bits at a time.",
+            prog, PATTERN_STEPS, SIEVE_WORD_BITS);
 }
 
 /** Parses command line arguments safely. **/
@@ -255,12 +297,12 @@ unsigned long sieve(unsigned long limit, out_mode mode) {
         unsigned long marked = 0;
         unsigned long whole = n_cand / BITS_PER_WORD;
         for (unsigned long w = 0; w < whole; ++w) {
-            marked += (unsigned long)__builtin_popcountll(buf[w]);
+            marked += (unsigned long)POPCOUNT(buf[w]);
         }
         unsigned long tail = n_cand % BITS_PER_WORD;
         if (tail) {
             WORD keep = (((WORD)1 << tail) - 1);
-            marked += (unsigned long)__builtin_popcountll(buf[whole] & keep);
+            marked += (unsigned long)POPCOUNT(buf[whole] & keep);
         }
 
         /* Every unmarked slot is prime except slot 0, the value 1, which is

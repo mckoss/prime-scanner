@@ -52,3 +52,55 @@ assertion needs. If you still have the original, replace this file.
     #           ^^^^^ passes  ^^^ seconds
 
 `make bench` in the parent directory times both implementations together.
+
+
+## The 2021 analysis, re-run in 2026
+
+Mike's original write-up compared six algorithms on an Intel i7-8700K @ 3.7GHz
+(full source: https://github.com/mckoss/Primes/blob/main/PrimeCAlgos/sieve.c).
+Rebuilding that same file here, limit 1e6, ms per pass:
+
+|                          | 2021 i7-8700K | this machine (32-bit) | (64-bit) |
+|--------------------------|---------------|-----------------------|----------|
+| Byte-map - 1 of 2        | 0.814         | 0.378                 | 0.379    |
+| Bit-map  - 1 of 2        | 0.595         | 0.958                 | 1.131    |
+| Bit-map  - 2 of 6        | 0.473         | 0.615                 | 0.792    |
+| Bit-map  - 8 of 30       | 0.405         | 0.413                 | 0.584    |
+| 1/2 Bit-map (dense)      | 0.653         | 1.122                 | 1.270    |
+| 1/3 Bit-map (dense)      | 0.741         | 0.795                 | 0.818    |
+
+Two of the 2021 conclusions still hold, and one has inverted.
+
+**Still true: 32-bit words beat 64-bit** for every bitmap variant, on an
+entirely different architecture five years later. (The byte-map is unaffected,
+as it uses no words at all.)
+
+**Still true: dense packing loses** -- 1/2 Bit-map is slower than Bit-map 1 of
+2, and 1/3 Bit-map slower than 2 of 6, exactly as in 2021.
+
+**Inverted: the byte-map is now the fastest of the naive algorithms** (0.378ms),
+where in 2021 it was the slowest (0.814ms). A 1MB byte buffer sits comfortably
+in a modern L2, so the memory that bitmaps save no longer pays for the bit
+twiddling. This is the single biggest change in the table.
+
+## Why ../sieve.c is dense anyway
+
+The 2021 dense variants carry this comment in both `countPrimesMod2` and
+`countPrimesMod6`:
+
+    // I tried pre-calculating masks - but that just slowed it down.
+
+That is the crux. Dense packing lost because its inner loop paid a division
+per mark, and precalculating masks did not help *in that form*. The recurrence
+has to be exact: for the mod-210 packing the (word offset, mask) pattern
+repeats only after 48*max(1,W/16) steps, advancing a whole number of words.
+Get that number right and the division disappears entirely -- which flips the
+result. At limit 1e6 on this machine:
+
+    your 2021 "Bit-map - 8 of 30"            0.413 ms
+    mod30.c drag-race entry (+ mask pattern) 0.169 ms
+    ../sieve.c dense mod-210 + pattern       0.107 ms
+
+Note that the drag-race entry is *faster* with 64-bit words (0.169 vs 0.210),
+unlike every algorithm in the table above -- once a mask pattern exists, wider
+words merge more bits per store and the 2021 rule of thumb reverses.

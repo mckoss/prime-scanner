@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BINARY = os.path.join(HERE, "sieve")
+BINARY = os.path.join(HERE, "sieve")   # overridden by --binary
 
 MODULUS = 210            # the wheel circumference, 2*3*5*7
 WHEEL_SLOTS = 48         # phi(210), and BLOCK_BYTES * 8
@@ -462,9 +462,18 @@ def main():
                         help="print each test as it runs")
     parser.add_argument("--slow", action="store_true",
                         help="also run the 1e6 and 1e7 range checks")
+    parser.add_argument("--binary", metavar="PATH",
+                        help="test an already-built binary instead of ./sieve "
+                             "(used by 'make test-widths')")
     args = parser.parse_args()
 
-    build()
+    if args.binary:
+        global BINARY
+        BINARY = os.path.abspath(args.binary)
+        if not os.path.exists(BINARY):
+            sys.exit(f"no such binary: {BINARY}")
+    else:
+        build()
 
     selected = [t for t in TESTS if args.slow or not getattr(t, "slow", False)]
     skipped = len(TESTS) - len(selected)
