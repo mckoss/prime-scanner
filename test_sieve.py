@@ -519,12 +519,12 @@ OEIS_A096265 = [2, 3, 5, 7, 23, 53, 89, 113, 211, 1129, 1327, 2179, 2503,
 GAP_LIMIT = 2000000
 
 
-def read_results(prefix):
+def read_results(outdir):
     """Read the per-kind results files and the checkpoint file."""
     records = {}
     for kind in ("gap", "lonely", "aloof"):
         rows = []
-        path = f"{prefix}-{kind}.txt"
+        path = os.path.join(outdir, f"{kind}.txt")
         if os.path.exists(path):
             for line in open(path):
                 if line.startswith("#") or not line.strip():
@@ -532,7 +532,7 @@ def read_results(prefix):
                 rows.append(tuple(int(x) for x in line.split()))
         records[kind] = rows
     checkpoints = []
-    path = f"{prefix}-progress.txt"
+    path = os.path.join(outdir, "progress.txt")
     if os.path.exists(path):
         for line in open(path):
             f = line.split()
@@ -541,8 +541,8 @@ def read_results(prefix):
     return records, checkpoints
 
 
-def run_gap_search(prefix, limit, extra=()):
-    proc = run_sieve("--gaps", "--out", prefix, *extra, str(limit), timeout=120)
+def run_gap_search(outdir, limit, extra=()):
+    proc = run_sieve("--gaps", "--out", outdir, *extra, str(limit), timeout=120)
     if proc.returncode != 0:
         raise SieveError(f"sieve --gaps ... {limit}: exit {proc.returncode}, "
                          f"stderr={proc.stderr.strip()[:200]!r}")
@@ -618,18 +618,20 @@ def test_gap_search_checkpoint_round_trips():
 
 @test
 def test_gap_results_files_are_separate():
-    """Each sequence gets its own results file, plus a progress file"""
+    """Each sequence gets its own results file in the output directory"""
     # Results files hold only results, so they stay directly comparable to an
     # OEIS b-file; restart state lives apart from them.
     with tempfile.TemporaryDirectory() as d:
         prefix = os.path.join(d, "g")
         run_gap_search(prefix, 500000)
+        if not os.path.isdir(prefix):
+            raise SieveError("--out did not create the output directory")
         for kind in ("gap", "lonely", "aloof", "progress"):
-            path = f"{prefix}-{kind}.txt"
+            path = os.path.join(prefix, f"{kind}.txt")
             if not os.path.exists(path):
-                raise SieveError(f"missing output file {os.path.basename(path)}")
+                raise SieveError(f"missing output file {kind}.txt")
         for kind in ("gap", "lonely", "aloof"):
-            for line in open(f"{prefix}-{kind}.txt"):
+            for line in open(os.path.join(prefix, f"{kind}.txt")):
                 if line.startswith("#") or not line.strip():
                     continue
                 if len(line.split()) != 7:

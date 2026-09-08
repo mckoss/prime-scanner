@@ -7,6 +7,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 /*
  * MODULO-210 PACKING SCHEME PARAMETERS:
@@ -179,7 +181,7 @@ void init_wheel(void) {
 void show_help(const char *prog) {
     fprintf(stderr,
             "Usage: %s [--help] [--count] [--from <lo>] [<limit>]\n"
-            "       %s --gaps --out <prefix> [--from <lo>] [--checkpoint <s>] [<limit>]\n\n"
+            "       %s --gaps --out <dir> [--from <lo>] [--checkpoint <s>] [<limit>]\n\n"
             "High-performance Prime Sieve using Modulo-210 wheel factorization.\n\n"
             "Arguments:\n"
             "  <limit>          Upper limit for prime search (default: 500).\n\n"
@@ -198,13 +200,13 @@ void show_help(const char *prog) {
             "                   'lonely' primes (max distance to the NEARER\n"
             "                   neighbour, OEIS A023186) and 'aloof' primes\n"
             "                   (max distance between BOTH neighbours, A096265).\n"
-            "  --out <prefix>   Output prefix for --gaps. Writes results to\n"
-            "                   <prefix>-gap.txt, -lonely.txt and -aloof.txt\n"
-            "                   (one record per line, carrying both neighbour\n"
-            "                   primes so each line is self-contained proof),\n"
-            "                   and <prefix>-progress.txt\n"
-            "                   for checkpoints. Every line is flushed, so a\n"
-            "                   killed run resumes without losing work.\n"
+            "  --out <dir>      Output directory for --gaps, created if needed.\n"
+            "                   Writes gap.txt, lonely.txt and aloof.txt (one\n"
+            "                   record per line, carrying both neighbour primes\n"
+            "                   so each line is self-contained proof), plus\n"
+            "                   progress.txt for checkpoints. Every line is\n"
+            "                   flushed, so a killed run resumes without losing\n"
+            "                   work.\n"
             "  --checkpoint <s> Seconds between progress lines and checkpoints\n"
             "                   (default 15).\n\n"
             "Technical Details:\n"
@@ -229,7 +231,7 @@ void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
             *gaps = 1;
         } else if (strcmp(argv[i], "--out") == 0) {
             if (i + 1 >= argc) {
-                fprintf(stderr, "Error: --out needs a file name prefix.\n");
+                fprintf(stderr, "Error: --out needs a directory.\n");
                 exit(1);
             }
             *out_path = argv[++i];
@@ -633,12 +635,12 @@ unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
  *   lonely  record distance to the NEARER neighbour          (OEIS A023186)
  *   aloof   record total distance between BOTH neighbours    (OEIS A096265)
  *
- * --out <prefix> writes four files:
+ * --out <dir> writes four files into that directory, creating it if needed:
  *
- *   <prefix>-gap.txt       results only, one record per line
- *   <prefix>-lonely.txt      "
- *   <prefix>-aloof.txt       "
- *   <prefix>-progress.txt  checkpoints, for resuming
+ *   <dir>/gap.txt       results only, one record per line
+ *   <dir>/lonely.txt      "
+ *   <dir>/aloof.txt       "
+ *   <dir>/progress.txt  checkpoints, for resuming
  *
  * Results lines are
  *
@@ -746,9 +748,9 @@ static void base_set_ensure(base_set *bs, unsigned long need) {
 
 /** Open one results file, recovering its threshold and count from what is
  *  already there. */
-static void rf_open(record_file *rf, const char *prefix, const char *kind) {
+static void rf_open(record_file *rf, const char *dir, const char *kind) {
     char path[1024];
-    snprintf(path, sizeof path, "%s-%s.txt", prefix, kind);
+    snprintf(path, sizeof path, "%s/%s.txt", dir, kind);
 
     rf->best = 0;
     rf->count = 0;
@@ -839,17 +841,22 @@ static void gap_feed(gap_state *st, unsigned long q) {
 }
 
 static void gap_search(unsigned long lo, unsigned long hi,
-                       const char *prefix, double ck_secs) {
+                       const char *dir, double ck_secs) {
     gap_state st;
     memset(&st, 0, sizeof st);
 
+    if (mkdir(dir, 0777) != 0 && errno != EEXIST) {
+        perror(dir);
+        exit(1);
+    }
+
     /* Thresholds come from the results files; position from the checkpoint. */
-    rf_open(&st.gap, prefix, "gap");
-    rf_open(&st.lonely, prefix, "lonely");
-    rf_open(&st.aloof, prefix, "aloof");
+    rf_open(&st.gap, dir, "gap");
+    rf_open(&st.lonely, dir, "lonely");
+    rf_open(&st.aloof, dir, "aloof");
 
     char path[1024];
-    snprintf(path, sizeof path, "%s-progress.txt", prefix);
+    snprintf(path, sizeof path, "%s/progress.txt", dir);
     FILE *pr = fopen(path, "r");
     if (pr != NULL) {
         char line[512];
@@ -986,7 +993,7 @@ int main(int argc, char *argv[]) {
 
     if (gaps) {
         if (out_path == NULL) {
-            fprintf(stderr, "Error: --gaps needs --out <prefix>.\n");
+            fprintf(stderr, "Error: --gaps needs --out <dir>.\n");
             exit(1);
         }
         /* Without an explicit limit, run to the end of the range. */
