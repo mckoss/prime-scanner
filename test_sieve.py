@@ -262,6 +262,14 @@ def test_output_is_sorted_and_unique():
 
 
 @test
+def test_exact_list_at_100k():
+    """Exact prime list up to 100,000"""
+    # Large enough that every sieving prime's 192-step mask pattern wraps many
+    # times, which the small-limit tests never reach.
+    check_exact(100000)
+
+
+@test
 def test_known_pi_values():
     """Counts match published values of pi(n)"""
     # An external check on the reference sieve itself, so a shared mistake
@@ -326,6 +334,33 @@ def test_count_prints_no_primes():
                          f"got {len(lines)}")
 
 
+@test
+def test_repeat_does_not_change_output():
+    """--repeat runs the sieve N times but reports exactly once"""
+    # --repeat exists for benchmarking; extra passes must be invisible.
+    for limit in (50, 1000, 20011):
+        once = run_sieve(str(limit), timeout=30).stdout
+        many = run_sieve("--repeat", "4", str(limit), timeout=30).stdout
+        if once != many:
+            raise SieveError(f"sieve --repeat 4 {limit}: output differs from a "
+                             f"single pass")
+        if count_from(limit, "--count", "--repeat", "3", timeout=30) != \
+                count_from(limit, "--count", timeout=30):
+            raise SieveError(f"sieve --count --repeat 3 {limit}: count differs")
+
+
+@test
+def test_repeat_rejects_missing_count():
+    """--repeat without a number is an error, not a silent default"""
+    # The bare flag must not let the next argument be eaten as the limit.
+    for flag in ("--repeat", "-r"):
+        proc = run_sieve(flag, timeout=10)
+        if proc.returncode == 0:
+            raise SieveError(f"sieve {flag}: expected a non-zero exit status")
+        if "repeat count" not in proc.stderr:
+            raise SieveError(f"sieve {flag}: unhelpful error {proc.stderr.strip()!r}")
+
+
 # --------------------------------------------------------------------------
 # Command line behaviour
 # --------------------------------------------------------------------------
@@ -356,7 +391,7 @@ def test_help_flags():
         text = proc.stdout + proc.stderr
         if "Usage:" not in text:
             raise SieveError(f"sieve {flag}: no usage text in output")
-        for documented in ("--count", "<limit>"):
+        for documented in ("--count", "--repeat", "<limit>"):
             if documented not in text:
                 raise SieveError(f"sieve {flag}: {documented} is undocumented")
 
