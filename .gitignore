@@ -1,3 +1,4 @@
 # Build artifacts
 sieve
+reference/mod30
 *.o
