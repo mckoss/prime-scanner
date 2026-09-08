@@ -25,20 +25,20 @@
 
 /*
  * WORD SIZE:
- * Which width wins depends on the limit, and not by much. Measured here
- * (ms per pass, sieve only, Apple arm64):
+ * Wide words merge more bits per store; narrow words build the mark pattern
+ * faster, since the pattern is 48*max(1,W/16) entries long. That used to make
+ * 32 the best all-round choice, but MARK_DIRECT_BELOW removes most of the
+ * build cost and 64 now wins from 1e6 up (ms per pass, sieve only, arm64):
  *
- *            1e5     1e6     1e7     1e9
- *   16-bit  0.014   0.116   1.599   329.0
- *   32-bit  0.016   0.107   1.448   310.8
- *   64-bit  0.024   0.115   1.362   296.4
+ *            1e4      1e5      3e5      1e6      1e7      1e8
+ *   32-bit  0.0018   0.0123   0.0325   0.1012   1.4370   17.700
+ *   64-bit  0.0023   0.0132   0.0338   0.0983   1.3446   16.424
  *
- * Narrow words build the mark pattern faster (fewer entries); wide words
- * merge more bits per store. 32 is the default because it is never the worst
- * at any size. Override with: make WORD_BITS=64
+ * 64 is the default. Below 1e6 the gap is under 10% of times measured in
+ * microseconds. Override with: make WORD_BITS=32
  */
 #ifndef SIEVE_WORD_BITS
-#define SIEVE_WORD_BITS 32
+#define SIEVE_WORD_BITS 64
 #endif
 #if   SIEVE_WORD_BITS == 8
 typedef uint8_t  WORD;
@@ -79,6 +79,20 @@ typedef uint64_t WORD;
 #define PATTERN_STEPS   (WHEEL_SLOTS * PATTERN_MULT)
 #define PATTERN_WORDS   (PATTERN_STEPS / SIEVE_WORD_BITS)
 
+/*
+ * A prime near sqrt(limit) has almost nothing left to mark: at limit 1e5,
+ * 62% of the sieving primes have fewer multiples in range than the 192-entry
+ * 64-bit pattern has entries, so building one costs more than it saves.
+ * Below this many marks, skip the pattern and mark directly.
+ *
+ * Swept at 8/16/32/64 bits: the optimum sits at 4/3 of the pattern length in
+ * every case (256 marks for the 192-step 64-bit pattern, 128 for the 96-step
+ * 32-bit one). Worth 45% at 1e5 and 10% at 1e6.
+ */
+#ifndef MARK_DIRECT_BELOW
+#define MARK_DIRECT_BELOW (4 * PATTERN_STEPS / 3)
+#endif
+
 /* How the reconstructed primes are reported. OUT_NONE still does all the
  * sieving work and returns the count; it exists so --repeat can time repeated
  * passes without their output. */
@@ -92,6 +106,23 @@ static int8_t dense_idx[MODULUS];
  * Iterating this costs 48 steps per block where scanning all residues cost
  * 210, and it removes the "is this residue valid?" test from every loop. */
 static uint8_t wheel_res[WHEEL_SLOTS];
+
+/*
+ * DIVISION-FREE PATTERN BUILD.
+ * Writing p = P*210 + wheel_res[a] and c = C*210 + wheel_res[b], the product
+ * expands to
+ *
+ *     slot(p*c) = (p*48)*C + P*(48*wheel_res[b]) + T[a][b]
+ *
+ * with T[a][b] = 48*(ra*rb / 210) + dense_idx[(ra*rb) % 210]. Only the two
+ * residues matter, so both tables are built once at startup: the per-prime
+ * pattern build then needs no division at all, and P and a are already the
+ * sieve loop's own block and slot indices.
+ *
+ * ra*rb < 210^2, so T fits in 16 bits (max 48*209 + 47 = 10079).
+ */
+static uint16_t wheel_prod[WHEEL_SLOTS][WHEEL_SLOTS];   /* T[a][b] */
+static uint16_t wheel_scaled[WHEEL_SLOTS];              /* 48 * wheel_res[b] */
 
 /** Builds the residue -> dense bit-slot map and its inverse. **/
 void init_wheel(void) {
@@ -113,6 +144,18 @@ void init_wheel(void) {
         fprintf(stderr, "internal error: wheel has %d slots, expected %d\n",
                 count, BLOCK_BYTES * 8);
         exit(1);
+    }
+
+    for (int a = 0; a < WHEEL_SLOTS; ++a) {
+        wheel_scaled[a] = (uint16_t)(WHEEL_SLOTS * (unsigned)wheel_res[a]);
+
+        for (int b = 0; b < WHEEL_SLOTS; ++b) {
+            /* Both residues are coprime to 210, so the product is too and
+             * dense_idx of it is never -1. */
+            unsigned prod = (unsigned)wheel_res[a] * (unsigned)wheel_res[b];
+            wheel_prod[a][b] = (uint16_t)(WHEEL_SLOTS * (prod / MODULUS)
+                                          + (unsigned)dense_idx[prod % MODULUS]);
+        }
     }
 }
 
@@ -212,6 +255,7 @@ unsigned long sieve(unsigned long limit, out_mode mode) {
     WORD pat_mask[PATTERN_STEPS];
     unsigned long pat_word[PATTERN_STEPS];
     unsigned long pat_off[PATTERN_STEPS];
+    unsigned long row_base[WHEEL_SLOTS];
 
     /* SIEVE PHASE: We only need to sieve candidates up to sqrt(limit). */
     for (unsigned long b = 0; b * MODULUS <= limit_sqrt; ++b) {
@@ -231,6 +275,25 @@ unsigned long sieve(unsigned long limit, out_mode mode) {
                 continue;  // already marked composite
             }
 
+            /* cmax is the largest c with p*c <= limit, and the wheel keeps
+             * 48 of every 210, so that is about how many marks follow. When
+             * there are few, building a pattern cannot pay for itself. */
+            unsigned long cmax = limit / p;
+            if (((cmax - p) * WHEEL_SLOTS) / MODULUS + 1 < MARK_DIRECT_BELOW) {
+                unsigned long cbase = base;
+                int wi = i;
+                unsigned long c = p;
+
+                while (c <= cmax) {
+                    unsigned long s_k = slot_of(p * c);
+                    buf[s_k / BITS_PER_WORD] |= (WORD)1 << (s_k % BITS_PER_WORD);
+
+                    if (++wi == WHEEL_SLOTS) { wi = 0; cbase += MODULUS; }
+                    c = cbase + wheel_res[wi];
+                }
+                continue;
+            }
+
             /* "p" is PRIME. Mark its multiples, starting at p*p.
              *
              * Only multiples p*c with c coprime to 210 can occupy a slot, so
@@ -242,14 +305,25 @@ unsigned long sieve(unsigned long limit, out_mode mode) {
              * sequence recurs forever. Build it once, then replay it: the
              * marking loop below has no division, no modulo and no bit
              * shifting, and consecutive multiples landing in the same word
-             * are merged into a single store. */
-            unsigned long cbase = (p / MODULUS) * MODULUS;
-            int wi = i;                 /* p == cbase + wheel_res[wi] */
-            unsigned long c = p;
+             * are merged into a single store.
+             *
+             * The build itself is division-free too: slot(p*c) decomposes
+             * into (p*48)*C + P*(48*rb) + T[a][b], where P and a are this
+             * loop's own b and i. The middle and last terms depend only on
+             * the step, so fold them into one row up front; each step is
+             * then a single add. */
+            for (int t = 0; t < WHEEL_SLOTS; ++t) {
+                row_base[t] = b * (unsigned long)wheel_scaled[t]
+                            + (unsigned long)wheel_prod[i][t];
+            }
+
+            unsigned long p_step = p * WHEEL_SLOTS;   /* slot advance per block */
+            unsigned long c_base = p_step * b;        /* the (p*48)*C term */
+            int bi = i;                               /* c starts at p itself */
             int used = 0;
 
             for (int j = 0; j < PATTERN_STEPS; ++j) {
-                unsigned long s_k = slot_of(p * c);
+                unsigned long s_k = c_base + row_base[bi];
                 unsigned long w = s_k / BITS_PER_WORD;
 
                 if (used == 0 || w != pat_word[used - 1]) {
@@ -259,8 +333,7 @@ unsigned long sieve(unsigned long limit, out_mode mode) {
                 }
                 pat_mask[used - 1] |= (WORD)1 << (s_k % BITS_PER_WORD);
 
-                if (++wi == WHEEL_SLOTS) { wi = 0; cbase += MODULUS; }
-                c = cbase + wheel_res[wi];
+                if (++bi == WHEEL_SLOTS) { bi = 0; c_base += p_step; }
             }
 
             unsigned long cycle = (unsigned long)PATTERN_WORDS * p;

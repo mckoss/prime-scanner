@@ -98,8 +98,8 @@ Get that number right and the division disappears entirely -- which flips the
 result. At limit 1e6 on this machine:
 
     your 2021 "Bit-map - 8 of 30"            0.413 ms
-    mod30.c drag-race entry (+ mask pattern) 0.169 ms
-    ../sieve.c dense mod-210 + pattern       0.107 ms
+    mod30.c drag-race entry (+ mask pattern) 0.168 ms
+    ../sieve.c dense mod-210 + pattern       0.098 ms
 
 Note that the drag-race entry is *faster* with 64-bit words (0.169 vs 0.210),
 unlike every algorithm in the table above -- once a mask pattern exists, wider

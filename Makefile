@@ -9,9 +9,9 @@ CC  ?= cc
 # free. (An -ffast-math build is what made the old floor(sqrt) bug reachable.)
 OPT    ?= -O3 -march=native -flto -funroll-loops
 
-# Sieve bitmap word size: 8, 16, 32 or 64. No width wins at every limit --
-# see the table in sieve.c. 32 is never the worst; 64 is best above ~3e6.
-WORD_BITS ?= 32
+# Sieve bitmap word size: 8, 16, 32 or 64. See the table in sieve.c: 64 wins
+# from 1e6 up, and trails 32 by under 10% below that.
+WORD_BITS ?= 64
 
 CFLAGS ?= $(OPT) -std=c11 -Wall -Wextra -DSIEVE_WORD_BITS=$(WORD_BITS)
 LDLIBS := -lm
