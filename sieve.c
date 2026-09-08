@@ -14,8 +14,31 @@
 #define MODULUS       210
 #define BLOCK_BYTES   6
 
-/* Maps residue r [0..MODULUS-1] -> dense bit slot [0..47], or -1 (invalid multiple of base primes OR '1'). */
+/* Maps residue r [0..MODULUS-1] -> dense bit slot [0..47], or -1 for residues
+ * sharing a factor with 210 (multiples of 2, 3, 5 or 7). */
 static int8_t dense_idx[MODULUS];
+
+/** Builds the residue -> dense bit-slot map. **/
+void init_wheel(void) {
+    memset(dense_idx, -1, sizeof(dense_idx));
+
+    int count = 0;
+    for (int i = 1; i < MODULUS; ++i) {
+        /* Keep every residue coprime to 210 -- including residue 1, since
+         * 211, 421, 631, ... are genuine candidates. The *value* 1 itself is
+         * excluded later, when residues are turned back into numbers. */
+        if (i % 2 != 0 && i % 3 != 0 && i % 5 != 0 && i % 7 != 0) {
+            dense_idx[i] = (int8_t)count++;
+        }
+    }
+
+    /* phi(210) == 48 == BLOCK_BYTES * 8: the packing has zero wasted bits. */
+    if (count != BLOCK_BYTES * 8) {
+        fprintf(stderr, "internal error: wheel has %d slots, expected %d\n",
+                count, BLOCK_BYTES * 8);
+        exit(1);
+    }
+}
 
 /** Prints the --help documentation. **/
 void show_help(const char *prog) {
@@ -38,7 +61,7 @@ void parse_args(int argc, char *argv[], unsigned long *limit) {
         if ((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
             show_help(argv[0]);
             exit(0);
-        } else if (!isdigit(argv[i][0])) { 
+        } else if (!isdigit((unsigned char)argv[i][0])) { 
             continue; // Gracefully ignore invalid flags
         } else {
             *limit = atol(argv[i]);
@@ -59,16 +82,23 @@ void sieve(unsigned long limit) {
 
     // Zeroed memory: Bit=0 means Prime candidate. Bit=1 means Composite (marked).
     uint8_t *sieve_mem = calloc(mem_size, sizeof(uint8_t));
+    if (sieve_mem == NULL) {
+        fprintf(stderr, "out of memory: could not allocate %zu bytes\n", mem_size);
+        exit(1);
+    }
 
+    /* Integer-exact floor(sqrt(limit)): the FP result can land one off,
+     * especially when built with -ffast-math. Off-by-one here would leave
+     * p*p unmarked for the largest sieving prime (e.g. 121 with limit=121). */
     unsigned long limit_sqrt = (unsigned long)sqrt((double)limit);
+    while (limit_sqrt > 0 && limit_sqrt * limit_sqrt > limit) --limit_sqrt;
+    while ((limit_sqrt + 1) * (limit_sqrt + 1) <= limit) ++limit_sqrt;
     
     /* SIEVE PHASE: We only need to sieve candidates up to sqrt(limit). */
     unsigned long end_block = (limit_sqrt / MODULUS) + 2; // +2 for safety
     if (end_block > num_blocks) end_block = num_blocks;
 
     for (unsigned long b = 0; b < end_block; ++b) {
-        uint8_t *base_ptr = sieve_mem + ((b) * BLOCK_BYTES);
-
         // Iterate through all residues in the current block: [0..MODULUS-1]
         for (int r = 0; r < MODULUS; ++r) {
             int idx = dense_idx[r];
@@ -79,7 +109,11 @@ void sieve(unsigned long limit) {
             unsigned long candidate = ((b * MODULUS) + r);
 
             // Optimization: Stop checking candidates > sqrt(limit).
-            if (candidate < 2 || candidate > limit_sqrt) break;
+            // Candidates ascend with r, so a break is safe here.
+            if (candidate > limit_sqrt) break;
+
+            // The value 1 sits in slot 0 of block 0; it is not a prime.
+            if (candidate < 2) continue;
 
             /* Check byte/bit for 'candidate' to see if it's already marked composite */
             unsigned long offset = (idx >> 3) + ((b)*BLOCK_BYTES); 
@@ -93,7 +127,10 @@ void sieve(unsigned long limit) {
                 unsigned long long start_sq_ll = (unsigned long long)candidate * candidate;
                 
                 if (start_sq_ll <= limit) {
-                    for (unsigned long k = (unsigned long)start_sq_ll; k <= limit; k += (unsigned long)candidate) {
+                    /* p is odd, so p*p is odd; stepping by 2p skips the even
+                     * multiples, which can never occupy a wheel slot anyway. */
+                    unsigned long step = 2UL * candidate;
+                    for (unsigned long k = (unsigned long)start_sq_ll; k <= limit; k += step) {
                         int idx_k = dense_idx[k % MODULUS];
 
                         /* FIX: Only update valid dense packing slots! */
@@ -123,9 +160,8 @@ void sieve(unsigned long limit) {
     for (unsigned long b = 0; b < num_blocks; ++b) { 
         unsigned long start_val = (b * MODULUS);
         
-            // If the start of this block fully exceeds limit, we can stop outer loop entirely
-        unsigned long next_block_start = ((b + 1) * MODULUS);
-        if (start_val > limit) break; 
+        // If the start of this block fully exceeds limit, stop the outer loop entirely.
+        if (start_val > limit) break;
 
         for (int r = 0; r < MODULUS; ++r) {
             int idx = dense_idx[r];
@@ -160,27 +196,14 @@ int main(int argc, char *argv[]) {
     unsigned long limit = 500; // Default limit
     
     /* Initialize dense packing map: residues [0..209] -> bit-slot [0..47]. */
-    memset(dense_idx, -1, sizeof(dense_idx));
-    
-    int count = 0;
-    for (int i = 1; i < MODULUS; ++i) { 
-        // EXACT GCD CHECK: Only assign an index if the number shares NO factors with 210.
-        // FIX: Explicitly skip '1' here because it is not prime, even though it passes all modulo checks below.
-        if (i == 1) continue;
-
-        if (i % 2 != 0 && i % 3 != 0 && i % 5 != 0 && i % 7 != 0) {
-            if(i == 1){ dense_idx[i] = -1; continue;}else if(dense_idx[i]==-1)continue;dense_idx[i] = count++; 
-        } else {
-            dense_idx[i] = -1; 
-        }
-    }
+    init_wheel();
 
     parse_args(argc, argv, &limit);
 
     if (limit < 8) { // Small limit handled manually to avoid unnecessary allocation/memory overhead.
         printf("Primes up to %lu:\n", limit);
         const int small_primes[] = {2, 3, 5, 7};
-        for(int i=0; i<4; ++i) if(small_primes[i]<=limit) printf("%d ", small_primes[i]);
+        for(int i=0; i<4; ++i) if((unsigned long)small_primes[i]<=limit) printf("%d ", small_primes[i]);
         printf("\n");
     } else {
         sieve(limit);
