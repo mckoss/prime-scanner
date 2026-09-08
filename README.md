@@ -367,7 +367,7 @@ results file first.
 ```
 python3 pgaps.py --to 9.41e14 --jobs 8 --out verify   # --from defaults to 0
 python3 pgaps.py --jobs 8 --out run                   # open-ended, Ctrl-C to stop
-python3 check_oeis.py verify --scanned 9.41e14
+python3 check_oeis.py verify          # limit read from the run's frontier.txt
 ```
 
 Omitting `--to` runs open-ended in **rolling rounds**, like `./sieve --gaps`.
@@ -403,6 +403,14 @@ legitimately a little below the range end.
 
 A test asserts an N-way run merges to exactly the serial result.
 
+**Interruption safety.** The driver treats SIGTERM and SIGHUP like Ctrl-C and
+kills its workers from a `finally`, so no exit path can orphan them, and it
+holds a lock on the output directory so two drivers cannot share one. This was
+a real bug, not a hypothetical: `timeout` killed a driver, its workers kept
+writing, a second driver ran on the same directory, and the desynced state
+silently dropped a record -- A023186 a(44). `check_oeis.py` caught it, which
+is the argument for running that check on anything you intend to trust.
+
 ### 11. Reproducing the published sequences from scratch
 
 Run with **no `--seed`**, so every term is derived independently rather than
@@ -410,7 +418,7 @@ assumed, then compare against the OEIS b-files:
 
 ```
 python3 pgaps.py --to 941114429467074 --jobs 8 --out verify
-python3 check_oeis.py verify --scanned 9.41e14
+python3 check_oeis.py verify          # limit read from the run's frontier.txt
 ```
 
 That upper limit is the last published term of A023186, the deepest of the

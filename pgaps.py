@@ -68,6 +68,61 @@ def seed_from(directory):
     return seed
 
 
+class Stopping(Exception):
+    """Raised when a signal asks the run to wind down."""
+
+
+def install_signal_handlers():
+    """Treat SIGTERM and SIGHUP like Ctrl-C.
+
+    Only SIGINT arrived as KeyboardInterrupt, so `timeout`, `kill` or closing
+    the terminal killed the driver outright and left its workers running.
+    Orphaned workers keep writing to the shard directories, and a second
+    driver started on the same output then desyncs the done-markers from the
+    merge -- which silently loses records.
+    """
+    def handler(signum, frame):
+        raise KeyboardInterrupt
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        try:
+            signal.signal(sig, handler)
+        except (ValueError, OSError):
+            pass
+
+
+def acquire_lock(out):
+    """Refuse to run two drivers against the same output directory."""
+    path = os.path.join(out, "lock")
+    if os.path.exists(path):
+        try:
+            pid = int(open(path).read().split()[0])
+            os.kill(pid, 0)                       # raises if not running
+        except (ValueError, IndexError, ProcessLookupError, PermissionError):
+            pass                                  # stale lock, take it
+        else:
+            sys.exit(f"another pgaps.py (pid {pid}) is already using {out}\n"
+                     f"stop it first, or remove {path} if it is stale")
+    open(path, "w").write(f"{os.getpid()}\n")
+    return path
+
+
+def kill_workers(procs):
+    for _, p, _ in procs:
+        if p.poll() is None:
+            try:
+                p.terminate()
+            except ProcessLookupError:
+                pass
+    for _, p, _ in procs:
+        try:
+            p.wait(timeout=60)
+        except Exception:
+            try:
+                p.kill()
+            except ProcessLookupError:
+                pass
+
+
 def shard_dir(out, i):
     return os.path.join(out, "shards", f"{i:03d}")
 
@@ -197,11 +252,7 @@ def monitor(out, procs, ranges, interval=15):
                   f"{scanned / max(el, 1e-9):.2e} nums/s aggregate", flush=True)
     except KeyboardInterrupt:
         print("\n  interrupted -- signalling workers to checkpoint", flush=True)
-        for _, p, _ in procs:
-            if p.poll() is None:
-                p.send_signal(signal.SIGTERM)
-        for _, p, _ in procs:
-            p.wait()
+        kill_workers(procs)
         return False
     return True
 
@@ -292,11 +343,15 @@ def run_round(out, lo, hi, jobs, seed, checkpoint):
             print(f"    {len(ranges) - len(pending)} worker(s) already complete")
         procs = launch(out, [r for _, r in pending], checkpoint,
                        [i for i, _ in pending])
-        finished = monitor(out, procs, ranges)
-        for i, p, log in procs:
-            if p.poll() == 0:
-                mark_done(out, i)
-            log.close()
+        try:
+            finished = monitor(out, procs, ranges)
+        finally:
+            # Whatever happens to the driver, its workers go with it.
+            kill_workers(procs)
+            for i, p, log in procs:
+                if p.poll() == 0:
+                    mark_done(out, i)
+                log.close()
     else:
         finished = True
     return finished, safe_frontier(out, ranges), ranges
@@ -339,6 +394,8 @@ def main():
         sys.exit("./sieve not built -- run 'make' first")
 
     os.makedirs(args.out, exist_ok=True)
+    install_signal_handlers()
+    globals()["_LOCK_PATH"] = acquire_lock(args.out)
     seed = seed_from(args.seed)
     state = os.path.join(args.out, "round.txt")
 
@@ -418,5 +475,20 @@ def main():
             return 0
 
 
+def _run():
+    lock = None
+    try:
+        return main()
+    finally:
+        # main() sets the lock path on the module for cleanup.
+        lock = globals().get("_LOCK_PATH")
+        if lock and os.path.exists(lock):
+            try:
+                if int(open(lock).read().split()[0]) == os.getpid():
+                    os.remove(lock)
+            except Exception:
+                pass
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(_run())
