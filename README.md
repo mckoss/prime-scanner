@@ -365,7 +365,7 @@ results file first.
 `pgaps.py` splits a range across N worker processes and merges their output:
 
 ```
-python3 pgaps.py --from 0 --to 9.41e14 --jobs 8 --out verify
+python3 pgaps.py --to 9.41e14 --jobs 8 --out verify   # --from defaults to 0
 python3 check_oeis.py verify --scanned 9.41e14
 ```
 
@@ -395,7 +395,7 @@ Run with **no `--seed`**, so every term is derived independently rather than
 assumed, then compare against the OEIS b-files:
 
 ```
-python3 pgaps.py --from 0 --to 941114429467074 --jobs 8 --out verify
+python3 pgaps.py --to 941114429467074 --jobs 8 --out verify
 python3 check_oeis.py verify --scanned 9.41e14
 ```
 

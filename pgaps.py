@@ -17,9 +17,9 @@ primed before the range they are responsible for; the duplicate candidates
 that produces are removed by the merge.
 
 Usage:
-    python3 pgaps.py --from 2e12 --to 1e13 --jobs 8 --out parallel
-    python3 pgaps.py --from 2e12 --to 1e13 --jobs 8 --out parallel --seed results
-    python3 pgaps.py --out parallel --merge-only
+    python3 pgaps.py --to 1e13 --jobs 8 --out verify          # from scratch
+    python3 pgaps.py --from 2e12 --to 1e13 --jobs 8 --out run --seed results
+    python3 pgaps.py --out run --merge-only
 """
 
 import argparse
@@ -259,8 +259,12 @@ def verify_coverage(out, ranges):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--from", dest="lo", type=float, help="range start")
-    ap.add_argument("--to", dest="hi", type=float, help="range end")
+    ap.add_argument("--from", dest="lo", type=float, default=0,
+                    help="range start (default 0, i.e. derive every record "
+                         "from scratch)")
+    ap.add_argument("--to", dest="hi", type=float,
+                    help="range end (required: the range must be bounded to "
+                         "be split across workers)")
     ap.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
                     help="worker processes (default: all cores). Prefer the "
                          "number of FREE performance cores; efficiency cores "
@@ -287,8 +291,9 @@ def main():
         lo, hi, jobs = (int(x) for x in open(meta).read().split())
         ranges = prepare(args.out, jobs, lo, hi, seed)
     else:
-        if args.lo is None or args.hi is None:
-            sys.exit("--from and --to are required unless --merge-only")
+        if args.hi is None:
+            sys.exit("--to is required (the range must be bounded to shard it); "
+                     "--from defaults to 0")
         lo, hi = int(args.lo), int(args.hi)
         os.makedirs(args.out, exist_ok=True)
         open(meta, "w").write(f"{lo} {hi} {args.jobs}\n")
