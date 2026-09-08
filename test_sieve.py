@@ -15,6 +15,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(HERE, "sieve")   # overridden by --binary
@@ -677,6 +678,77 @@ def test_gap_search_requires_out_file():
         raise SieveError("sieve --gaps without --out: expected non-zero exit")
     if "--out" not in proc.stderr:
         raise SieveError(f"unhelpful error: {proc.stderr.strip()!r}")
+
+
+@test
+def test_gap_exit_code_reports_completion():
+    """Exit status distinguishes finishing the range from being interrupted"""
+    # pgaps.py relies on this to know a worker actually covered its range;
+    # a checkpoint alone cannot say, since it names the last prime seen.
+    with tempfile.TemporaryDirectory() as d:
+        proc = run_sieve("--gaps", "--out", os.path.join(d, "done"),
+                         "200000", timeout=60)
+        if proc.returncode != 0:
+            raise SieveError(f"completed run exited {proc.returncode}, expected 0")
+
+        p = subprocess.Popen([BINARY, "--gaps", "--out", os.path.join(d, "cut"),
+                              "400000000000"],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(2)
+        p.terminate()
+        rc = p.wait(timeout=60)
+        if rc != 2:
+            raise SieveError(f"interrupted run exited {rc}, expected 2")
+
+
+@test
+def test_gap_out_creates_nested_directories():
+    """--out creates missing parent directories"""
+    with tempfile.TemporaryDirectory() as d:
+        nested = os.path.join(d, "a", "b", "c")
+        run_gap_search(nested, 100000)
+        for kind in ("gap", "lonely", "aloof", "progress"):
+            if not os.path.exists(os.path.join(nested, f"{kind}.txt")):
+                raise SieveError(f"missing {kind}.txt under a nested --out")
+
+
+@test
+def test_parallel_merge_matches_serial():
+    """A sharded run merges to exactly the serial result"""
+    # The whole correctness claim for pgaps.py: workers emit candidates
+    # against a shared threshold, and the merge applies the running maximum.
+    driver = os.path.join(HERE, "pgaps.py")
+    if not os.path.exists(driver):
+        raise SieveError("pgaps.py is missing")
+
+    with tempfile.TemporaryDirectory() as d:
+        serial = os.path.join(d, "serial")
+        run_gap_search(serial, 3000000)
+
+        par = os.path.join(d, "par")
+        proc = subprocess.run([sys.executable, driver, "--from", "0",
+                               "--to", "3000000", "--jobs", "4", "--out", par],
+                              capture_output=True, text=True, timeout=300)
+        if proc.returncode != 0:
+            raise SieveError(f"pgaps.py exited {proc.returncode}: "
+                             f"{proc.stdout[-400:]}{proc.stderr[-400:]}")
+
+        a, _ = read_results(serial)
+        b, _ = read_results(par)
+        for kind in ("gap", "lonely", "aloof"):
+            sa = [r[1:] for r in a[kind]]
+            sb = [r[1:] for r in b[kind]]
+            if sa != sb:
+                raise SieveError(
+                    f"{kind}: parallel merge differs from serial\n"
+                    f"  serial   {len(sa)} records, first diff around "
+                    f"{[x for x, y in zip(sa, sb) if x != y][:2]}\n"
+                    f"  parallel {len(sb)} records")
+        if not b["aloof"]:
+            raise SieveError("parallel run produced no records -- vacuous test")
+
+
+test_parallel_merge_matches_serial.slow = True
 
 
 # --------------------------------------------------------------------------

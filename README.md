@@ -11,8 +11,8 @@ range.
 ./sieve --gaps --out run 1e13         # hunt record prime gaps
 
 make            # build ./sieve
-make test       # 34 tests
-make test-slow  # 38 tests, including 1e6/1e7 range checks and the 2^63 window
+make test       # 36 tests
+make test-slow  # 41 tests, including 1e6/1e7 range checks and the 2^63 window
 make test-widths# the suite against WORD_BITS 8, 16, 32 and 64
 make bench      # time it against the reference implementation
 ```
@@ -360,13 +360,78 @@ either, because records only ever increase. Seeding a search to extend a
 published sequence is then just a matter of writing its known terms into the
 results file first.
 
+### 10. Running it in parallel
+
+`pgaps.py` splits a range across N worker processes and merges their output:
+
+```
+python3 pgaps.py --from 0 --to 9.41e14 --jobs 8 --out verify
+python3 check_oeis.py verify --scanned 9.41e14
+```
+
+**The merge is not bookkeeping, it is the correctness argument.** A record is
+a running maximum over the whole scan, so a worker covering [1e13, 2e13]
+cannot know whether its local best beats everything below it. Each worker
+emits *candidates* -- primes beating the threshold in force when the search
+began -- and a serial merge applies the running-maximum rule in order. No true
+record can be missed: a global record at p must exceed everything below p,
+including everything in its own worker, so it is a local record there too.
+
+Workers overlap slightly at their lower edge to prime the 3-prime window; the
+duplicate candidates that produces are removed by the merge. Shards are split
+by estimated *time*, not by length, since throughput falls with magnitude and
+equal-length shards would leave the run waiting on the topmost one.
+
+Completion is tracked by exit status: `./sieve --gaps` returns 0 when it
+finished its range and **2** when a signal stopped it early. A checkpoint
+cannot answer that question, since it names the last prime seen, which is
+legitimately a little below the range end.
+
+A test asserts an N-way run merges to exactly the serial result.
+
+### 11. Reproducing the published sequences from scratch
+
+Run with **no `--seed`**, so every term is derived independently rather than
+assumed, then compare against the OEIS b-files:
+
+```
+python3 pgaps.py --from 0 --to 941114429467074 --jobs 8 --out verify
+python3 check_oeis.py verify --scanned 9.41e14
+```
+
+That upper limit is the last published term of A023186, the deepest of the
+three. Reaching it verifies:
+
+| sequence | terms verified |
+|----------|----------------|
+| A096265 aloof | 55 of 55 — complete (finishes at 9.3e11, early in worker 0) |
+| A023186 lonely | 56 of 56 — complete |
+| A002386 gaps | 61 of 85 (the rest lie beyond, up to 1e20) |
+
+Estimated cost, integrating the measured rate curve:
+
+| | time |
+|---|---|
+| serial, 1 core | 18.1 days |
+| 8 workers, ideal | 2.3 days |
+| 8 workers, dedicated machine | ~2.6 days |
+| 8 workers, measured here (4.39 of 8 cores busy) | 4.1 days |
+
+The gap between "ideal" and "measured" is scheduling, not algorithm: CPU time
+barely rises with worker count (58.8s -> 66.5s for the same range), but only
+about 4.4 cores were actually busy for 8 requested. Leave a core free for the
+OS, avoid competing jobs, and prefer `--jobs` equal to the number of *free
+performance* cores -- efficiency cores contribute little.
+
 ---
 
 ## Layout
 
 ```
 sieve.c            the sieve
-test_sieve.py      34 tests; --slow adds range checks, --binary tests a variant
+test_sieve.py      41 tests; --slow adds range checks, --binary tests a variant
+pgaps.py           parallel driver: shard, scan, merge
+check_oeis.py      compare a results directory against the OEIS b-files
 bench.py           timing harness, compares against reference/mod30
 Makefile           all, test, test-slow, test-widths, bench, reference, clean
 reference/         Mike Koss's 2021 mod-30 drag-race entry, kept verbatim

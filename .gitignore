@@ -3,3 +3,4 @@ sieve
 sieve-w*
 reference/mod30
 *.o
+.oeis-cache/

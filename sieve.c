@@ -746,6 +746,26 @@ static void base_set_ensure(base_set *bs, unsigned long need) {
     free(buf);
 }
 
+/** mkdir -p: create a directory and any missing parents. **/
+static void mkdir_p(const char *path) {
+    char buf[1024];
+    size_t n = strlen(path);
+    if (n == 0 || n >= sizeof buf) {
+        fprintf(stderr, "invalid output directory: %s\n", path);
+        exit(1);
+    }
+    memcpy(buf, path, n + 1);
+    while (n > 1 && buf[n - 1] == '/') buf[--n] = '\0';
+
+    for (char *p = buf + 1; *p; ++p) {
+        if (*p != '/') continue;
+        *p = '\0';
+        if (mkdir(buf, 0777) != 0 && errno != EEXIST) { perror(buf); exit(1); }
+        *p = '/';
+    }
+    if (mkdir(buf, 0777) != 0 && errno != EEXIST) { perror(buf); exit(1); }
+}
+
 /** Open one results file, recovering its threshold and count from what is
  *  already there. */
 static void rf_open(record_file *rf, const char *dir, const char *kind) {
@@ -840,15 +860,13 @@ static void gap_feed(gap_state *st, unsigned long q) {
     st->p_last = q;
 }
 
-static void gap_search(unsigned long lo, unsigned long hi,
-                       const char *dir, double ck_secs) {
+/* Returns 1 if the whole range was scanned, 0 if a signal cut it short. */
+static int gap_search(unsigned long lo, unsigned long hi,
+                      const char *dir, double ck_secs) {
     gap_state st;
     memset(&st, 0, sizeof st);
 
-    if (mkdir(dir, 0777) != 0 && errno != EEXIST) {
-        perror(dir);
-        exit(1);
-    }
+    mkdir_p(dir);
 
     /* Thresholds come from the results files; position from the checkpoint. */
     rf_open(&st.gap, dir, "gap");
@@ -970,6 +988,8 @@ static void gap_search(unsigned long lo, unsigned long hi,
     fclose(st.lonely.out);
     fclose(st.aloof.out);
     fclose(st.progress);
+
+    return !stop_requested;
 }
 
 /* Keeps the optimiser from discarding the repeated --repeat passes. */
@@ -999,7 +1019,9 @@ int main(int argc, char *argv[]) {
         /* Without an explicit limit, run to the end of the range. */
         unsigned long end = (limit == 500 && !has_from) ? ULONG_MAX : limit;
         if (limit == 500) end = ULONG_MAX;
-        gap_search(has_from ? from : 0, end, out_path, ck_secs);
+        /* Exit 2 when interrupted, so a caller can tell "finished the range"
+         * from "stopped early but checkpointed". */
+        if (!gap_search(has_from ? from : 0, end, out_path, ck_secs)) return 2;
     } else if (has_from) {
         for (unsigned long r = 1; r < repeat; ++r) {
             bench_sink += sieve_window(from, limit, OUT_NONE);
