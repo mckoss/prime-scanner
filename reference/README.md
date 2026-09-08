@@ -104,3 +104,31 @@ result. At limit 1e6 on this machine:
 Note that the drag-race entry is *faster* with 64-bit words (0.169 vs 0.210),
 unlike every algorithm in the table above -- once a mask pattern exists, wider
 words merge more bits per store and the 2021 rule of thumb reverses.
+
+
+## Range and precision
+
+The windowed mode (`--from`) is exact across the whole 64-bit range, verified
+against a deterministic Miller-Rabin test at 2^63, 1e19, and the last 2000
+integers below ULONG_MAX. Two bugs had to be fixed to get there, both of which
+returned confident wrong answers rather than failing:
+
+- The limit was parsed with `atol()`, which returns a *signed* long, so any
+  bound at or above 2^63 saturated at LONG_MAX and the window came back empty.
+- The output walk advanced by value (`blk * 210 + residue`). One step past the
+  last candidate below ULONG_MAX that expression wraps to a small number, which
+  restarted the walk and emitted tens of millions of bogus "primes". It now
+  loops on the slot index, which cannot wrap (the largest is ~0.229 * 2^64).
+
+Cost is dominated by the base sieve to sqrt(hi), not by the window width:
+
+    window [x, x+1e5]      primes    peak RSS    time
+    x = 1e6                  7216      1.3 MB    0.002s
+    x = 1e9                  4832      1.3 MB    0.002s
+    x = 1e12                 3614      1.4 MB    0.004s
+    x = 1e15                 2805      2.2 MB    0.032s
+    x = 1e18                 2398     28.6 MB    0.97s
+    x = 2^63                   ~40      ~90 MB   4.0s
+
+At 1e18 a 1e7-wide window (241,295 primes) also takes about 1.2s, since the
+same base sieve is amortised over more output.

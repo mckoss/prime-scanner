@@ -124,6 +124,11 @@ static uint8_t wheel_res[WHEEL_SLOTS];
 static uint16_t wheel_prod[WHEEL_SLOTS][WHEEL_SLOTS];   /* T[a][b] */
 static uint16_t wheel_scaled[WHEEL_SLOTS];              /* 48 * wheel_res[b] */
 
+/* For residue r, the slot of the smallest wheel residue >= r, or WHEEL_SLOTS
+ * when there is none and the search must move to the next block. Used to snap
+ * a window's lower bound up to a real candidate. */
+static uint8_t ceil_idx[MODULUS + 1];
+
 /** Builds the residue -> dense bit-slot map and its inverse. **/
 void init_wheel(void) {
     memset(dense_idx, -1, sizeof(dense_idx));
@@ -146,6 +151,14 @@ void init_wheel(void) {
         exit(1);
     }
 
+    {
+        int slot = 0;
+        for (int r = 0; r <= MODULUS; ++r) {
+            while (slot < WHEEL_SLOTS && wheel_res[slot] < r) ++slot;
+            ceil_idx[r] = (uint8_t)slot;
+        }
+    }
+
     for (int a = 0; a < WHEEL_SLOTS; ++a) {
         wheel_scaled[a] = (uint16_t)(WHEEL_SLOTS * (unsigned)wheel_res[a]);
 
@@ -162,7 +175,7 @@ void init_wheel(void) {
 /** Prints the --help documentation. **/
 void show_help(const char *prog) {
     fprintf(stderr,
-            "Usage: %s [--help] [--count] [<limit>]\n\n"
+            "Usage: %s [--help] [--count] [--from <lo>] [<limit>]\n\n"
             "High-performance Prime Sieve using Modulo-210 wheel factorization.\n\n"
             "Arguments:\n"
             "  <limit>          Upper limit for prime search (default: 500).\n\n"
@@ -171,6 +184,9 @@ void show_help(const char *prog) {
             "  --count, -c      Print only how many primes were found, not the\n"
             "                   primes themselves. Useful for timing the sieve\n"
             "                   without the cost of formatting every result.\n"
+            "  --from, -f <lo>  Report only primes >= <lo>. Sieves just that\n"
+            "                   window, so memory and time scale with the window\n"
+            "                   rather than with <limit>.\n"
             "  --repeat, -r <n> Run the sieve <n> times, reporting once. For\n"
             "                   benchmarking: it amortises process startup, which\n"
             "                   otherwise dwarfs the sieve at small limits.\n\n"
@@ -184,13 +200,20 @@ void show_help(const char *prog) {
 
 /** Parses command line arguments safely. **/
 void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
-                unsigned long *repeat) {
+                unsigned long *repeat, unsigned long *from, int *has_from) {
     for (int i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
             show_help(argv[0]);
             exit(0);
         } else if ((strcmp(argv[i], "--count") == 0) || (strcmp(argv[i], "-c") == 0)) {
             *count_only = 1;
+        } else if ((strcmp(argv[i], "--from") == 0) || (strcmp(argv[i], "-f") == 0)) {
+            if (i + 1 >= argc || !isdigit((unsigned char)argv[i + 1][0])) {
+                fprintf(stderr, "Error: %s needs a lower bound.\n", argv[i]);
+                exit(1);
+            }
+            *from = strtoul(argv[++i], NULL, 10);
+            *has_from = 1;
         } else if ((strcmp(argv[i], "--repeat") == 0) || (strcmp(argv[i], "-r") == 0)) {
             if (i + 1 >= argc || !isdigit((unsigned char)argv[i + 1][0])) {
                 fprintf(stderr, "Error: %s needs a repeat count.\n", argv[i]);
@@ -201,7 +224,9 @@ void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
         } else if (!isdigit((unsigned char)argv[i][0])) {
             continue; // Gracefully ignore invalid flags
         } else {
-            *limit = atol(argv[i]);
+            /* strtoul, not atol: atol returns a signed long, so any limit at
+             * or above 2^63 saturates at LONG_MAX and silently truncates. */
+            *limit = strtoul(argv[i], NULL, 10);
         }
     }
 }
@@ -209,6 +234,20 @@ void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
 /** Slot index of a value known to be coprime to MODULUS. **/
 static inline unsigned long slot_of(unsigned long k) {
     return (k / MODULUS) * WHEEL_SLOTS + (unsigned long)dense_idx[k % MODULUS];
+}
+
+/** Exact floor(sqrt(n)). **/
+static unsigned long isqrt_floor(unsigned long n) {
+    if (n < 2) return n;
+
+    /* The double conversion loses precision above 2^53 and -ffast-math can
+     * nudge it either way, so correct in both directions. Comparing via
+     * division rather than r*r keeps this exact right up to ULONG_MAX. */
+    unsigned long r = (unsigned long)sqrt((double)n);
+    if (r > n) r = n;
+    while (r > 1 && r > n / r) --r;
+    while (r + 1 <= n / (r + 1)) ++r;
+    return r;
 }
 
 /** Number of wheel candidates <= limit, i.e. how many slots are in use. **/
@@ -221,187 +260,197 @@ static unsigned long candidates_upto(unsigned long limit) {
     return n;
 }
 
-/** High-performance Modulo-210 Sieve implementation. Returns the prime count. **/
-unsigned long sieve(unsigned long limit, out_mode mode) {
-    if (limit < 8) return 0;
+/** Set bits in buf[] over the inclusive bit range [lo_bit, hi_bit]. **/
+static unsigned long popcount_range(const WORD *buf,
+                                    unsigned long lo_bit, unsigned long hi_bit) {
+    unsigned long wlo = lo_bit / BITS_PER_WORD, klo = lo_bit % BITS_PER_WORD;
+    unsigned long whi = hi_bit / BITS_PER_WORD, khi = hi_bit % BITS_PER_WORD;
 
-    /*
-     * MEMORY ALLOCATION:
-     * Each block covers exactly MODULUS numbers, densely packed into exactly
-     * BLOCK_BYTES. One guard word past the end lets the marking loop write a
-     * whole word without a bounds test on the final partial block.
-     */
-    unsigned long num_blocks = (limit / MODULUS) + 1;
+    WORD all = (WORD)~(WORD)0;
+    WORD mask_lo = (WORD)(all << klo);                       /* bits >= klo */
+    WORD mask_hi = (khi + 1 == BITS_PER_WORD)                /* bits <= khi */
+                 ? all : (WORD)(((WORD)1 << (khi + 1)) - 1);
+
+    if (wlo == whi) {
+        return (unsigned long)POPCOUNT((WORD)(buf[wlo] & mask_lo & mask_hi));
+    }
+
+    unsigned long n = (unsigned long)POPCOUNT((WORD)(buf[wlo] & mask_lo));
+    for (unsigned long w = wlo + 1; w < whi; ++w) {
+        n += (unsigned long)POPCOUNT(buf[w]);
+    }
+    return n + (unsigned long)POPCOUNT((WORD)(buf[whi] & mask_hi));
+}
+
+/**
+ * Mark the multiples of prime p that land in [lo, hi].
+ *
+ * The buffer need not start at slot 0: word_base is the absolute word index
+ * of buf[0], so a candidate at absolute slot s lands in
+ * buf[s / BITS_PER_WORD - word_base]. last_word is buf's final valid index.
+ * That offset is the whole of what makes a windowed sieve work -- bit
+ * positions within a word are unchanged, so the mark pattern is identical.
+ */
+static void mark_prime(WORD *buf, unsigned long word_base, unsigned long last_word,
+                       unsigned long p, unsigned long lo, unsigned long hi) {
+    unsigned long cmax = hi / p;
+    if (cmax < p) return;                  /* p*p is already past the window */
+
+    /* Smallest c with p*c >= lo, never below p itself: any smaller multiple
+     * has a factor under p and was marked when that prime was handled. */
+    unsigned long c0 = p;
+    if (lo > 0) {
+        /* ceil(lo / p), written to avoid overflowing when lo is near
+         * ULONG_MAX -- (lo + p - 1) would wrap. */
+        unsigned long need = lo / p;
+        if (need * p < lo) ++need;
+        if (need > c0) c0 = need;
+    }
+
+    /* Only c coprime to 210 gives a multiple that occupies a slot. */
+    unsigned long blk = c0 / MODULUS;
+    int bi = ceil_idx[c0 % MODULUS];
+    if (bi == WHEEL_SLOTS) { bi = 0; ++blk; }
+
+    unsigned long c = blk * MODULUS + wheel_res[bi];
+    if (c > cmax) return;
+
+    /* The wheel keeps 48 of every 210, so this is about how many marks
+     * follow. Too few and building a pattern cannot pay for itself. */
+    if (((cmax - c) * WHEEL_SLOTS) / MODULUS + 1 < MARK_DIRECT_BELOW) {
+        unsigned long cbase = blk * MODULUS;
+        unsigned long v = c;
+
+        while (v <= cmax) {
+            unsigned long s = slot_of(p * v);
+            buf[s / BITS_PER_WORD - word_base] |= (WORD)1 << (s % BITS_PER_WORD);
+
+            if (++bi == WHEEL_SLOTS) { bi = 0; cbase += MODULUS; }
+            v = cbase + wheel_res[bi];
+        }
+        return;
+    }
+
+    /* Division-free build: slot(p*c) = (p*48)*C + P*(48*rb) + T[a][b], with
+     * the two step-dependent terms folded into one row up front. */
+    unsigned long P = p / MODULUS;
+    int a = dense_idx[p % MODULUS];
+
+    unsigned long row_base[WHEEL_SLOTS];
+    for (int t = 0; t < WHEEL_SLOTS; ++t) {
+        row_base[t] = P * (unsigned long)wheel_scaled[t]
+                    + (unsigned long)wheel_prod[a][t];
+    }
+
+    WORD pat_mask[PATTERN_STEPS];
+    unsigned long pat_word[PATTERN_STEPS];
+    unsigned long pat_off[PATTERN_STEPS];
+
+    unsigned long p_step = p * WHEEL_SLOTS;    /* slot advance per block of c */
+    unsigned long c_base = p_step * blk;
+    int used = 0;
+
+    for (int j = 0; j < PATTERN_STEPS; ++j) {
+        unsigned long s = c_base + row_base[bi];
+        unsigned long w = s / BITS_PER_WORD - word_base;
+
+        if (used == 0 || w != pat_word[used - 1]) {
+            pat_word[used] = w;
+            pat_mask[used] = 0;
+            ++used;
+        }
+        pat_mask[used - 1] |= (WORD)1 << (s % BITS_PER_WORD);
+
+        if (++bi == WHEEL_SLOTS) { bi = 0; c_base += p_step; }
+    }
+
+    unsigned long cycle = (unsigned long)PATTERN_WORDS * p;
+    unsigned long first = pat_word[0];
+    for (int j = 0; j < used - 1; ++j) {
+        pat_off[j] = pat_word[j + 1] - pat_word[j];
+    }
+    pat_off[used - 1] = first + cycle - pat_word[used - 1];
+
+    /* Whole cycles need no bounds test inside: a cycle never reaches past
+     * first + cycle. */
+    unsigned long w = first;
+    while (w + cycle <= last_word) {
+        for (int j = 0; j < used; ++j) {
+            buf[w] |= pat_mask[j];
+            w += pat_off[j];
+        }
+    }
+    for (int j = 0; j < used && w <= last_word; ++j) {
+        buf[w] |= pat_mask[j];
+        w += pat_off[j];
+    }
+}
+
+/** Sieve [0, m] into a fresh buffer, discovering its own primes as it goes. **/
+static WORD *self_sieve(unsigned long m, size_t *words_out) {
+    unsigned long num_blocks = (m / MODULUS) + 1;
     unsigned long total_bits = num_blocks * WHEEL_SLOTS;
     size_t num_words = (size_t)((total_bits + BITS_PER_WORD - 1) / BITS_PER_WORD) + 1;
 
-    // Zeroed memory: Bit=0 means Prime candidate. Bit=1 means Composite (marked).
     WORD *buf = calloc(num_words, sizeof(WORD));
     if (buf == NULL) {
         fprintf(stderr, "out of memory: could not allocate %zu bytes\n",
                 num_words * sizeof(WORD));
         exit(1);
     }
-    unsigned long last_word = (unsigned long)num_words - 1;
 
-    /* Integer-exact floor(sqrt(limit)): the FP result can land one off,
-     * especially when built with -ffast-math. Off-by-one here would leave
-     * p*p unmarked for the largest sieving prime (e.g. 121 with limit=121). */
-    unsigned long limit_sqrt = (unsigned long)sqrt((double)limit);
-    while (limit_sqrt > 0 && limit_sqrt * limit_sqrt > limit) --limit_sqrt;
-    while ((limit_sqrt + 1) * (limit_sqrt + 1) <= limit) ++limit_sqrt;
-
-    /* Scratch for the recurring mark pattern, rebuilt per sieving prime. */
-    WORD pat_mask[PATTERN_STEPS];
-    unsigned long pat_word[PATTERN_STEPS];
-    unsigned long pat_off[PATTERN_STEPS];
-    unsigned long row_base[WHEEL_SLOTS];
-
-    /* SIEVE PHASE: We only need to sieve candidates up to sqrt(limit). */
-    for (unsigned long b = 0; b * MODULUS <= limit_sqrt; ++b) {
+    unsigned long root = isqrt_floor(m);
+    for (unsigned long b = 0; b * MODULUS <= root; ++b) {
         unsigned long base = b * MODULUS;
 
         for (int i = 0; i < WHEEL_SLOTS; ++i) {
             unsigned long p = base + wheel_res[i];
-
-            // Candidates ascend with i, so a break is safe here.
-            if (p > limit_sqrt) break;
-
-            // The value 1 sits in slot 0 of block 0; it is not a prime.
-            if (p < 2) continue;
+            if (p > root) break;            /* candidates ascend with i */
+            if (p < 2) continue;            /* the value 1 */
 
             unsigned long s = b * WHEEL_SLOTS + (unsigned long)i;
-            if ((buf[s / BITS_PER_WORD] >> (s % BITS_PER_WORD)) & 1) {
-                continue;  // already marked composite
-            }
+            if ((buf[s / BITS_PER_WORD] >> (s % BITS_PER_WORD)) & 1) continue;
 
-            /* cmax is the largest c with p*c <= limit, and the wheel keeps
-             * 48 of every 210, so that is about how many marks follow. When
-             * there are few, building a pattern cannot pay for itself. */
-            unsigned long cmax = limit / p;
-            if (((cmax - p) * WHEEL_SLOTS) / MODULUS + 1 < MARK_DIRECT_BELOW) {
-                unsigned long cbase = base;
-                int wi = i;
-                unsigned long c = p;
-
-                while (c <= cmax) {
-                    unsigned long s_k = slot_of(p * c);
-                    buf[s_k / BITS_PER_WORD] |= (WORD)1 << (s_k % BITS_PER_WORD);
-
-                    if (++wi == WHEEL_SLOTS) { wi = 0; cbase += MODULUS; }
-                    c = cbase + wheel_res[wi];
-                }
-                continue;
-            }
-
-            /* "p" is PRIME. Mark its multiples, starting at p*p.
-             *
-             * Only multiples p*c with c coprime to 210 can occupy a slot, so
-             * we step c through the wheel instead of stepping by 2p and
-             * discarding the ~54% of steps that land nowhere.
-             *
-             * Over PATTERN_STEPS such steps the slot index advances by
-             * exactly PATTERN_WORDS*p whole words, so the (word offset, mask)
-             * sequence recurs forever. Build it once, then replay it: the
-             * marking loop below has no division, no modulo and no bit
-             * shifting, and consecutive multiples landing in the same word
-             * are merged into a single store.
-             *
-             * The build itself is division-free too: slot(p*c) decomposes
-             * into (p*48)*C + P*(48*rb) + T[a][b], where P and a are this
-             * loop's own b and i. The middle and last terms depend only on
-             * the step, so fold them into one row up front; each step is
-             * then a single add. */
-            for (int t = 0; t < WHEEL_SLOTS; ++t) {
-                row_base[t] = b * (unsigned long)wheel_scaled[t]
-                            + (unsigned long)wheel_prod[i][t];
-            }
-
-            unsigned long p_step = p * WHEEL_SLOTS;   /* slot advance per block */
-            unsigned long c_base = p_step * b;        /* the (p*48)*C term */
-            int bi = i;                               /* c starts at p itself */
-            int used = 0;
-
-            for (int j = 0; j < PATTERN_STEPS; ++j) {
-                unsigned long s_k = c_base + row_base[bi];
-                unsigned long w = s_k / BITS_PER_WORD;
-
-                if (used == 0 || w != pat_word[used - 1]) {
-                    pat_word[used] = w;
-                    pat_mask[used] = 0;
-                    ++used;
-                }
-                pat_mask[used - 1] |= (WORD)1 << (s_k % BITS_PER_WORD);
-
-                if (++bi == WHEEL_SLOTS) { bi = 0; c_base += p_step; }
-            }
-
-            unsigned long cycle = (unsigned long)PATTERN_WORDS * p;
-            unsigned long first = pat_word[0];
-            for (int j = 0; j < used - 1; ++j) {
-                pat_off[j] = pat_word[j + 1] - pat_word[j];
-            }
-            pat_off[used - 1] = first + cycle - pat_word[used - 1];
-
-            /* Replay the pattern. Whole cycles need no bounds test inside,
-             * because the cycle never reaches past first + cycle. */
-            unsigned long w = first;
-            while (w + cycle <= last_word) {
-                for (int j = 0; j < used; ++j) {
-                    buf[w] |= pat_mask[j];
-                    w += pat_off[j];
-                }
-            }
-            for (int j = 0; j < used && w <= last_word; ++j) {
-                buf[w] |= pat_mask[j];
-                w += pat_off[j];
-            }
+            mark_prime(buf, 0, (unsigned long)num_words - 1, p, 0, m);
         }
     }
 
-    /* OUTPUT PHASE: Reconstruct primes from the dense bitset. */
+    *words_out = num_words;
+    return buf;
+}
+
+/** High-performance Modulo-210 Sieve implementation. Returns the prime count. **/
+unsigned long sieve(unsigned long limit, out_mode mode) {
+    if (limit < 8) return 0;
+
+    size_t num_words;
+    WORD *buf = self_sieve(limit, &num_words);
+
     unsigned long n_cand = candidates_upto(limit);
     unsigned long found;
 
     if (mode != OUT_LIST) {
         /* Slots ascend with value, so the candidates <= limit are exactly the
-         * first n_cand bits. Popcount whole words rather than test each bit:
-         * ~3.6K word reads instead of ~229K bit tests at limit 1e6. */
-        unsigned long marked = 0;
-        unsigned long whole = n_cand / BITS_PER_WORD;
-        for (unsigned long w = 0; w < whole; ++w) {
-            marked += (unsigned long)POPCOUNT(buf[w]);
-        }
-        unsigned long tail = n_cand % BITS_PER_WORD;
-        if (tail) {
-            WORD keep = (((WORD)1 << tail) - 1);
-            marked += (unsigned long)POPCOUNT(buf[whole] & keep);
-        }
-
-        /* Every unmarked slot is prime except slot 0, the value 1, which is
-         * never marked. The four base primes are not in the wheel at all. */
-        found = 4 + (n_cand - 1) - marked;
+         * first n_cand bits. Every unmarked one is prime except slot 0, the
+         * value 1, which is never marked. */
+        found = 4 + (n_cand - 1) - popcount_range(buf, 0, n_cand - 1);
         if (mode == OUT_COUNT) printf("Primes up to %lu: %lu\n", limit, found);
     } else {
         printf("Primes up to %lu:\n", limit);
 
-        // Report base primes explicitly removed by our wheel (2, 3, 5, 7).
         const int base_primes[] = {2, 3, 5, 7};
         found = 4;
         for (int i = 0; i < 4; ++i) {
             printf("%d ", base_primes[i]);
         }
 
-        for (unsigned long b = 0; b < num_blocks; ++b) {
+        for (unsigned long b = 0; b * MODULUS <= limit; ++b) {
             unsigned long base = b * MODULUS;
-            if (base > limit) break;
 
             for (int i = 0; i < WHEEL_SLOTS; ++i) {
                 unsigned long val = base + wheel_res[i];
                 if (val > limit) break;
-
-                /* Ensure '1' is never considered prime. */
-                if (val < 2) continue;
+                if (val < 2) continue;      /* 1 is not prime */
 
                 unsigned long s = b * WHEEL_SLOTS + (unsigned long)i;
                 if (((buf[s / BITS_PER_WORD] >> (s % BITS_PER_WORD)) & 1) == 0) {
@@ -410,8 +459,129 @@ unsigned long sieve(unsigned long limit, out_mode mode) {
                 }
             }
         }
+        printf("\n");
+    }
 
-        // Safety flush to ensure line breaks
+    free(buf);
+    return found;
+}
+
+/**
+ * Windowed sieve: report only the primes in [lo, hi].
+ *
+ * Allocates for the window alone, so memory tracks (hi - lo) rather than hi.
+ * The sieving primes up to sqrt(hi) come from a small ordinary sieve first --
+ * for a window near 1e12 that is a sieve of 1e6, a fraction of a millisecond.
+ */
+unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
+    const unsigned long base_primes[] = {2, 3, 5, 7};
+    unsigned long found = 0;
+
+    if (mode == OUT_LIST) printf("Primes from %lu to %lu:\n", lo, hi);
+
+    if (lo <= hi) {
+        for (int i = 0; i < 4; ++i) {
+            if (base_primes[i] >= lo && base_primes[i] <= hi) {
+                ++found;
+                if (mode == OUT_LIST) printf("%lu ", base_primes[i]);
+            }
+        }
+    }
+
+    /* First and last wheel candidates inside the window. Value 1 occupies a
+     * slot but is not prime, so start no lower than 11 unless lo demands it. */
+    unsigned long v_lo = 0, v_hi = 0;
+    int have_range = 0;
+
+    if (lo <= hi && hi >= 1) {
+        unsigned long start = (lo < 1) ? 1 : lo;
+        unsigned long blk = start / MODULUS;
+        int bi = ceil_idx[start % MODULUS];
+        if (bi == WHEEL_SLOTS) { bi = 0; ++blk; }
+        v_lo = blk * MODULUS + wheel_res[bi];
+
+        if (v_lo <= hi) {
+            unsigned long ehi = hi / MODULUS;
+            int ei = ceil_idx[hi % MODULUS];
+            /* ceil_idx lands on the first candidate >= hi; step back one. */
+            if (ei == WHEEL_SLOTS || wheel_res[ei] > hi % MODULUS) {
+                if (ei == 0) { ei = WHEEL_SLOTS - 1; --ehi; } else { --ei; }
+            }
+            v_hi = ehi * MODULUS + wheel_res[ei];
+            have_range = (v_hi >= v_lo);
+        }
+    }
+
+    if (!have_range) {
+        if (mode == OUT_LIST) printf("\n");
+        else if (mode == OUT_COUNT) printf("Primes from %lu to %lu: %lu\n", lo, hi, found);
+        return found;
+    }
+
+    unsigned long s_lo = slot_of(v_lo), s_hi = slot_of(v_hi);
+    unsigned long word_base = s_lo / BITS_PER_WORD;
+    size_t num_words = (size_t)(s_hi / BITS_PER_WORD - word_base) + 2;   /* +1 guard */
+
+    WORD *buf = calloc(num_words, sizeof(WORD));
+    if (buf == NULL) {
+        fprintf(stderr, "out of memory: could not allocate %zu bytes\n",
+                num_words * sizeof(WORD));
+        exit(1);
+    }
+
+    /* Sieving primes: every wheel prime up to sqrt(hi). Multiples of 2, 3, 5
+     * and 7 are absent from the wheel, so those four need no marking. */
+    unsigned long root = isqrt_floor(hi);
+    if (root >= 11) {
+        size_t bwords;
+        WORD *base = self_sieve(root, &bwords);
+
+        for (unsigned long b = 0; b * MODULUS <= root; ++b) {
+            unsigned long start = b * MODULUS;
+
+            for (int i = 0; i < WHEEL_SLOTS; ++i) {
+                unsigned long p = start + wheel_res[i];
+                if (p > root) break;
+                if (p < 2) continue;
+
+                unsigned long s = b * WHEEL_SLOTS + (unsigned long)i;
+                if (((base[s / BITS_PER_WORD] >> (s % BITS_PER_WORD)) & 1) == 0) {
+                    mark_prime(buf, word_base, (unsigned long)num_words - 1,
+                               p, lo, hi);
+                }
+            }
+        }
+        free(base);
+    }
+
+    unsigned long b_lo = s_lo - word_base * BITS_PER_WORD;
+    unsigned long b_hi = s_hi - word_base * BITS_PER_WORD;
+
+    if (mode != OUT_LIST) {
+        found += (s_hi - s_lo + 1) - popcount_range(buf, b_lo, b_hi);
+        if (v_lo < 2) --found;              /* slot 0 is the value 1 */
+        if (mode == OUT_COUNT) printf("Primes from %lu to %lu: %lu\n", lo, hi, found);
+    } else {
+        unsigned long blk = v_lo / MODULUS;
+        int bi = dense_idx[v_lo % MODULUS];
+        unsigned long v = v_lo;
+
+        /* Loop on the slot index, not the value: for a window at the very top
+         * of the range the next candidate value overflows past ULONG_MAX and
+         * wraps to a small number, which would restart the walk. Slots cannot
+         * wrap (the largest is about 0.229 * ULONG_MAX), and the wrapped v of
+         * the final step is computed but never used. */
+        for (unsigned long s = s_lo; s <= s_hi; ++s) {
+            unsigned long w = s / BITS_PER_WORD - word_base;
+
+            if (v >= 2 && ((buf[w] >> (s % BITS_PER_WORD)) & 1) == 0) {
+                ++found;
+                printf("%lu ", v);
+            }
+
+            if (++bi == WHEEL_SLOTS) { bi = 0; ++blk; }
+            v = blk * MODULUS + wheel_res[bi];
+        }
         printf("\n");
     }
 
@@ -426,13 +596,20 @@ int main(int argc, char *argv[]) {
     unsigned long limit = 500; // Default limit
     int count_only = 0;
     unsigned long repeat = 1;
+    unsigned long from = 0;
+    int has_from = 0;
 
     /* Initialize dense packing map: residues [0..209] -> bit-slot [0..47]. */
     init_wheel();
 
-    parse_args(argc, argv, &limit, &count_only, &repeat);
+    parse_args(argc, argv, &limit, &count_only, &repeat, &from, &has_from);
 
-    if (limit < 8) { // Small limit handled manually to avoid unnecessary allocation/memory overhead.
+    if (has_from) {
+        for (unsigned long r = 1; r < repeat; ++r) {
+            bench_sink += sieve_window(from, limit, OUT_NONE);
+        }
+        sieve_window(from, limit, count_only ? OUT_COUNT : OUT_LIST);
+    } else if (limit < 8) { // Small limit handled manually to avoid unnecessary allocation/memory overhead.
         const int small_primes[] = {2, 3, 5, 7};
         unsigned long found = 0;
 

@@ -48,6 +48,50 @@ def reference_primes(n):
     return [i for i, is_p in enumerate(flags) if is_p]
 
 
+def reference_window(lo, hi):
+    """Segmented reference: primes in [lo, hi], computed without a wheel."""
+    if hi < 2 or lo > hi:
+        return []
+    lo = max(lo, 0)
+    root = int(hi ** 0.5) + 1
+    base = reference_primes(root)
+
+    flags = bytearray([1]) * (hi - lo + 1)
+    for v in (0, 1):
+        if lo <= v <= hi:
+            flags[v - lo] = 0
+    for p in base:
+        start = max(p * p, ((lo + p - 1) // p) * p)
+        for m in range(start, hi + 1, p):
+            flags[m - lo] = 0
+    return [lo + i for i, f in enumerate(flags) if f]
+
+
+def is_prime_miller_rabin(n):
+    """Deterministic for n < 3.3e24, so it covers the whole 64-bit range."""
+    if n < 2:
+        return False
+    small = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37)
+    for p in small:
+        if n % p == 0:
+            return n == p
+    d, s = n - 1, 0
+    while d % 2 == 0:
+        d //= 2
+        s += 1
+    for a in small:
+        x = pow(a, d, n)
+        if x in (1, n - 1):
+            continue
+        for _ in range(s - 1):
+            x = x * x % n
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+
 def is_prime_by_trial_division(n):
     """Second opinion that shares no logic with either sieve."""
     if n < 2:
@@ -124,6 +168,41 @@ def count_from(limit, *flags, timeout=120):
         return int(text[len(expected_prefix):])
     except ValueError:
         raise SieveError(f"sieve --count {limit}: total is not a number: {text!r}")
+
+
+def window_from(lo, hi, *flags, timeout=60):
+    """Run the sieve over a window and parse its prime list."""
+    proc = run_sieve(*flags, "--from", str(lo), str(hi), timeout=timeout)
+    if proc.returncode != 0:
+        raise SieveError(f"sieve --from {lo} {hi}: exit {proc.returncode}, "
+                         f"stderr={proc.stderr.strip()!r}")
+
+    lines = proc.stdout.strip().split("\n")
+    expected = f"Primes from {lo} to {hi}:"
+    if lines[0] != expected:
+        raise SieveError(f"sieve --from {lo} {hi}: header was {lines[0]!r}, "
+                         f"expected {expected!r}")
+    return [int(x) for x in " ".join(lines[1:]).split()]
+
+
+def check_window(lo, hi, timeout=60):
+    """Assert the window's output matches the segmented reference exactly."""
+    actual = window_from(lo, hi, timeout=timeout)
+    expected = reference_window(lo, hi)
+    if actual == expected:
+        return
+
+    missing = sorted(set(expected) - set(actual))
+    extra = sorted(set(actual) - set(expected))
+    detail = [f"sieve --from {lo} {hi}: window does not match the reference",
+              f"  printed {len(actual)} values, expected {len(expected)}"]
+    if missing:
+        detail.append(f"  missing: {missing[:10]}")
+    if extra:
+        detail.append(f"  should not be there: {extra[:10]}")
+    if not missing and not extra:
+        detail.append("  same values but wrong order")
+    raise SieveError("\n".join(detail))
 
 
 def check_exact(limit, timeout=120):
@@ -283,6 +362,146 @@ def test_known_pi_values():
 
 
 # --------------------------------------------------------------------------
+# Windowed sieving (--from)
+# --------------------------------------------------------------------------
+
+@test
+def test_reference_window_agrees_with_full_reference():
+    """The segmented reference itself is correct"""
+    # Guard the guard: a broken reference would make every window test pass.
+    for hi in range(0, 260):
+        if reference_window(0, hi) != reference_primes(hi):
+            raise SieveError(f"reference_window(0, {hi}) disagrees with "
+                             f"reference_primes({hi})")
+
+
+@test
+def test_window_boundaries():
+    """Windows straddling 210-blocks, word edges and wheel gaps"""
+    # A window's first slot is snapped up to a real candidate and its buffer
+    # is offset to a word boundary; both are easy to get wrong by one.
+    cases = []
+    for edge in (0, 210, 420, 2100, 210 * 48):
+        for d_lo in (-2, -1, 0, 1, 2):
+            for width in (0, 1, 11, 210, 211):
+                lo = edge + d_lo
+                if lo >= 0:
+                    cases.append((lo, lo + width))
+    for lo, hi in cases:
+        check_window(lo, hi, timeout=10)
+
+
+@test
+def test_window_equals_full_run():
+    """Windows agree with the corresponding slice of a full run"""
+    full = primes_from(20000)
+    for lo, hi in ((0, 20000), (1, 20000), (2, 19999), (7, 11), (8, 10),
+                   (100, 200), (4900, 5100), (10000, 20000), (19990, 20000)):
+        sliced = [p for p in full if lo <= p <= hi]
+        got = window_from(lo, hi, timeout=10)
+        if got != sliced:
+            raise SieveError(f"sieve --from {lo} {hi}: differs from the full "
+                             f"run sliced to the same range "
+                             f"({len(got)} vs {len(sliced)} primes)")
+
+
+@test
+def test_window_empty_and_degenerate():
+    """Empty, inverted and sub-2 windows produce no primes"""
+    for lo, hi in ((10, 5), (0, 0), (0, 1), (1, 1), (24, 28), (114, 126)):
+        got = window_from(lo, hi, timeout=10)
+        expected = reference_window(lo, hi)
+        if got != expected:
+            raise SieveError(f"sieve --from {lo} {hi}: got {got}, "
+                             f"expected {expected}")
+
+
+@test
+def test_window_far_from_origin():
+    """A window far above sqrt(limit), where segmentation actually matters"""
+    # The point of --from: sieve near 1e12 without touching everything below.
+    for lo, width in ((10**9, 5000), (10**12, 5000), (10**15, 3000)):
+        check_window(lo, lo + width, timeout=60)
+
+
+@test
+def test_window_count_matches_listing():
+    """--count over a window agrees with listing that window"""
+    for lo, hi in ((0, 1000), (1000, 2000), (210, 420), (10**6, 10**6 + 5000)):
+        proc = run_sieve("--count", "--from", str(lo), str(hi), timeout=30)
+        text = proc.stdout.strip()
+        prefix = f"Primes from {lo} to {hi}: "
+        if not text.startswith(prefix) or "\n" in text:
+            raise SieveError(f"sieve --count --from {lo} {hi}: got {text!r}")
+        counted = int(text[len(prefix):])
+        listed = len(window_from(lo, hi, timeout=30))
+        if counted != listed:
+            raise SieveError(f"sieve --count --from {lo} {hi}: reported "
+                             f"{counted}, listing gives {listed}")
+
+
+@test
+def test_window_rejects_missing_bound():
+    """--from without a number is an error"""
+    for flag in ("--from", "-f"):
+        proc = run_sieve(flag, timeout=10)
+        if proc.returncode == 0:
+            raise SieveError(f"sieve {flag}: expected a non-zero exit status")
+        if "lower bound" not in proc.stderr:
+            raise SieveError(f"sieve {flag}: unhelpful error "
+                             f"{proc.stderr.strip()!r}")
+
+
+@test
+def test_large_bounds_parse_without_truncation():
+    """Bounds at or above 2^63 survive argument parsing intact"""
+    # Regression: the limit was parsed with atol(), which returns a signed
+    # long, so anything >= 2^63 saturated at LONG_MAX and the window silently
+    # came back empty. An inverted window echoes both bounds and returns at
+    # once, so this checks parsing without paying for a base sieve.
+    for lo, hi in ((2**64 - 1, 2**63), (2**63 + 12345, 2**63), (10**19, 10)):
+        proc = run_sieve("--count", "--from", str(lo), str(hi), timeout=10)
+        expected = f"Primes from {lo} to {hi}: 0"
+        if proc.stdout.strip() != expected:
+            raise SieveError(f"sieve --count --from {lo} {hi}: got "
+                             f"{proc.stdout.strip()!r}, expected {expected!r}")
+
+
+@test
+def test_window_at_top_of_range():
+    """Windows at 2^63 and just below ULONG_MAX are correct"""
+    # Two regressions live here. Parsing must not truncate above 2^63, and the
+    # output walk must not advance by value: the next candidate past the last
+    # one overflows ULONG_MAX and wraps to a small number, which restarted the
+    # walk and emitted tens of millions of bogus "primes".
+    ulong_max = 2**64 - 1
+    for lo in (2**63, ulong_max - 2000):
+        hi = min(lo + 2000, ulong_max)
+        got = window_from(lo, hi, timeout=300)
+        expected = [n for n in range(lo, hi + 1) if is_prime_miller_rabin(n)]
+        if got != expected:
+            missing = sorted(set(expected) - set(got))[:5]
+            extra = sorted(set(got) - set(expected))[:5]
+            raise SieveError(
+                f"sieve --from {lo} {hi}: {len(got)} primes, expected "
+                f"{len(expected)}\n  missing: {missing}\n  extra: {extra}")
+
+
+test_window_at_top_of_range.slow = True
+
+
+@test
+def test_window_exhaustive_small():
+    """Every window [lo, lo+w] for lo 0..215, w in {0,1,209,210,211}"""
+    for lo in range(0, 216):
+        for width in (0, 1, 209, 210, 211):
+            check_window(lo, lo + width, timeout=10)
+
+
+test_window_exhaustive_small.slow = True
+
+
+# --------------------------------------------------------------------------
 # --count mode
 # --------------------------------------------------------------------------
 
@@ -391,7 +610,7 @@ def test_help_flags():
         text = proc.stdout + proc.stderr
         if "Usage:" not in text:
             raise SieveError(f"sieve {flag}: no usage text in output")
-        for documented in ("--count", "--repeat", "<limit>"):
+        for documented in ("--count", "--repeat", "--from", "<limit>"):
             if documented not in text:
                 raise SieveError(f"sieve {flag}: {documented} is undocumented")
 
