@@ -261,10 +261,16 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--from", dest="lo", type=float, help="range start")
     ap.add_argument("--to", dest="hi", type=float, help="range end")
-    ap.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4)
-    ap.add_argument("--out", required=True, help="output directory")
+    ap.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
+                    help="worker processes (default: all cores). Prefer the "
+                         "number of FREE performance cores; efficiency cores "
+                         "add little and a busy core costs more than it gives")
+    ap.add_argument("--out", required=True,
+                    help="output directory; merged results land here and "
+                         "workers under <out>/shards/")
     ap.add_argument("--seed", help="results directory supplying start thresholds")
-    ap.add_argument("--checkpoint", type=int, default=30)
+    ap.add_argument("--checkpoint", type=int, default=30,
+                    help="seconds between each worker's checkpoints (default 30)")
     ap.add_argument("--merge-only", action="store_true",
                     help="re-merge existing worker output without scanning")
     args = ap.parse_args()
