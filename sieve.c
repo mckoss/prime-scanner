@@ -43,12 +43,15 @@ void init_wheel(void) {
 /** Prints the --help documentation. **/
 void show_help(const char *prog) {
     fprintf(stderr, 
-            "Usage: %s [--help] [<limit>]\n\n"
+            "Usage: %s [--help] [--count] [<limit>]\n\n"
             "High-performance Prime Sieve using Modulo-210 wheel factorization.\n\n"
             "Arguments:\n"
             "  <limit>          Upper limit for prime search (default: 500).\n\n"
             "Options:\n"
-            "  --help, -h       Show this help message and exit.\n\n"
+            "  --help, -h       Show this help message and exit.\n"
+            "  --count, -c      Print only how many primes were found, not the\n"
+            "                   primes themselves. Useful for timing the sieve\n"
+            "                   without the cost of formatting every result.\n\n"
             "Technical Details:\n"
             "  - Modulo M = 210. Excludes all direct multiples of primes (2,3,5,7).\n"
             "  - Memory footprint: Exactly 6 bytes per modulus block (~phi(210)/8 compressed).",
@@ -56,11 +59,13 @@ void show_help(const char *prog) {
 }
 
 /** Parses command line arguments safely. **/
-void parse_args(int argc, char *argv[], unsigned long *limit) {
+void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only) {
     for (int i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
             show_help(argv[0]);
             exit(0);
+        } else if ((strcmp(argv[i], "--count") == 0) || (strcmp(argv[i], "-c") == 0)) {
+            *count_only = 1;
         } else if (!isdigit((unsigned char)argv[i][0])) { 
             continue; // Gracefully ignore invalid flags
         } else {
@@ -70,7 +75,7 @@ void parse_args(int argc, char *argv[], unsigned long *limit) {
 }
 
 /** High-performance Modulo-210 Sieve implementation. **/
-void sieve(unsigned long limit) {
+void sieve(unsigned long limit, int count_only) {
     if (limit < 8) return; 
 
     /* 
@@ -148,12 +153,16 @@ void sieve(unsigned long limit) {
     }
 
     /* OUTPUT PHASE: Reconstruct primes from the dense bitset */
-    printf("Primes up to %lu:\n", limit);
-    
-    // Print base primes explicitly removed by our wheel (2, 3, 5, 7) if they are <= limit.
+    unsigned long found = 0;
+    if (!count_only) printf("Primes up to %lu:\n", limit);
+
+    // Report base primes explicitly removed by our wheel (2, 3, 5, 7) if they are <= limit.
     const int base_primes[] = {2, 3, 5, 7};
     for (int i = 0; i < 4; ++i) {
-        if ((unsigned long)base_primes[i] <= limit) printf("%d ", base_primes[i]);
+        if ((unsigned long)base_primes[i] <= limit) {
+            ++found;
+            if (!count_only) printf("%d ", base_primes[i]);
+        }
     }
 
     // Iterate through every modulus block up to the limit.
@@ -181,32 +190,46 @@ void sieve(unsigned long limit) {
             uint8_t mask = (uint8_t)(1 << (idx & 7));
             
             if ((sieve_mem[offset] & mask) == 0) {
-                printf("%lu ", val);
+                ++found;
+                if (!count_only) printf("%lu ", val);
             }
         }
     }
     
-    // Safety flush to ensure line breaks
-    printf("\n");
+    if (count_only) {
+        printf("Primes up to %lu: %lu\n", limit, found);
+    } else {
+        // Safety flush to ensure line breaks
+        printf("\n");
+    }
 
     free(sieve_mem);
 }
 
 int main(int argc, char *argv[]) {
     unsigned long limit = 500; // Default limit
+    int count_only = 0;
     
     /* Initialize dense packing map: residues [0..209] -> bit-slot [0..47]. */
     init_wheel();
 
-    parse_args(argc, argv, &limit);
+    parse_args(argc, argv, &limit, &count_only);
 
     if (limit < 8) { // Small limit handled manually to avoid unnecessary allocation/memory overhead.
-        printf("Primes up to %lu:\n", limit);
         const int small_primes[] = {2, 3, 5, 7};
-        for(int i=0; i<4; ++i) if((unsigned long)small_primes[i]<=limit) printf("%d ", small_primes[i]);
-        printf("\n");
+        unsigned long found = 0;
+
+        if (!count_only) printf("Primes up to %lu:\n", limit);
+        for (int i = 0; i < 4; ++i) {
+            if ((unsigned long)small_primes[i] <= limit) {
+                ++found;
+                if (!count_only) printf("%d ", small_primes[i]);
+            }
+        }
+        if (count_only) printf("Primes up to %lu: %lu\n", limit, found);
+        else printf("\n");
     } else {
-        sieve(limit);
+        sieve(limit, count_only);
     }
     
     return 0;
