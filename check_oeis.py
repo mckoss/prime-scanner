@@ -20,6 +20,7 @@ it, so it cannot be overstated by accident.
 
     python3 check_oeis.py results
     python3 check_oeis.py verify --scanned 9.41e14
+    python3 check_oeis.py --refresh          # just update the cached b-files
 """
 
 import argparse
@@ -42,7 +43,7 @@ def read_terms(path):
     return [int(l.split()[1]) for l in open(path) if l.strip() and l[0].isdigit()]
 
 
-def bfile(aid, refresh=False):
+def bfile(kind, refresh=False):
     """The b-file, which is the full published data -- longer than the DATA
     section shown on the sequence page.
 
@@ -50,8 +51,9 @@ def bfile(aid, refresh=False):
     one at a time between 2018 and 2026. A stale cache would report an already
     published term as ours, so say how old it is and offer to refetch.
     """
+    aid = SEQ[kind][0]
     os.makedirs(CACHE, exist_ok=True)
-    path = os.path.join(CACHE, f"b{aid[1:]}.txt")
+    path = os.path.join(CACHE, f"{kind}.txt")
 
     if refresh or not os.path.exists(path):
         url = f"https://oeis.org/{aid}/b{aid[1:]}.txt"
@@ -74,7 +76,6 @@ def bfile(aid, refresh=False):
             else:
                 # A published term appearing here is one this scan can no
                 # longer claim, so name them rather than just counting.
-                kind = next((k for k, (a, _) in SEQ.items() if a == aid), "a")
                 added = [t for t in after if t not in set(before)]
                 gone = [t for t in before if t not in set(after)]
                 print(f"  * {aid}: UPDATED, {len(before)} -> {len(after)} terms")
@@ -164,7 +165,9 @@ def ours(directory, kind):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
              formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("results")
+    ap.add_argument("results", nargs="?",
+                    help="results directory to check; omit with --refresh to "
+                         "only update the cached b-files")
     ap.add_argument("--scanned", type=float,
                     help="upper limit actually scanned (default: the run's "
                          "own frontier.txt, so it cannot be overstated)")
@@ -174,6 +177,14 @@ def main():
                     help="refetch the b-files instead of using the cache; the "
                          "published sequences do get extended")
     args = ap.parse_args()
+
+    if args.results is None:
+        if not args.refresh:
+            ap.error("give a results directory, or --refresh on its own "
+                     "to just update the cached b-files")
+        for kind in SEQ:
+            bfile(kind, refresh=True)
+        return 0
 
     frontier = os.path.join(args.results, "frontier.txt")
     if args.scanned is None and os.path.exists(frontier):
@@ -185,7 +196,7 @@ def main():
 
     rc = 0
     for kind, (aid, desc) in SEQ.items():
-        pub, got = bfile(aid, args.refresh), ours(args.results, kind)
+        pub, got = bfile(kind, args.refresh), ours(args.results, kind)
         limit = args.scanned or (max(got) if got else 0)
         expect = [p for p in pub if p <= limit]
 

@@ -14,17 +14,28 @@ ignored. Three reasons:
 
 They are small: 2.7 KB for all three.
 
-| file | sequence | terms | extent |
-|------|----------|-------|--------|
-| `b002386.txt` | [A002386](https://oeis.org/A002386) — record gaps, lower end | 85 | 1.014e20 |
-| `b023186.txt` | [A023186](https://oeis.org/A023186) — lonely primes | 56 | 9.41e14 |
-| `b096265.txt` | [A096265](https://oeis.org/A096265) — aloof primes | 55 | 9.29e11 |
+| file | sequence | records | terms | extent |
+|------|----------|---------|-------|--------|
+| `gap.txt` | [A002386](https://oeis.org/A002386) | primes at the lower end of a record gap | 85 | 1.014e20 |
+| `lonely.txt` | [A023186](https://oeis.org/A023186) | record of min(gap below, gap above) | 56 | 9.41e14 |
+| `aloof.txt` | [A096265](https://oeis.org/A096265) | record of nextprime(p) − prevprime(p) | 55 | 9.29e11 |
+
+Each is named for the record it holds, matching the file it is checked
+against — `oeis/gap.txt` is the published counterpart of `fresh/gap.txt`. The
+A-number lives here rather than in the filename, so this table is the mapping;
+upstream these are `b002386.txt`, `b023186.txt` and `b096265.txt`.
 
 A b-file is the full published data and is longer than the DATA section shown
 on the sequence page, which is why these are what the check reads.
 
-To update: `python3 check_oeis.py <results> --refresh`. It refetches all three
-and reports what moved, naming any new terms:
+To update, with or without checking a run:
+
+```
+python3 check_oeis.py --refresh             # just update these files
+python3 check_oeis.py fresh --refresh       # update, then check a run
+```
+
+It refetches all three and reports what moved, naming any new terms:
 
 ```
   = A002386: unchanged, 85 terms
@@ -42,5 +53,5 @@ still used.
 From The [Online Encyclopedia of Integer Sequences](https://oeis.org/),
 licensed CC BY-SA 4.0 under [the OEIS End-User License
 Agreement](https://oeis.org/wiki/The_OEIS_End-User_License_Agreement). The
-files are unmodified. Individual b-file contributors are named in each
-sequence's OEIS entry.
+files are renamed as above but their contents are unmodified. Individual
+b-file contributors are named in each sequence's OEIS entry.
