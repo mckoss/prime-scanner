@@ -88,32 +88,44 @@ Rerun the command above for the current numbers — the scan is still moving.
 |----------|-----------|---------------------|------|---|
 | gap A002386 | 85 | 61 | 61 | exact match |
 | lonely A023186 | 56 | 54 | 54 | exact match |
-| aloof A096265 | 55 | 55 | 63 | **8 terms beyond the published sequence** |
+| aloof A096265 | 55 | 55 | 63 | all published — see below |
 
 The middle column is the honest denominator: a term above the frontier is not
-a miss, it is simply not reached yet. Only A096265 is fully consumed — it ends
-at 9.29e11, which worker 0 passed in the first few minutes.
+a miss, it is simply not reached yet.
 
-The new aloof terms:
+**A096265's b-file is not the deepest source for aloof records**, so that last
+row understates the published data badly. See "Aloof is not new ground" below.
 
-```
-aloof(56) =   1032148488557   span 678
-aloof(57) =   3605572653889   span 690
-aloof(58) =   4079970755417   span 700
-aloof(59) =   5061226833937   span 760
-aloof(60) =  12772332382939   span 780
-aloof(61) =  19535748743177   span 838
-aloof(62) =  21185697626267   span 900
-aloof(63) = 117102787055963   span 944
-```
+### Aloof is not new ground
 
-A096265 was published to aloof(55) = 929,156,727,137. `aloof(56)` was also found by the
-earlier single-threaded run in `results/`, which had been *seeded* with the 55
-published terms; this run rediscovered it having been told nothing, which is
-the stronger of the two claims.
+The eight aloof terms past A096265 are **not discoveries**. The same records
+are published far deeper as a three-sequence family:
 
-None of these have been submitted to OEIS or confirmed by a second
-implementation.
+| sequence | holds |
+|----------|-------|
+| [A031133](https://oeis.org/A031133) | the lower neighbour |
+| [A031134](https://oeis.org/A031134) | the upper neighbour |
+| [A031132](https://oeis.org/A031132) | the span between them |
+
+`prime(n+2) − prime(n)` is exactly `nextprime(p) − prevprime(p)` for the middle
+prime, so these are the same records under a different name. They are indexed
+one lower than A096265, which carries an extra a(1) = 2 having no lower
+neighbour: **family term k is A096265 term k+1**.
+
+Their b-files hold **67 terms, equivalent to A096265 index 68, reaching
+1.693e15** — while A096265's own b-file stopped at 55. Checked against the
+family, all 63 aloof records this scan has produced agree on lower neighbour,
+upper neighbour and span, and the family is **5 terms ahead**, its next at
+471,911,699,385,743.
+
+So the scan has reproduced published aloof data, not extended it. That is a
+real result — 63 terms rederived from zero, agreeing exactly — but it is
+verification, not discovery, and the earlier claim of eight new terms was
+wrong. `check_oeis.py` now compares against the family, so this cannot recur.
+
+The genuine aloof frontier is 1.693e15, about 6.7 days from here — which is
+also where the gap checkpoints run out. That one point is now the milestone for
+both.
 
 ## How far can this go?
 
@@ -186,7 +198,7 @@ the sequences change roles:
 
 | sequence | past 9.41e14 |
 |----------|--------------|
-| A096265 aloof | **extension** — published data ended at 9.3e11; every term since is new, 8 so far |
+| A096265 aloof | still **validation** until 1.693e15 — the A031133/4/2 family is published that far, 5 terms ahead of this scan |
 | A023186 lonely | **extension** — published data ends at lonely(56) = 941,114,429,467,073; lonely(55) = 475,963,705,368,391 is the last one still ahead |
 | A002386 gaps | still **validation** — confirmed terms run to 1.014e20, past this program's own 1.84e19 ceiling, so it supplies free checkpoints forever |
 
@@ -224,9 +236,9 @@ the Andersen–Luhn table has an unconfirmed section from rank 86 on, and why
 OEIS publishes only the confirmed prefix.
 
 The asymmetry is the real point. Exhaustive coverage stands at 1.014e20 for
-gaps but only 9.41e14 for lonely and 9.29e11 for aloof — five to eight orders
-of magnitude less, because far less effort has gone there. The open ground is
-not above 2^64. It is here, now, and this scan is already standing on it.
+gaps, 1.693e15 for aloof (via A031133/4/2, not A096265) and 9.41e14 for lonely.
+The open ground is not above 2^64 — but it is nearer 1e15 than 1e12, and
+lonely reaches it first.
 
 ### Opportunism that does work: gaps predict aloof records
 

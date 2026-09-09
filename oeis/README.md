@@ -12,13 +12,20 @@ ignored. Three reasons:
   `check_oeis.py --refresh` shows up as a diff instead of silently changing
   what "new" means.
 
-They are small: 2.7 KB for all three.
+The last three are the aloof records published a second time, under different
+A-numbers and indexed one lower (A096265 carries an extra a(1) = 2 with no
+lower neighbour, so family term k is A096265 term k+1). They run to 1.693e15
+where A096265's own b-file stops at 9.29e11 — checking only A096265 makes
+long-published records look like discoveries, which is exactly what happened.
 
 | file | sequence | records | terms | extent |
 |------|----------|---------|-------|--------|
 | `gap.txt` | [A002386](https://oeis.org/A002386) | primes at the lower end of a record gap | 85 | 1.014e20 |
 | `lonely.txt` | [A023186](https://oeis.org/A023186) | record of min(gap below, gap above) | 56 | 9.41e14 |
 | `aloof.txt` | [A096265](https://oeis.org/A096265) | record of nextprime(p) − prevprime(p) | 55 | 9.29e11 |
+| `aloof-lower.txt` | [A031133](https://oeis.org/A031133) | lower neighbour of the same records | 67 | 1.693e15 |
+| `aloof-upper.txt` | [A031134](https://oeis.org/A031134) | upper neighbour of the same records | 67 | 1.693e15 |
+| `aloof-span.txt` | [A031132](https://oeis.org/A031132) | span between them | 67 | 1152 |
 
 Each is named for the record it holds, matching the file it is checked
 against — `oeis/gap.txt` is the published counterpart of `fresh/gap.txt`. The

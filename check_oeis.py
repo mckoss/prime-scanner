@@ -34,6 +34,17 @@ SEQ = {"gap": ("A002386", "primes at the lower end of a record gap"),
        "aloof": ("A096265", "aloof primes")}
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis")
 
+# A096265 lists the aloof primes, but its b-file stops at 55 terms while the
+# SAME records are published far deeper as a three-sequence family: the lower
+# neighbour, the upper neighbour and the span. That family is indexed one lower
+# than A096265, which carries an extra a(1) = 2 having no lower neighbour --
+# so family term k is A096265 term k+1. Checking only A096265 makes records
+# that are already published look like discoveries.
+ALOOF_FAMILY = {"aloof-lower": ("A031133", 6),    # column 6 of ours: prev_prime
+                "aloof-upper": ("A031134", 7),    # column 7 of ours: next_prime
+                "aloof-span":  ("A031132", 3)}    # column 3 of ours: value
+ALOOF_OFFSET = 1
+
 
 STALE_DAYS = 30
 
@@ -43,7 +54,7 @@ def read_terms(path):
     return [int(l.split()[1]) for l in open(path) if l.strip() and l[0].isdigit()]
 
 
-def bfile(kind, refresh=False):
+def bfile(stem, aid, refresh=False):
     """The b-file, which is the full published data -- longer than the DATA
     section shown on the sequence page.
 
@@ -51,9 +62,8 @@ def bfile(kind, refresh=False):
     one at a time between 2018 and 2026. A stale cache would report an already
     published term as ours, so say how old it is and offer to refetch.
     """
-    aid = SEQ[kind][0]
     os.makedirs(CACHE, exist_ok=True)
-    path = os.path.join(CACHE, f"{kind}.txt")
+    path = os.path.join(CACHE, f"{stem}.txt")
 
     if refresh or not os.path.exists(path):
         url = f"https://oeis.org/{aid}/b{aid[1:]}.txt"
@@ -80,7 +90,7 @@ def bfile(kind, refresh=False):
                 gone = [t for t in before if t not in set(after)]
                 print(f"  * {aid}: UPDATED, {len(before)} -> {len(after)} terms")
                 for t in added[:5]:
-                    print(f"      + {kind}({after.index(t) + 1}) = {t}")
+                    print(f"      + a({after.index(t) + 1}) = {t}")
                 if len(added) > 5:
                     print(f"      + ... and {len(added) - 5} more")
                 for t in gone[:5]:
@@ -162,6 +172,66 @@ def ours(directory, kind):
             if not l.startswith("#") and l.strip()]
 
 
+def rows(directory, kind):
+    """Our full 7-column records, not just the primes."""
+    out = []
+    path = os.path.join(directory, f"{kind}.txt")
+    if not os.path.exists(path):
+        return out
+    for line in open(path):
+        if line.startswith("#") or not line.strip():
+            continue
+        f = [int(x) for x in line.split()]
+        if len(f) == 7:
+            out.append(f)
+    return out
+
+
+def check_aloof_family(directory, refresh, rc):
+    """Compare aloof against A031133/A031134/A031132, not just A096265.
+
+    A096265's b-file stops at 55 terms; the same records are published to 67
+    in this family, which reaches 1.69e15. Judging "new" against A096265 alone
+    reports long-published records as discoveries -- it did, for eight terms.
+    """
+    fam = {stem: bfile(stem, aid, refresh)
+           for stem, (aid, _) in ALOOF_FAMILY.items()}
+    lo, hi, span = fam["aloof-lower"], fam["aloof-upper"], fam["aloof-span"]
+    got = rows(directory, "aloof")
+    if not got or not lo:
+        return rc
+
+    # family term k is A096265 term k + ALOOF_OFFSET
+    bad = []
+    for k in range(1, min(len(lo), len(got) - ALOOF_OFFSET) + 1):
+        n, p, value, below, above, prev, nxt = got[k + ALOOF_OFFSET - 1]
+        if (lo[k - 1], hi[k - 1], span[k - 1]) != (prev, nxt, value):
+            bad.append((k, n))
+
+    covered = len(lo) + ALOOF_OFFSET          # A096265 index the family reaches
+    status = "!! " if bad else "OK "
+    print(f"  {status}aloof   A031133/4/2  ours {len(got):>3} terms | "
+          f"family {len(lo)} terms = A096265 index {covered} "
+          f"(to {hi[-1]:.3e})")
+    for k, n in bad[:3]:
+        print(f"       family term {k} disagrees with our aloof({n})")
+        rc = 1
+    if not bad:
+        print(f"       {min(len(lo), len(got) - ALOOF_OFFSET)} term(s) agree on "
+              f"lower, upper and span")
+    beyond = len(got) - covered
+    if beyond > 0:
+        print(f"       {beyond} term(s) genuinely beyond the family:")
+        for r in got[covered:]:
+            print(f"         aloof({r[0]}) = {r[1]}  span {r[2]}")
+    else:
+        print(f"       nothing new: the family is {-beyond} term(s) AHEAD of "
+              f"this scan (its next is at {hi[len(got) - ALOOF_OFFSET]:,})"
+              if len(hi) > len(got) - ALOOF_OFFSET else
+              f"       nothing new yet")
+    return rc
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
              formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -182,8 +252,10 @@ def main():
         if not args.refresh:
             ap.error("give a results directory, or --refresh on its own "
                      "to just update the cached b-files")
-        for kind in SEQ:
-            bfile(kind, refresh=True)
+        for kind, (aid, _) in SEQ.items():
+            bfile(kind, aid, refresh=True)
+        for stem, (aid, _) in ALOOF_FAMILY.items():
+            bfile(stem, aid, refresh=True)
         return 0
 
     frontier = os.path.join(args.results, "frontier.txt")
@@ -196,7 +268,7 @@ def main():
 
     rc = 0
     for kind, (aid, desc) in SEQ.items():
-        pub, got = bfile(kind, args.refresh), ours(args.results, kind)
+        pub, got = bfile(kind, aid, args.refresh), ours(args.results, kind)
         limit = args.scanned or (max(got) if got else 0)
         expect = [p for p in pub if p <= limit]
 
@@ -210,9 +282,15 @@ def main():
             print(f"       term {i}: ours {a}, OEIS {b}")
             rc = 1
         if not bad and len(got) > len(expect):
-            for p in got[len(expect):]:
-                print(f"       NEW: {kind}({got.index(p) + 1}) = {p} "
-                      f"(beyond the published sequence)")
+            if kind == "aloof":
+                # A096265 is not the deepest published source for these
+                # records; the family check below is authoritative.
+                print(f"       {len(got) - len(expect)} term(s) past "
+                      f"{aid}'s b-file -- see the family check below")
+            else:
+                for p in got[len(expect):]:
+                    print(f"       NEW: {kind}({got.index(p) + 1}) = {p} "
+                          f"(beyond the published sequence)")
         elif len(got) < len(expect):
             print(f"       missing {len(expect) - len(got)} term(s) OEIS has, "
                   f"e.g. {expect[len(got)]}")
@@ -229,6 +307,8 @@ def main():
             else:
                 print(f"       {len(got)} record(s) verified prime "
                       f"(Miller-Rabin, independent of the sieve)")
+
+    rc = check_aloof_family(args.results, args.refresh, rc)
     return rc
 
 

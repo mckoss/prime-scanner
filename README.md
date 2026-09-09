@@ -328,12 +328,21 @@ as a gap versus as a lonely prime gives a mean exponent of **1.37** against the
 predicted 1.41. Growth is ~1.83x per record for gaps and ~2.08x for lonely --
 which is exactly why A023186 needs only 56 terms to reach 9.4e14.
 
-**A new term.** A096265 was published to aloof(55) = 929,156,727,137. An exhaustive
-scan upward from there found
+**Not a new term.** A096265 was published to aloof(55) = 929,156,727,137, and
+an exhaustive scan finds the next record at
 
 ```
 aloof(56) = 1032148488557    span 678    prevprime 1032148488143, nextprime 1032148488821
 ```
+
+but this is already published. The aloof records appear a second time as the
+family [A031133](https://oeis.org/A031133) (lower neighbour),
+[A031134](https://oeis.org/A031134) (upper neighbour) and
+[A031132](https://oeis.org/A031132) (span), indexed one below A096265 because
+A096265 carries an extra a(1) = 2 with no lower neighbour. Those b-files hold
+67 terms — A096265 index 68, reaching 1.693e15 — so A096265's 55-term b-file
+is simply the shallowest view of the same data. `check_oeis.py` compares
+against the family for this reason.
 
 in about two minutes at ~1.15e9 numbers/sec, beating the previous record span
 of 624. All three primes and the absence of any prime between them were
