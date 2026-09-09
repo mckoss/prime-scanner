@@ -14,3 +14,5 @@ shards/
 round.txt
 # the driver's PID, to keep two drivers off one output directory
 lock
+# oeis_audit.py's working copies of entries it re-fetches
+oeis/audit/
