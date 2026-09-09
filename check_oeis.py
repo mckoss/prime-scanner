@@ -26,6 +26,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 
 SEQ = {"gap": ("A002386", "primes at the lower end of a record gap"),
        "lonely": ("A023186", "lonely primes"),
@@ -33,14 +34,38 @@ SEQ = {"gap": ("A002386", "primes at the lower end of a record gap"),
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".oeis-cache")
 
 
-def bfile(aid):
+STALE_DAYS = 30
+
+
+def bfile(aid, refresh=False):
+    """The b-file, which is the full published data -- longer than the DATA
+    section shown on the sequence page.
+
+    These grow: A002386 went from 77 terms to 85 as ranks 78-85 were confirmed
+    one at a time between 2018 and 2026. A stale cache would report an already
+    published term as ours, so say how old it is and offer to refetch.
+    """
     os.makedirs(CACHE, exist_ok=True)
     path = os.path.join(CACHE, f"b{aid[1:]}.txt")
-    if not os.path.exists(path):
+    if refresh or not os.path.exists(path):
         url = f"https://oeis.org/{aid}/b{aid[1:]}.txt"
-        r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", path])
-        if r.returncode != 0:
-            sys.exit(f"could not fetch {url}")
+        tmp = path + ".new"
+        r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", tmp])
+        got = os.path.exists(tmp) and os.path.getsize(tmp) > 0
+        if r.returncode != 0 or not got:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            if os.path.exists(path):
+                print(f"  ! could not refresh {url}; using the cached copy")
+            else:
+                sys.exit(f"could not fetch {url}")
+        else:
+            os.replace(tmp, path)
+    else:
+        age = (time.time() - os.path.getmtime(path)) / 86400
+        if age > STALE_DAYS:
+            print(f"  ! {os.path.basename(path)} cached {age:.0f} days ago; "
+                  f"rerun with --refresh to check for new published terms")
     return [int(l.split()[1]) for l in open(path) if l.strip() and l[0].isdigit()]
 
 
@@ -87,20 +112,20 @@ def verify_rows(directory, kind):
             continue                       # p = 2 has no lower neighbour
         for q in (prev, p, nxt):
             if not miller_rabin(q):
-                problems.append(f"a({n}): {q} is not prime")
+                problems.append(f"{kind}({n}): {q} is not prime")
         if p - prev != below or nxt - p != above:
-            problems.append(f"a({n}): neighbours disagree with the gaps")
+            problems.append(f"{kind}({n}): neighbours disagree with the gaps")
         want = {"gap": above, "lonely": min(below, above),
                 "aloof": below + above}[kind]
         if value != want:
-            problems.append(f"a({n}): value {value}, expected {want}")
+            problems.append(f"{kind}({n}): value {value}, expected {want}")
         for q in range(prev + 1, p):
             if miller_rabin(q):
-                problems.append(f"a({n}): {q} lies between {prev} and {p}")
+                problems.append(f"{kind}({n}): {q} lies between {prev} and {p}")
                 break
         for q in range(p + 1, nxt):
             if miller_rabin(q):
-                problems.append(f"a({n}): {q} lies between {p} and {nxt}")
+                problems.append(f"{kind}({n}): {q} lies between {p} and {nxt}")
                 break
     return problems
 
@@ -122,6 +147,9 @@ def main():
                          "own frontier.txt, so it cannot be overstated)")
     ap.add_argument("--no-verify", action="store_true",
                     help="skip the Miller-Rabin check of each record")
+    ap.add_argument("--refresh", action="store_true",
+                    help="refetch the b-files instead of using the cache; the "
+                         "published sequences do get extended")
     args = ap.parse_args()
 
     frontier = os.path.join(args.results, "frontier.txt")
@@ -134,7 +162,7 @@ def main():
 
     rc = 0
     for kind, (aid, desc) in SEQ.items():
-        pub, got = bfile(aid), ours(args.results, kind)
+        pub, got = bfile(aid, args.refresh), ours(args.results, kind)
         limit = args.scanned or (max(got) if got else 0)
         expect = [p for p in pub if p <= limit]
 
@@ -149,7 +177,7 @@ def main():
             rc = 1
         if not bad and len(got) > len(expect):
             for p in got[len(expect):]:
-                print(f"       NEW: a({got.index(p) + 1}) = {p} "
+                print(f"       NEW: {kind}({got.index(p) + 1}) = {p} "
                       f"(beyond the published sequence)")
         elif len(got) < len(expect):
             print(f"       missing {len(expect) - len(got)} term(s) OEIS has, "

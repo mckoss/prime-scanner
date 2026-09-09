@@ -159,7 +159,7 @@ the sequences change roles:
 |----------|--------------|
 | A096265 aloof | **extension** — published data ended at 9.3e11; every term since is new, 8 so far |
 | A023186 lonely | **extension** — published data ends at lonely(56) = 941,114,429,467,073; lonely(55) = 475,963,705,368,391 is the last one still ahead |
-| A002386 gaps | still **validation** — the b-file lists terms to 1e20, so it keeps supplying free checkpoints |
+| A002386 gaps | still **validation** — confirmed terms run to 1.014e20, past this program's own 1.84e19 ceiling, so it supplies free checkpoints forever |
 
 That last row is the useful one: A002386 costs nothing and keeps confirming the
 scan long after the other two have gone past what anyone has published. But the
@@ -171,6 +171,39 @@ gap(63) = 1686994940955803   1.69e15
 gap(64) = 1693182318746371   1.69e15
 gap(65) = 43841547845541059  4.38e16   <- 26x jump, no maximal gap in between
 ```
+
+### Is the A002386 b-file trustworthy that far out?
+
+Worth asking, because a list of record gaps can be built two ways: by scanning
+every integer, or by hunting for large gaps directly. The second method finds
+genuine gaps but cannot prove there is no smaller record hiding in the
+unsearched space between them, and a list built that way would have holes.
+
+The b-file is the first kind, all the way to the end. Andersen and Luhn's
+[Record Prime Gaps](https://www.pzktupel.de/RecordGaps/risinggap.php) table —
+the source OEIS links — splits at exactly the b-file's last term:
+
+| rank | gap start | status |
+|------|-----------|--------|
+| 1–85 | up to 1.014e20 | **confirmed**, each with a named "Verification of the *n*th maximum gap" and a date |
+| 86+ | 3.94e25 and up | **unconfirmed** — known large gaps, not proven to be the next record |
+
+OEIS stops the b-file at 85, so it publishes only the confirmed prefix. The
+confirmations are recent and were done one rank at a time: 78 in 2018, 81 in
+Dec 2023, 82 in May 2024, 83 in Oct 2024, 84 in Jan 2026, 85 in May 2026.
+
+Two consequences. First, no intermediate term is missing below 1.014e20, so
+every gap checkpoint this scan can reach is sound — the confirmed frontier
+(1.014e20) is already past this program's own arithmetic ceiling (1.84e19).
+Second, the b-file grows, which is why `check_oeis.py` warns when its cache is
+over a month old and takes `--refresh`. A stale cache would report a published
+term as a discovery.
+
+One caution against reading too much into the shape of the data: merit
+(`gap / ln p`) sits near 34–35 for ranks 76–82 and then jumps to 37.7, 37.8 and
+40.2 for ranks 83–85, and rank 84 is 3.3x rank 83. That looks like the
+signature of a hole, but it is not — those three ranks carry verification dates
+like the rest. Unusually high-merit gaps are simply rare and clustered.
 
 So **1.7e15 is the meaningful milestone**, not 9.41e14: about a week from the
 current frontier, it collects the last three gap checkpoints available for a
