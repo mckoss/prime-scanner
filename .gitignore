@@ -3,7 +3,6 @@ sieve
 sieve-w*
 reference/mod30
 *.o
-.oeis-cache/
 __pycache__/
 *.pyc
 

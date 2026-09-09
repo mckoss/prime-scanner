@@ -458,6 +458,7 @@ sieve.c            the sieve
 test_sieve.py      41 tests; --slow adds range checks, --binary tests a variant
 pgaps.py           parallel driver: shard, scan, merge
 check_oeis.py      compare a results directory against the OEIS b-files
+.oeis-cache/       those b-files, committed so the check runs offline
 bench.py           timing harness, compares against reference/mod30
 Makefile           all, test, test-slow, test-widths, bench, reference, clean
 reference/         Mike Koss's 2021 mod-30 drag-race entry, kept verbatim
