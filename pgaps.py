@@ -33,6 +33,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(HERE, "sieve")
 KINDS = ("gap", "lonely", "aloof")
 
+# balanced.txt is deliberately not here: it is filtered out of the merged
+# lonely records afterwards, and the sieve never emits a candidate for it.
+# See derive_balanced().
+
 # Enough to prime a worker's 3-prime window before its own range begins.
 # The largest known prime gap below 1e20 is 1854, so this is ample; it is
 # capped against the shard span so small ranges still parallelise.
@@ -57,6 +61,27 @@ def write_records(path, rows, header):
         f.write(header)
         for i, r in enumerate(rows, 1):
             f.write(" ".join(str(x) for x in (i,) + tuple(r[1:])) + "\n")
+
+
+def derive_balanced(out):
+    """Lonely records whose two neighbours are equidistant.
+
+    A023186 terms that are also balanced primes (A006562). This is a *filter*
+    on the merged lonely records, not a record sequence of its own, so the
+    workers collect nothing for it and it needs no threshold: a balanced
+    lonely prime is by definition already a lonely record, so lonely.txt
+    holds every term there can be below the frontier.
+
+    p = 2 is excluded. It has no lower neighbour, so it is not balanced.
+    """
+    rows = [r for r in read_records(os.path.join(out, "lonely.txt"))
+            if r[5] and r[3] == r[4]]
+    write_records(os.path.join(out, "balanced.txt"), rows,
+                  "# balanced-lonely records: <n> <prime> <value> <gap_below> "
+                  "<gap_above> <prev_prime> <next_prime>\n"
+                  "# lonely.txt filtered to gap_below == gap_above; a subset "
+                  "of the lonely records, not a record sequence of its own\n")
+    return rows
 
 
 def seed_from(directory):
@@ -317,6 +342,12 @@ def merge(out, lo, seed, upto=None):
                       f"# merged from {len(cands)} candidates across "
                       f"{len(os.listdir(os.path.join(out, 'shards')))} workers\n")
         summary[kind] = (len(cands), len(kept), best)
+
+    # Its "candidates" are the lonely records it filters, so it reports in
+    # the same shape as the scanned kinds.
+    bal = derive_balanced(out)
+    summary["balanced"] = (summary["lonely"][1], len(bal),
+                           bal[-1][2] if bal else 0)
     return summary
 
 

@@ -45,6 +45,14 @@ ALOOF_FAMILY = {"aloof-lower": ("A031133", 6),    # column 6 of ours: prev_prime
                 "aloof-span":  ("A031132", 3)}    # column 3 of ours: value
 ALOOF_OFFSET = 1
 
+# balanced.txt has no sequence of its own, but it is not unchecked: every
+# balanced-lonely record must appear in A058867. If p beats every prime below
+# it on min(gap below, gap above), it beats every *balanced* prime below it in
+# particular, so p sets a record among balanced primes too. A058867 is that
+# record sequence, so it must contain all of ours -- a term of ours missing
+# from it means one of the two is wrong.
+BALANCED_SUPER = ("equidistant", "A058867")
+
 
 STALE_DAYS = 30
 
@@ -149,8 +157,11 @@ def verify_rows(directory, kind):
                 problems.append(f"{kind}({n}): {q} is not prime")
         if p - prev != below or nxt - p != above:
             problems.append(f"{kind}({n}): neighbours disagree with the gaps")
+        if kind == "balanced" and below != above:
+            problems.append(f"{kind}({n}): {below} below, {above} above -- "
+                            f"not balanced")
         want = {"gap": above, "lonely": min(below, above),
-                "aloof": below + above}[kind]
+                "aloof": below + above, "balanced": below}[kind]
         if value != want:
             problems.append(f"{kind}({n}): value {value}, expected {want}")
         for q in range(prev + 1, p):
@@ -232,6 +243,59 @@ def check_aloof_family(directory, refresh, rc):
     return rc
 
 
+def check_balanced(directory, refresh, limit, rc):
+    """Check balanced.txt against lonely.txt, and against A058867.
+
+    Two independent things can go wrong and each has its own check: the filter
+    could drop or invent a row (caught against lonely.txt, which is the only
+    place its terms can come from), or the records themselves could be wrong
+    (caught against A058867, which is published and derived by someone else).
+    """
+    got, lonely = rows(directory, "balanced"), rows(directory, "lonely")
+    if not lonely:
+        return rc
+    want = [r for r in lonely if r[5] and r[3] == r[4]]
+
+    mine, theirs = [r[1] for r in got], [r[1] for r in want]
+    status = "OK " if mine == theirs else "!! "
+    print(f"  {status}balanced  (unpublished)  ours {len(got):>3} terms | "
+          f"filtered from {len(lonely)} lonely records "
+          f"(lonely records that are also balanced primes)")
+    if mine != theirs:
+        rc = 1
+        for p in [x for x in theirs if x not in set(mine)][:3]:
+            print(f"       lonely.txt has balanced {p}, balanced.txt does not")
+        for p in [x for x in mine if x not in set(theirs)][:3]:
+            print(f"       balanced.txt has {p}, which is not a balanced "
+                  f"lonely record")
+
+    problems = verify_rows(directory, "balanced")
+    if problems:
+        rc = 1
+        print(f"       {len(problems)} record(s) fail verification:")
+        for m in problems[:3]:
+            print(f"         {m}")
+    else:
+        print(f"       {len(got)} record(s) verified prime (Miller-Rabin, "
+              f"independent of the sieve)")
+
+    stem, aid = BALANCED_SUPER
+    super_ = bfile(stem, aid, refresh)
+    if super_:
+        missing = [p for p in mine if p not in set(super_)]
+        if missing:
+            rc = 1
+            print(f"       {len(missing)} term(s) NOT in {aid}, which must "
+                  f"contain every one: {missing[:3]}")
+        else:
+            print(f"       all {len(mine)} appear in {aid} "
+                  f"({len(super_)} terms to {super_[-1]:.3e}), as they must")
+        if limit and super_[-1] < limit:
+            print(f"       note: {aid} stops at {super_[-1]:.3e}, below this "
+                  f"scan's {limit:.3e} -- see oeis/TODO.md")
+    return rc
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
              formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -256,6 +320,7 @@ def main():
             bfile(kind, aid, refresh=True)
         for stem, (aid, _) in ALOOF_FAMILY.items():
             bfile(stem, aid, refresh=True)
+        bfile(*BALANCED_SUPER, refresh=True)
         return 0
 
     frontier = os.path.join(args.results, "frontier.txt")
@@ -309,6 +374,7 @@ def main():
                       f"(Miller-Rabin, independent of the sieve)")
 
     rc = check_aloof_family(args.results, args.refresh, rc)
+    rc = check_balanced(args.results, args.refresh, args.scanned, rc)
     return rc
 
 

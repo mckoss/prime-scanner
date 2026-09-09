@@ -26,6 +26,13 @@ long-published records look like discoveries, which is exactly what happened.
 | `aloof-lower.txt` | [A031133](https://oeis.org/A031133) | lower neighbour of the same records | 67 | 1.693e15 |
 | `aloof-upper.txt` | [A031134](https://oeis.org/A031134) | upper neighbour of the same records | 67 | 1.693e15 |
 | `aloof-span.txt` | [A031132](https://oeis.org/A031132) | span between them | 67 | 1152 |
+| `equidistant.txt` | [A058867](https://oeis.org/A058867) | record distance among *balanced* primes only | 30 | 1.879e14 |
+
+`equidistant.txt` is not a counterpart of one of our files. It is the
+published sequence that must contain every term of `balanced.txt`, because a
+prime that beats all primes on `min(gap)` beats the balanced ones in
+particular — `check_oeis.py` asserts that containment. See
+[`TODO.md`](TODO.md) for why the two are not the same sequence.
 
 Each is named for the record it holds, matching the file it is checked
 against — `oeis/gap.txt` is the published counterpart of `fresh/gap.txt`. The

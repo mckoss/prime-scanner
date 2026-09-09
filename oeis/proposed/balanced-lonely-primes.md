@@ -5,7 +5,9 @@ Suggested by Michel Marcus in review of a comment on
 sequence rather than as a comment there.
 
 Not currently in OEIS — a search for `5, 53, 211, 26923643849953` returns
-nothing.
+nothing. The near miss is [A058867](https://oeis.org/A058867), which is a
+different sequence and contains this one; the Comments below say how, because
+an editor will otherwise ask.
 
 ## Draft entry
 
@@ -30,7 +32,15 @@ nothing.
     A023186(1) = 2 is excluded: it has no lower neighbor, so it is not a
     balanced prime.
 
-    There are no further terms below 4.06e14. The terms of A023186 were
+    Not to be confused with A058867, which is a supersequence of this one.
+    A058867 takes its record within the balanced primes alone, so a balanced
+    prime enters it by beating every earlier balanced prime; a term here must
+    beat every earlier prime, balanced or not. A058867(4) = 16787 shows the
+    difference: its gaps are (24, 24), but A023186 had already reached 24 at
+    the prime 16033, whose gaps are (26, 24), so 16787 sets no record over all
+    primes. This sequence is the 5 terms of A058867 that are in A023186.
+
+    There are no further terms below 5.67e14. The terms of A023186 were
     rederived from zero by an exhaustive scan, so the sequence is complete
     below that bound. - Mike Koss, <date>
 
@@ -42,7 +52,7 @@ nothing.
     26923643849953 has neighbors (26923643849563, 26923643850343),   both at distance 390.
     187891466722913 has neighbors (187891466722493, 187891466723333), both at distance 420.
 
-**Cross-references**  `Cf. A023186, A023187, A006562, A096265.`
+**Cross-references**  `Cf. A006562, A023186, A023187, A054342, A058867, A096265.`
 
 **Keywords**  `nonn,more`
 

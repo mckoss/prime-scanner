@@ -37,13 +37,49 @@ Do **not** pass `--to` to the running scan; it is open-ended and should stay so.
 ## A. New sequence — balanced lonely primes
 
 Draft: [`proposed/balanced-lonely-primes.md`](proposed/balanced-lonely-primes.md)
+Terms: `<run>/balanced.txt`, filtered out of `lonely.txt` at every merge.
 
 - [ ] refresh the completeness bound to the frontier at submission time
-- [ ] re-run the balanced filter (exclude a(1)=2: `prev != 0`, not just `below == above`)
+- [x] **distinguish it from A058867 in the Comments** — see below; an editor
+      will ask, and the entry should answer before they do
+- [x] add `A058867` and `A054342` to the cross-references
 - [ ] submit; say nothing about whether the sequence is infinite
 - [ ] offer to reduce the A023186 comment to `Cf.` the new A-number
 
 Suggested by Michel Marcus in review. Not currently in OEIS.
+
+### It is not A058867, and the difference is subtle
+
+[A058867](https://oeis.org/A058867) is "equidistant lonely primes", whose
+distances "are maximal: each distance is larger than all such previous
+distances". **Such** is doing the work: the record is taken *within the
+equidistant primes*, not against all primes. Ours is the intersection of
+A023186 with A006562 — a record against **every** prime that also happens to
+be balanced. That is strictly stronger, so ours is a subsequence of A058867:
+5 of its 30 terms, namely its first three and its last two.
+
+The cleanest example is its 4th term, 16787:
+
+| prime | gaps (below, above) | min | in A058867 | in A023186 |
+|-------|--------------------|-----|------------|------------|
+| 16033 | (26, 24) | 24 | no — not balanced | **yes**, sets the record at 24 |
+| 16787 | (24, 24) | 24 | **yes** — first balanced prime to reach 24 | no — 24 ties, and a record must be strictly larger |
+
+So A058867 admits 16787 on a distance that A023186 had already reached with a
+lopsided prime. 22546768250359 (its 28th term) is the same story at 348,
+against `lonely(49) = 16303344721399` with gaps (348, 378).
+
+### A058867 itself is extendable, but not from what we scan
+
+Its 30 terms stop at 1.879e14, and this scan is already past that. But its
+records are maxima *within the balanced primes*, and `sieve.c` keeps running
+maxima only for the gap, lonely and aloof records — so no filter over
+`lonely.txt` can produce them. Extending it means a fourth running maximum in
+the sieve and a rescan from zero (~2.5 days at the measured rate).
+
+Not started, and not obviously worth it: decide before the submission goes in,
+because if it is done, A058867 and the new sequence should be submitted
+together.
 
 ## B. b-files — stale within their own family
 

@@ -300,6 +300,20 @@ Two sequences ask a different question -- not "how big is the gap after p?" but
 | **Lonely** primes | [A023186](https://oeis.org/A023186) | record of **min**(gap below, gap above) | 2, 5, 23, 53, 211, 1847, 2179, … |
 | **Aloof** primes | [A096265](https://oeis.org/A096265) | record of `nextprime(p) − prevprime(p)` | 2, 3, 5, 7, 23, 53, 89, 113, 211, … |
 
+A fourth list falls out of the lonely records for free — the ones whose two
+gaps are *equal*:
+
+| what | OEIS | definition | first terms |
+|------|------|------------|-------------|
+| **Balanced-lonely** primes | none yet | lonely records that are also balanced primes ([A006562](https://oeis.org/A006562)) | 5, 53, 211, 26923643849953, 187891466722913 |
+| Record distance among *balanced* primes | [A058867](https://oeis.org/A058867) | maximal over the balanced primes only, not over all primes | 5, 53, 211, 16787, 69623, 247141, … |
+
+The two are easy to conflate and are not the same: A058867 takes its record
+within the balanced primes, so 16787 qualifies there on a distance of 24 that
+`lonely(9) = 16033` had already reached with lopsided gaps (26, 24). Ours is a
+subsequence of it — 5 of its 30 terms. See
+[`oeis/TODO.md`](oeis/TODO.md).
+
 **Notation.** Three sequences are in play at once, so `a(n)` would be
 ambiguous. Terms are written `gap(n)`, `lonely(n)` and `aloof(n)` throughout —
 the nth term of A002386, A023186 and A096265 respectively.
@@ -465,11 +479,11 @@ performance* cores -- efficiency cores contribute little.
 ```
 sieve.c            the sieve
 test_sieve.py      41 tests; --slow adds range checks, --binary tests a variant
-pgaps.py           parallel driver: shard, scan, merge
+pgaps.py           parallel driver: shard, scan, merge, derive balanced.txt
 check_oeis.py      compare a results directory against the OEIS b-files
 oeis/              those b-files, committed so the check runs offline
 oeis/TODO.md       OEIS submission checklist: stale b-files, missing a-files
-oeis_audit.py      find family members whose b-file lags its siblings
+oeis_audit.py      coverage table: where each sequence's terms are written down
 bench.py           timing harness, compares against reference/mod30
 Makefile           all, test, test-slow, test-widths, bench, reference, clean
 reference/         Mike Koss's 2021 mod-30 drag-race entry, kept verbatim
