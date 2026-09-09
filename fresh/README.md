@@ -117,14 +117,43 @@ implementation.
 
 ## How far can this go?
 
-Not a precision question. Everything in `sieve.c` is `unsigned long` — 64-bit
-here (`getconf LONG_BIT` = 64) — so the hard ceiling is
-ULONG_MAX = 18,446,744,073,709,551,615 ≈ 1.84e19. The frontier is roughly
-48,000x below it. The two places that would break first are already handled:
-the candidate walk loops on the slot index rather than the value, because at
-the very top of the range the next value wraps past ULONG_MAX
-(`sieve.c:608`), and `isqrt_floor` corrects its `double` seed by division
-rather than `r*r`, so it stays exact all the way up.
+Not a precision question. The ceiling is a word size, not a limit of the
+method: every prime, window bound and neighbour is stored in an
+`unsigned long`, 64-bit here, so nothing above
+ULONG_MAX = 18,446,744,073,709,551,615 ≈ 1.84e19 is representable. There is no
+`__int128` anywhere in `sieve.c`. The frontier is roughly 48,000x below it.
+
+That is a deliberate trade. The inner loop is bit-index arithmetic —
+`s / BITS_PER_WORD`, `s % BITS_PER_WORD`, `p * wheel_scaled[t]` — all single
+instructions at 64 bits and multi-instruction sequences at 128, with division
+much the worse. Widening the type would slow every scan to buy range that
+takes centuries to reach.
+
+The ceiling is a real, usable 1.84e19 rather than "breaks somewhere near the
+top", because the wheel indexes the bitmap by slot rather than by value, and
+slots run at 48/210 = 0.229 of the value range:
+
+```
+ULONG_MAX        18,446,744,073,709,551,615
+max slot index    4,216,398,645,419,326,127     4.38x of headroom
+```
+
+Three spots need care even so, each a fixed regression:
+
+| | |
+|---|---|
+| `parse_args` | `strtoul`, not `atol` — a signed long saturates at 2^63 and the window silently came back empty |
+| the candidate walk (`sieve.c:608`) | loops on the slot index, since the next *value* past the last wraps to a small number and restarted the walk |
+| `ceil(lo / p)` (`sieve.c:342`) | written as `need = lo/p; if (need*p < lo) ++need`, because `(lo + p - 1)` wraps |
+
+`isqrt_floor` likewise corrects its `double` seed by division rather than
+`r*r`, so it stays exact to ULONG_MAX. `test_window_at_top_of_range` checks
+the top 2000 integers below ULONG_MAX against Miller-Rabin; it is marked slow
+because at that height the sieving primes run to sqrt(2^64) = 4,294,967,296.
+
+Worth noting the ceiling is not where knowledge runs out: confirmed A002386
+terms reach 1.014e20, 5.5x *above* it. Even a scan at the ceiling would still
+have published data to check against.
 
 Memory is not the constraint either. Each worker holds the sieving primes up
 to sqrt(hi), 8 bytes each:
