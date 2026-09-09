@@ -41,10 +41,10 @@ matter of writing its known terms here first.
 
 ## Status
 
-A096265 was published to a(55) = 929,156,727,137. This search found
+A096265 was published to aloof(55) = 929,156,727,137. This search found
 
 ```
-a(56) = 1032148488557    span 678    1032148488143 < p < 1032148488821
+aloof(56) = 1032148488557    span 678    1032148488143 < p < 1032148488821
 ```
 
 verified with a deterministic Miller-Rabin test independently of the sieve.
@@ -55,5 +55,5 @@ is a useful running check on the scan:
 
 | record | matches |
 |--------|---------|
-| gap #2, #3, #4 | A002386 a(51), a(52), a(53) |
-| lonely #2, #3 | A023186 a(45), a(46) |
+| gap #2, #3, #4 | gap(51), gap(52), gap(53) |
+| lonely #2, #3 | lonely(45), lonely(46) |

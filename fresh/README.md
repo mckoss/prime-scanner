@@ -38,6 +38,10 @@ that nothing lies between them, and the record stands without rerunning the
 scan. `value` is whichever quantity that sequence maximises — `gap_above` for
 gaps, `min(below, above)` for lonely, `below + above` for aloof.
 
+Because three sequences are in play at once, terms are written `gap(n)`,
+`lonely(n)` and `aloof(n)` rather than `a(n)` — the nth term of A002386,
+A023186 and A096265 respectively.
+
 ## The frontier, and why it is not a position
 
 A single-threaded run resumes from the last line of `progress.txt`, because
@@ -93,17 +97,17 @@ at 9.29e11, which worker 0 passed in the first few minutes.
 The new aloof terms:
 
 ```
-a(56) =   1032148488557   span 678
-a(57) =   3605572653889   span 690
-a(58) =   4079970755417   span 700
-a(59) =   5061226833937   span 760
-a(60) =  12772332382939   span 780
-a(61) =  19535748743177   span 838
-a(62) =  21185697626267   span 900
-a(63) = 117102787055963   span 944
+aloof(56) =   1032148488557   span 678
+aloof(57) =   3605572653889   span 690
+aloof(58) =   4079970755417   span 700
+aloof(59) =   5061226833937   span 760
+aloof(60) =  12772332382939   span 780
+aloof(61) =  19535748743177   span 838
+aloof(62) =  21185697626267   span 900
+aloof(63) = 117102787055963   span 944
 ```
 
-A096265 was published to a(55) = 929,156,727,137. `a(56)` was also found by the
+A096265 was published to aloof(55) = 929,156,727,137. `aloof(56)` was also found by the
 earlier single-threaded run in `results/`, which had been *seeded* with the 55
 published terms; this run rediscovered it having been told nothing, which is
 the stronger of the two claims.
@@ -138,10 +142,10 @@ current frontier, at the 8-worker throughput actually observed here:
 | target | added time |
 |--------|-----------|
 | 9.41e14 — last published A023186 term | +2.6 days |
-| 1.19e15 — A002386 a(62) | +3.9 days |
-| 1.69e15 — A002386 a(64) | +6.7 days |
+| 1.19e15 — gap(62) | +3.9 days |
+| 1.69e15 — gap(64) | +6.7 days |
 | 1e16 | +66 days |
-| 4.38e16 — A002386 a(65) | +1.1 years |
+| 4.38e16 — gap(65) | +1.1 years |
 | 1e18 | ~47 years |
 | 2^64 | ~1500 years |
 
@@ -154,7 +158,7 @@ the sequences change roles:
 | sequence | past 9.41e14 |
 |----------|--------------|
 | A096265 aloof | **extension** — published data ended at 9.3e11; every term since is new, 8 so far |
-| A023186 lonely | **extension** — published data ends at a(56) = 941,114,429,467,073 |
+| A023186 lonely | **extension** — published data ends at lonely(56) = 941,114,429,467,073; lonely(55) = 475,963,705,368,391 is the last one still ahead |
 | A002386 gaps | still **validation** — the b-file lists terms to 1e20, so it keeps supplying free checkpoints |
 
 That last row is the useful one: A002386 costs nothing and keeps confirming the
@@ -162,10 +166,10 @@ scan long after the other two have gone past what anyone has published. But the
 checkpoints are not evenly spaced, and there is a notable drought:
 
 ```
-a(62) = 1189459969825483   1.19e15
-a(63) = 1686994940955803   1.69e15
-a(64) = 1693182318746371   1.69e15
-a(65) = 43841547845541059  4.38e16   <- 26x jump, no maximal gap in between
+gap(62) = 1189459969825483   1.19e15
+gap(63) = 1686994940955803   1.69e15
+gap(64) = 1693182318746371   1.69e15
+gap(65) = 43841547845541059  4.38e16   <- 26x jump, no maximal gap in between
 ```
 
 So **1.7e15 is the meaningful milestone**, not 9.41e14: about a week from the

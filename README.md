@@ -300,6 +300,10 @@ Two sequences ask a different question -- not "how big is the gap after p?" but
 | **Lonely** primes | [A023186](https://oeis.org/A023186) | record of **min**(gap below, gap above) | 2, 5, 23, 53, 211, 1847, 2179, … |
 | **Aloof** primes | [A096265](https://oeis.org/A096265) | record of `nextprime(p) − prevprime(p)` | 2, 3, 5, 7, 23, 53, 89, 113, 211, … |
 
+**Notation.** Three sequences are in play at once, so `a(n)` would be
+ambiguous. Terms are written `gap(n)`, `lonely(n)` and `aloof(n)` throughout —
+the nth term of A002386, A023186 and A096265 respectively.
+
 A prime can be aloof without being lonely, when its two gaps are lopsided.
 Record *values* for the lonely primes are [A120937](https://oeis.org/A120937);
 Erdős and Surányi call them *reclusive primes* and proved there are infinitely
@@ -324,11 +328,11 @@ as a gap versus as a lonely prime gives a mean exponent of **1.37** against the
 predicted 1.41. Growth is ~1.83x per record for gaps and ~2.08x for lonely --
 which is exactly why A023186 needs only 56 terms to reach 9.4e14.
 
-**A new term.** A096265 was published to a(55) = 929,156,727,137. An exhaustive
+**A new term.** A096265 was published to aloof(55) = 929,156,727,137. An exhaustive
 scan upward from there found
 
 ```
-a(56) = 1032148488557    span 678    prevprime 1032148488143, nextprime 1032148488821
+aloof(56) = 1032148488557    span 678    prevprime 1032148488143, nextprime 1032148488821
 ```
 
 in about two minutes at ~1.15e9 numbers/sec, beating the previous record span
@@ -408,7 +412,7 @@ kills its workers from a `finally`, so no exit path can orphan them, and it
 holds a lock on the output directory so two drivers cannot share one. This was
 a real bug, not a hypothetical: `timeout` killed a driver, its workers kept
 writing, a second driver ran on the same directory, and the desynced state
-silently dropped a record -- A023186 a(44). `check_oeis.py` caught it, which
+silently dropped a record -- lonely(44). `check_oeis.py` caught it, which
 is the argument for running that check on anything you intend to trust.
 
 ### 11. Reproducing the published sequences from scratch
