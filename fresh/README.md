@@ -111,34 +111,72 @@ the stronger of the two claims.
 None of these have been submitted to OEIS or confirmed by a second
 implementation.
 
-## What is left to check against
+## How far can this go?
 
-[A023186](https://oeis.org/A023186/b023186.txt) is the deepest published
-sequence an exhaustive scan can actually consume — its b-file runs to
-a(56) = 941,114,429,467,073 (9.41e14), about 2.4x the current frontier. Two of
-its terms still lie ahead:
+Not a precision question. Everything in `sieve.c` is `unsigned long` — 64-bit
+here (`getconf LONG_BIT` = 64) — so the hard ceiling is
+ULONG_MAX = 18,446,744,073,709,551,615 ≈ 1.84e19. The frontier is roughly
+48,000x below it. The two places that would break first are already handled:
+the candidate walk loops on the slot index rather than the value, because at
+the very top of the range the next value wraps past ULONG_MAX
+(`sieve.c:608`), and `isqrt_floor` corrects its `double` seed by division
+rather than `r*r`, so it stays exact all the way up.
+
+Memory is not the constraint either. Each worker holds the sieving primes up
+to sqrt(hi), 8 bytes each:
+
+| hi | sieving primes | per worker | 8 workers |
+|----|----------------|-----------|-----------|
+| 1e15 | 1.8e6 | 14 MB | 0.1 GB |
+| 1e16 | 5.4e6 | 41 MB | 0.3 GB |
+| 1e18 | 4.8e7 | 368 MB | 2.9 GB |
+| 2^64 | 1.9e8 | 1.5 GB | 11.5 GB |
+
+The binding constraint is time. Integrating the measured rate curve from the
+current frontier, at the 8-worker throughput actually observed here:
+
+| target | added time |
+|--------|-----------|
+| 9.41e14 — last published A023186 term | +2.6 days |
+| 1.19e15 — A002386 a(62) | +3.9 days |
+| 1.69e15 — A002386 a(64) | +6.7 days |
+| 1e16 | +66 days |
+| 4.38e16 — A002386 a(65) | +1.1 years |
+| 1e18 | ~47 years |
+| 2^64 | ~1500 years |
+
+## Extending, not just validating
+
+9.41e14 is only a milestone for *validation* — it is where the published
+A023186 data runs out. It is not a stopping point for the search, and past it
+the sequences change roles:
+
+| sequence | past 9.41e14 |
+|----------|--------------|
+| A096265 aloof | **extension** — published data ended at 9.3e11; every term since is new, 8 so far |
+| A023186 lonely | **extension** — published data ends at a(56) = 941,114,429,467,073 |
+| A002386 gaps | still **validation** — the b-file lists terms to 1e20, so it keeps supplying free checkpoints |
+
+That last row is the useful one: A002386 costs nothing and keeps confirming the
+scan long after the other two have gone past what anyone has published. But the
+checkpoints are not evenly spaced, and there is a notable drought:
 
 ```
-a(55) = 475963705368391   (4.76e14)
-a(56) = 941114429467073   (9.41e14)
+a(62) = 1189459969825483   1.19e15
+a(63) = 1686994940955803   1.69e15
+a(64) = 1693182318746371   1.69e15
+a(65) = 43841547845541059  4.38e16   <- 26x jump, no maximal gap in between
 ```
 
-A002386 has 85 published terms, but only 61 of them fall below 9.41e14 and
-this run already holds all 61 — the next maximal gap is
-a(62) = 1,189,459,969,825,483, past that limit. Its remaining terms reach 1e20
-and come from targeted gap searches rather than exhaustive scans, so they are
-not something a scan like this reaches.
+So **1.7e15 is the meaningful milestone**, not 9.41e14: about a week from the
+current frontier, it collects the last three gap checkpoints available for a
+very long way, while extending A023186 and A096265 past everything published.
+Beyond it the scan runs 26x — call it a year — with no external check at all
+until 4.38e16.
 
-So for the rest of the run the published data offers exactly two more checks,
-both from A023186, and everything found in A096265 along the way is new. That
-makes 941,114,429,467,074 the natural stopping point, which is the target the
-[top-level README](../README.md#11-reproducing-the-published-sequences-from-scratch)
-uses:
+At the recent cadence of aloof records (~4 per decade of magnitude) that week
+should also yield two or three new A096265 terms and one or two new A023186
+terms.
 
-```
-python3 pgaps.py --to 941114429467074 --jobs 8 --out fresh
-```
-
-Passing `--to` to the running open-ended scan is not necessary to get there —
-it is the same walk — but it makes the run terminate at the limit instead of
-scanning on past the last thing there is to compare against.
+Nothing needs to be passed to the running scan to do this: it is open-ended
+already and will simply keep going. Adding `--to` would only make it stop.
