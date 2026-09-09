@@ -1,5 +1,5 @@
 # lonely records: <n> <prime> <value> <gap_below> <gap_above> <prev_prime> <next_prime>
-# merged from 228 candidates across 8 workers
+# merged from 235 candidates across 8 workers
 1 2 1 1 1 0 3
 2 5 2 2 2 3 7
 3 23 4 4 6 19 29
