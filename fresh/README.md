@@ -201,6 +201,56 @@ gap(64) = 1693182318746371   1.69e15
 gap(65) = 43841547845541059  4.38e16   <- 26x jump, no maximal gap in between
 ```
 
+### Why opportunistic gap-hunting will not extend these sequences
+
+The obvious shortcut is to skip ahead to a published record and hope a lucky
+gap sits nearby. It does not work here, for three separate reasons.
+
+*It is out of range.* The confirmed gap frontier, gap(85) = 1.014e20, is 5.5x
+above this program's 1.84e19 ceiling — as are gap(81) through gap(84). The only
+published maximal gap below the ceiling is gap(80) = 1.836e19, and everything
+between it and gap(85) is already confirmed, so there is nothing there to find.
+
+*It is a different program.* Searches at that height do not sieve. They
+construct an interval where small primes divide everything, then PRP-test the
+ends — the top of the Andersen–Luhn table is
+`1217 • 888887# / 23# − 7636494`, a 385,713-digit number with a gap of
+16,045,848. That needs bignum arithmetic and a completely different method.
+
+*Its results would not be terms.* These are **record** sequences: term n is
+defined by exceeding every earlier one, which you can only know by having seen
+everything below. A lucky gap found at 1e25 has no index. That is exactly why
+the Andersen–Luhn table has an unconfirmed section from rank 86 on, and why
+OEIS publishes only the confirmed prefix.
+
+The asymmetry is the real point. Exhaustive coverage stands at 1.014e20 for
+gaps but only 9.41e14 for lonely and 9.29e11 for aloof — five to eight orders
+of magnitude less, because far less effort has gone there. The open ground is
+not above 2^64. It is here, now, and this scan is already standing on it.
+
+### Opportunism that does work: gaps predict aloof records
+
+Within range, the published gap list is useful in the other direction. A
+maximal gap forces an aloof value at both of its endpoints, so A002386 says in
+advance what this scan will find:
+
+| at | prime | below | above | aloof | lonely |
+|----|-------|-------|-------|-------|--------|
+| gap(62) upper | 1,189,459,969,826,399 | 916 | 42 | **958** | 42 |
+| gap(63) lower | 1,686,994,940,955,803 | 70 | 924 | **994** | 70 |
+| gap(63) upper | 1,686,994,940,956,727 | 924 | 56 | **980** | 56 |
+| gap(64) both ends | 1,693,182,318,746,371 and …747,503 | 20/1132 | 1132/20 | **1152** | 20 |
+
+Against a current aloof record of 944, every one of those is a new record, so
+the aloof value is guaranteed to be at least 958 by 1.19e15 and at least 1152
+by 1.69e15. They are lower bounds, not predictions of the term itself — some
+prime in between may do better — but they are checkpoints that cost nothing.
+
+Note the last column. None of these threatens the lonely record of 432, and
+that is structural: a maximal gap is lopsided (2/916, 70/924, 20/1132) and
+lonely takes the *smaller* side. The gap list is silent about lonely records,
+which is why lonely(n) has to be earned by scanning.
+
 ### Is the A002386 b-file trustworthy that far out?
 
 Worth asking, because a list of record gaps can be built two ways: by scanning
