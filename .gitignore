@@ -6,3 +6,12 @@ reference/mod30
 .oeis-cache/
 __pycache__/
 *.pyc
+
+# Parallel-run scratch (pgaps.py). Anything worth keeping has been merged up
+# into <out>/{gap,lonely,aloof}.txt; <out>/frontier.txt is the resume point.
+# per-worker candidates, checkpoints and logs -- deleted and rebuilt each round
+shards/
+# the round in flight; meaningless without its shards/ tree
+round.txt
+# the driver's PID, to keep two drivers off one output directory
+lock
