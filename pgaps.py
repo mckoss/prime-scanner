@@ -367,10 +367,22 @@ def merge(out, lo, seed, upto=None, kinds=KINDS):
     """
     os.makedirs(out, exist_ok=True)
     summary = {}
+    shards = sorted(os.listdir(os.path.join(out, "shards")))
     for kind in kinds:
         cands = read_records(os.path.join(out, f"{kind}.txt"))
-        for d in sorted(os.listdir(os.path.join(out, "shards"))):
-            cands += read_records(os.path.join(out, "shards", d, f"{kind}.txt"))
+        emitted = False
+        for d in shards:
+            path = os.path.join(out, "shards", d, f"{kind}.txt")
+            emitted = emitted or os.path.exists(path)
+            cands += read_records(path)
+        # A sieve older than this driver knows nothing about a kind added
+        # since, and writes no file for it. Merging that silently produces an
+        # EMPTY records file and then marks it covered -- a false completeness
+        # claim, which is the one failure this whole scan exists to avoid.
+        if shards and not emitted:
+            sys.exit(f"no worker produced {kind}.txt: ./sieve does not know "
+                     f"that record kind.\nIt is older than this driver -- "
+                     f"run 'make' and start again.")
         if upto is not None:
             cands = [r for r in cands if r[1] <= upto]
 

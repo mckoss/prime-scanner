@@ -540,6 +540,16 @@ OEIS_1E7_NAMES = {"gap": "A002386", "lonely": "A023186",
 GAP_LIMIT_SLOW = 10000000
 
 
+def load_pgaps():
+    """Import pgaps.py as a module, for testing its merge directly."""
+    import importlib.util
+    path = os.path.join(HERE, "pgaps.py")
+    spec = importlib.util.spec_from_file_location("_pgaps", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def read_results(outdir):
     """Read the per-kind results files and the checkpoint file."""
     records = {}
@@ -593,6 +603,30 @@ def test_gap_search_reproduces_oeis():
                                  f"OEIS has {len(expected)} below {GAP_LIMIT}")
         if not checkpoints:
             raise SieveError("no CHECKPOINT line was written")
+
+
+@test
+def test_merge_refuses_a_sieve_that_skips_a_kind():
+    """merge() aborts rather than writing an empty file for a missing kind"""
+    # The migration hazard: adding a record kind to a run whose ./sieve
+    # predates it. The workers write no file, so the merge would see no
+    # candidates, write an empty records file and mark it fully covered.
+    pgaps = load_pgaps()
+    with tempfile.TemporaryDirectory() as d:
+        os.makedirs(os.path.join(d, "shards", "000"))
+        for kind in ("gap", "lonely", "aloof"):        # note: no equidistant
+            open(os.path.join(d, "shards", "000", f"{kind}.txt"), "w").write(
+                f"# {kind} candidates\n")
+        try:
+            pgaps.merge(d, None, {}, kinds=("equidistant",))
+        except SystemExit as e:
+            if "does not know that record kind" not in str(e):
+                raise SieveError(f"wrong message: {e}")
+        else:
+            raise SieveError("merge() accepted a sieve that emitted no "
+                             "equidistant.txt")
+        if os.path.exists(os.path.join(d, "equidistant.txt")):
+            raise SieveError("merge() wrote an equidistant.txt anyway")
 
 
 @test
