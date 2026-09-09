@@ -34,8 +34,6 @@ nothing.
     rederived from zero by an exhaustive scan, so the sequence is complete
     below that bound. - Mike Koss, <date>
 
-    It appears that there are infinitely many terms, but this is not known.
-
 **Example**
 
     5              has neighbors (3, 7),                             both at distance 2.
@@ -55,8 +53,11 @@ No b-file: five terms fit in DATA.
 
 - The completeness bound is the strongest line in the entry, and it is the one
   thing a targeted search cannot supply. State the bound, not just the terms.
-- State infinitude as an appearance, never a claim — OEIS is strict about
-  guess vs. theorem.
+- Say nothing about whether the sequence is infinite. Five terms and no theory
+  support no statement in either direction, and "it appears that..." is still a
+  claim. Erdős and Surányi proved there are infinitely many lonely primes
+  (noted in A023186), but that says nothing about the ones that are balanced.
+  If an editor asks, the answer is that it is unknown.
 - Offer to reduce the A023186 comment to `Cf.` this sequence once it is
   allocated, so the list is not maintained in two places.
 - The bound rises as the scan advances; use the frontier at submission time.
