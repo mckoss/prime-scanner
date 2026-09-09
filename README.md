@@ -279,9 +279,10 @@ that such runs do not exist below roughly `10^137`.
 
 ### 9. Record gaps, and OEIS
 
-`--gaps` streams consecutive primes upward and records three kinds of record.
-All three are catalogued in OEIS, and the sieve reproduces each of them exactly
-from scratch (a test asserts this against the published b-files):
+`--gaps` streams consecutive primes upward and records four kinds of record.
+All four are catalogued in OEIS, and the sieve reproduces each of them exactly
+from scratch (a test asserts this against the published b-files, from zero to
+1e7):
 
 | what | OEIS | first terms |
 |------|------|-------------|
@@ -305,18 +306,21 @@ gaps are *equal*:
 
 | what | OEIS | definition | first terms |
 |------|------|------------|-------------|
+| **Equidistant** primes | [A058867](https://oeis.org/A058867) | record distance among the *balanced* primes only, not over all primes | 5, 53, 211, 16787, 69623, 247141, … |
 | **Balanced-lonely** primes | none yet | lonely records that are also balanced primes ([A006562](https://oeis.org/A006562)) | 5, 53, 211, 26923643849953, 187891466722913 |
-| Record distance among *balanced* primes | [A058867](https://oeis.org/A058867) | maximal over the balanced primes only, not over all primes | 5, 53, 211, 16787, 69623, 247141, … |
 
-The two are easy to conflate and are not the same: A058867 takes its record
-within the balanced primes, so 16787 qualifies there on a distance of 24 that
-`lonely(9) = 16033` had already reached with lopsided gaps (26, 24). Ours is a
-subsequence of it — 5 of its 30 terms. See
+The two are easy to conflate and are not the same. A058867 takes its record
+*within* the balanced primes, so 16787 qualifies there on a distance of 24
+that `lonely(9) = 16033` had already reached with lopsided gaps (26, 24) —
+which is why it is a fourth running maximum in the sieve rather than a filter
+over the lonely records. The balanced-lonely primes *are* such a filter, and
+are a subsequence of A058867: 5 of its 30 terms. See
 [`oeis/TODO.md`](oeis/TODO.md).
 
-**Notation.** Three sequences are in play at once, so `a(n)` would be
-ambiguous. Terms are written `gap(n)`, `lonely(n)` and `aloof(n)` throughout —
-the nth term of A002386, A023186 and A096265 respectively.
+**Notation.** Several sequences are in play at once, so `a(n)` would be
+ambiguous. Terms are written `gap(n)`, `lonely(n)`, `aloof(n)` and
+`equidistant(n)` throughout — the nth term of A002386, A023186, A096265 and
+A058867 respectively.
 
 A prime can be aloof without being lonely, when its two gaps are lopsided.
 Record *values* for the lonely primes are [A120937](https://oeis.org/A120937);
@@ -479,7 +483,7 @@ performance* cores -- efficiency cores contribute little.
 ```
 sieve.c            the sieve
 test_sieve.py      41 tests; --slow adds range checks, --binary tests a variant
-pgaps.py           parallel driver: shard, scan, merge, derive balanced.txt
+pgaps.py           parallel driver: shard, scan, merge, catch up a new kind
 check_oeis.py      compare a results directory against the OEIS b-files
 oeis/              those b-files, committed so the check runs offline
 oeis/TODO.md       OEIS submission checklist: stale b-files, missing a-files

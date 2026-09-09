@@ -198,15 +198,17 @@ void show_help(const char *prog) {
             "                   otherwise dwarfs the sieve at small limits.\n"
             "  --gaps           Search for record prime gaps, and for record\n"
             "                   'lonely' primes (max distance to the NEARER\n"
-            "                   neighbour, OEIS A023186) and 'aloof' primes\n"
-            "                   (max distance between BOTH neighbours, A096265).\n"
+            "                   neighbour, OEIS A023186), 'aloof' primes (max\n"
+            "                   distance between BOTH neighbours, A096265) and\n"
+            "                   'equidistant' primes (max distance among the\n"
+            "                   BALANCED primes only, A058867).\n"
             "  --out <dir>      Output directory for --gaps, created if needed.\n"
-            "                   Writes gap.txt, lonely.txt and aloof.txt (one\n"
-            "                   record per line, carrying both neighbour primes\n"
-            "                   so each line is self-contained proof), plus\n"
-            "                   progress.txt for checkpoints. Every line is\n"
-            "                   flushed, so a killed run resumes without losing\n"
-            "                   work.\n"
+            "                   Writes gap.txt, lonely.txt, aloof.txt and\n"
+            "                   equidistant.txt (one record per line, carrying\n"
+            "                   both neighbour primes so each line is\n"
+            "                   self-contained proof), plus progress.txt for\n"
+            "                   checkpoints. Every line is flushed, so a killed\n"
+            "                   run resumes without losing work.\n"
             "  --checkpoint <s> Seconds between progress lines and checkpoints\n"
             "                   (default 15).\n\n"
             "  This sieve is single-threaded. To scan a range across several\n"
@@ -633,18 +635,28 @@ unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
  * RECORD GAP SEARCH
  *
  * Scans upward in cache-sized segments, streaming consecutive primes and
- * recording three kinds of record:
+ * recording four kinds of record:
  *
- *   gap     a record difference between consecutive primes   (OEIS A005250)
- *   lonely  record distance to the NEARER neighbour          (OEIS A023186)
- *   aloof   record total distance between BOTH neighbours    (OEIS A096265)
+ *   gap          record difference between consecutive primes  (OEIS A005250)
+ *   lonely       record distance to the NEARER neighbour       (OEIS A023186)
+ *   aloof        record total distance between BOTH neighbours (OEIS A096265)
+ *   equidistant  record distance among the BALANCED primes     (OEIS A058867)
  *
- * --out <dir> writes four files into that directory, creating it if needed:
+ * The first three take their maximum over every prime. The fourth does not:
+ * it ranks only the primes whose two gaps are EQUAL, against each other. So
+ * it is not a filter of the lonely records and cannot be derived from them --
+ * a balanced prime enters it by beating every earlier balanced prime, which
+ * it can do at a distance some lopsided prime reached first. (Compare
+ * balanced.txt, which pgaps.py filters out of the lonely records and which
+ * *is* a subsequence of them.)
  *
- *   <dir>/gap.txt       results only, one record per line
- *   <dir>/lonely.txt      "
- *   <dir>/aloof.txt       "
- *   <dir>/progress.txt  checkpoints, for resuming
+ * --out <dir> writes five files into that directory, creating it if needed:
+ *
+ *   <dir>/gap.txt          results only, one record per line
+ *   <dir>/lonely.txt         "
+ *   <dir>/aloof.txt          "
+ *   <dir>/equidistant.txt    "
+ *   <dir>/progress.txt     checkpoints, for resuming
  *
  * Results lines are
  *
@@ -681,7 +693,7 @@ typedef struct {
     unsigned long primes;
     double seconds;
     int resumed;
-    record_file gap, lonely, aloof;
+    record_file gap, lonely, aloof, equi;
     FILE *progress;
 } gap_state;
 
@@ -812,7 +824,7 @@ static void rf_write(record_file *rf, const char *kind, unsigned long p,
             rf->count, p, value, below, above, prev, next);
     fflush(rf->out);
 
-    fprintf(stderr, "  *** %-6s record #%lu: p=%lu  value=%lu  "
+    fprintf(stderr, "  *** %-11s record #%lu: p=%lu  value=%lu  "
                     "(%lu < %lu < %lu)\n",
             kind, rf->count, p, value, prev, p, next);
     fflush(stderr);
@@ -820,9 +832,10 @@ static void rf_write(record_file *rf, const char *kind, unsigned long p,
 
 static void gap_checkpoint(gap_state *st) {
     fprintf(st->progress,
-            "CHECKPOINT %lu %lu %lu %.1f  gap=%lu lonely=%lu aloof=%lu\n",
+            "CHECKPOINT %lu %lu %lu %.1f  gap=%lu lonely=%lu aloof=%lu "
+            "equidistant=%lu\n",
             st->p_prev, st->p_last, st->primes, st->seconds,
-            st->gap.best, st->lonely.best, st->aloof.best);
+            st->gap.best, st->lonely.best, st->aloof.best, st->equi.best);
     fflush(st->progress);
 }
 
@@ -858,6 +871,14 @@ static void gap_feed(gap_state *st, unsigned long q) {
                 rf_write(&st->aloof, "aloof", st->p_last, total, below, above,
                          st->p_prev, q);
             }
+            /* Balanced primes ranked against each other, not against all
+             * primes -- so this can fire at a distance the lonely record
+             * already reached with a lopsided prime. p = 2 is excluded: with
+             * no lower neighbour it is not balanced. */
+            if (st->p_prev != 0 && below == above && below > st->equi.best) {
+                rf_write(&st->equi, "equidistant", st->p_last, below,
+                         below, above, st->p_prev, q);
+            }
         }
     }
     st->p_prev = st->p_last;
@@ -876,6 +897,7 @@ static int gap_search(unsigned long lo, unsigned long hi,
     rf_open(&st.gap, dir, "gap");
     rf_open(&st.lonely, dir, "lonely");
     rf_open(&st.aloof, dir, "aloof");
+    rf_open(&st.equi, dir, "equidistant");
 
     char path[1024];
     snprintf(path, sizeof path, "%s/progress.txt", dir);
@@ -898,9 +920,11 @@ static int gap_search(unsigned long lo, unsigned long hi,
     unsigned long pos = st.resumed ? st.p_last + 1 : lo;
     if (st.resumed) {
         fprintf(stderr, "resuming at %lu  (records: gap %lu, lonely %lu, "
-                        "aloof %lu; thresholds %lu / %lu / %lu)\n",
+                        "aloof %lu, equidistant %lu; "
+                        "thresholds %lu / %lu / %lu / %lu)\n",
                 pos, st.gap.count, st.lonely.count, st.aloof.count,
-                st.gap.best, st.lonely.best, st.aloof.best);
+                st.equi.count, st.gap.best, st.lonely.best, st.aloof.best,
+                st.equi.best);
     } else {
         fprintf(st.progress, "# CHECKPOINT <p_prev> <p_last> <primes> <seconds>\n");
         fflush(st.progress);
@@ -966,9 +990,9 @@ static int gap_search(unsigned long lo, unsigned long hi,
             st.seconds = base_seconds + now;
             fprintf(stderr,
                     "[%8.0fs] pos %.6e  %.2e nums/s  %lu primes  "
-                    "best: gap %lu lonely %lu aloof %lu\n",
+                    "best: gap %lu lonely %lu aloof %lu equidistant %lu\n",
                     st.seconds, (double)seg_hi, rate, st.primes,
-                    st.gap.best, st.lonely.best, st.aloof.best);
+                    st.gap.best, st.lonely.best, st.aloof.best, st.equi.best);
             fflush(stderr);
             gap_checkpoint(&st);
             next_ck = now + ck_secs;
@@ -991,6 +1015,7 @@ static int gap_search(unsigned long lo, unsigned long hi,
     fclose(st.gap.out);
     fclose(st.lonely.out);
     fclose(st.aloof.out);
+    fclose(st.equi.out);
     fclose(st.progress);
 
     return !stop_requested;

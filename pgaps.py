@@ -31,11 +31,12 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(HERE, "sieve")
-KINDS = ("gap", "lonely", "aloof")
+KINDS = ("gap", "lonely", "aloof", "equidistant")
 
 # balanced.txt is deliberately not here: it is filtered out of the merged
 # lonely records afterwards, and the sieve never emits a candidate for it.
-# See derive_balanced().
+# See derive_balanced(). "equidistant" IS here and is not the same thing --
+# it is a running maximum the sieve keeps, over the balanced primes alone.
 
 # Enough to prime a worker's 3-prime window before its own range begins.
 # The largest known prime gap below 1e20 is 1854, so this is ample; it is
@@ -61,6 +62,58 @@ def write_records(path, rows, header):
         f.write(header)
         for i, r in enumerate(rows, 1):
             f.write(" ".join(str(x) for x in (i,) + tuple(r[1:])) + "\n")
+
+
+def read_coverage(out):
+    """How far each kind has been scanned from zero.
+
+    Kinds can be at different points. Adding a kind to KINDS puts it at 0
+    while the others stay where they are, and the driver catches it up before
+    scanning any further -- which is the whole reason this file exists.
+
+    A run from before coverage.txt was written has none, so it is inferred:
+    whatever it scanned, it scanned for every kind it knew about, so a kind
+    with a records file is covered to the frontier and a kind without one has
+    never been scanned. That is exactly the state a newly added kind is in.
+    """
+    cov = {k: 0 for k in KINDS}
+    path = os.path.join(out, "coverage.txt")
+    if os.path.exists(path):
+        for line in open(path):
+            if line.startswith("#") or not line.strip():
+                continue
+            f = line.split()
+            if len(f) >= 2 and f[0] in cov:
+                cov[f[0]] = int(f[1])
+        return cov
+
+    front = 0
+    fpath = os.path.join(out, "frontier.txt")
+    if os.path.exists(fpath):
+        front = int(open(fpath).read().split()[0])
+    for k in KINDS:
+        if os.path.exists(os.path.join(out, f"{k}.txt")):
+            cov[k] = front
+    return cov
+
+
+def write_coverage(out, cov):
+    with open(os.path.join(out, "coverage.txt"), "w") as f:
+        f.write("# how far each kind is scanned from zero, which is not always\n"
+                "# the same point: <kind> <covered_to>\n")
+        for k in KINDS:
+            f.write(f"{k} {cov.get(k, 0)}\n")
+
+
+def read_round(path):
+    """The round in flight: (lo, hi, jobs, kinds)."""
+    f = open(path).read().split()
+    kinds = tuple(f[3].split(",")) if len(f) > 3 else KINDS
+    return int(f[0]), int(f[1]), int(f[2]), kinds
+
+
+def write_round(path, lo, hi, jobs, kinds):
+    open(path, "w").write(f"{lo} {hi} {jobs} {','.join(kinds)}\n")
 
 
 def derive_balanced(out):
@@ -301,15 +354,20 @@ def safe_frontier(out, ranges):
     return front
 
 
-def merge(out, lo, seed, upto=None):
+def merge(out, lo, seed, upto=None, kinds=KINDS):
     """Apply the running-maximum rule across every worker's candidates.
 
     Incremental: records already in <out> are kept and act as the threshold,
     so rounds can be merged one after another.
+
+    `kinds` narrows it to a subset. A catch-up round scans a range the other
+    kinds have already covered, so merging their candidates would be at best
+    a no-op and at worst a way to disturb a finished file; only the kinds
+    being caught up are written.
     """
     os.makedirs(out, exist_ok=True)
     summary = {}
-    for kind in KINDS:
+    for kind in kinds:
         cands = read_records(os.path.join(out, f"{kind}.txt"))
         for d in sorted(os.listdir(os.path.join(out, "shards"))):
             cands += read_records(os.path.join(out, "shards", d, f"{kind}.txt"))
@@ -344,10 +402,12 @@ def merge(out, lo, seed, upto=None):
         summary[kind] = (len(cands), len(kept), best)
 
     # Its "candidates" are the lonely records it filters, so it reports in
-    # the same shape as the scanned kinds.
-    bal = derive_balanced(out)
-    summary["balanced"] = (summary["lonely"][1], len(bal),
-                           bal[-1][2] if bal else 0)
+    # the same shape as the scanned kinds. Nothing to redo if lonely was not
+    # part of this merge.
+    if "lonely" in kinds:
+        bal = derive_balanced(out)
+        summary["balanced"] = (summary["lonely"][1], len(bal),
+                               bal[-1][2] if bal else 0)
     return summary
 
 
@@ -419,6 +479,8 @@ def main():
                     help="seconds between each worker's checkpoints (default 30)")
     ap.add_argument("--merge-only", action="store_true",
                     help="re-merge existing worker output without scanning")
+    ap.add_argument("--status", action="store_true",
+                    help="print how far each kind is covered, and exit")
     args = ap.parse_args()
 
     if not os.path.exists(BINARY):
@@ -430,38 +492,66 @@ def main():
     seed = seed_from(args.seed)
     state = os.path.join(args.out, "round.txt")
 
+    cov = read_coverage(args.out)
+
+    if args.status:
+        target = max(cov.values())
+        print(f"  {args.out}/")
+        for kind in KINDS:
+            n = len(read_records(os.path.join(args.out, f"{kind}.txt")))
+            flag = "" if cov[kind] >= target else "   <-- BEHIND, will catch up"
+            print(f"    {kind:<12} {n:>3} records   covered to "
+                  f"{cov[kind]:,}{flag}")
+        print(f"  resumes at {target:,}")
+        print(f"  frontier   {min(cov.values()):,}  "
+              f"(complete for every sequence below this)")
+        return 0
+
     if args.merge_only:
         if not os.path.exists(state):
             sys.exit(f"{state} missing -- nothing to merge")
-        lo, hi, jobs = (int(x) for x in open(state).read().split())
+        lo, hi, jobs, kinds = read_round(state)
         ranges = prepare(args.out, jobs, lo, hi, seed)
         front = safe_frontier(args.out, ranges)
-        summary = merge(args.out, None, seed, upto=front)
+        summary = merge(args.out, None, seed, upto=front, kinds=kinds)
         for kind, (n, k, best) in summary.items():
-            print(f"    {kind:<7} {n:>5} candidates -> {k:>3} records   best {best}")
+            print(f"    {kind:<12} {n:>5} candidates -> {k:>3} records   best {best}")
         return 0
 
     # An unfinished round takes precedence: resume it before advancing.
     resume = None
     if os.path.exists(state):
-        a, b, j = (int(x) for x in open(state).read().split())
+        a, b, j, kinds = read_round(state)
         ranges = prepare(args.out, j, a, b, seed)
         if any(not is_done(args.out, i) for i in range(j)):
-            resume = (a, b, j)
+            resume = (a, b, j, kinds)
 
-    lo = int(args.lo)
+    # Where the run RESUMES is the furthest any kind has reached. That is not
+    # the same as the frontier it can claim, which is the point every kind has
+    # reached -- the two differ exactly while a catch-up is pending.
     frontier_file = os.path.join(args.out, "frontier.txt")
-    if os.path.exists(frontier_file):
-        lo = max(lo, int(open(frontier_file).read().strip()))
+    lo = max(int(args.lo), max(cov.values()))
+
+    # A kind added after the run started sits at 0 while the rest are at the
+    # frontier. Catch it up over the range they have already covered, on its
+    # own, before advancing any further.
+    behind = [k for k in KINDS if cov[k] < max(cov.values())]
+    if behind and not resume:
+        print(f"  catching up {', '.join(behind)}: covered to "
+              f"{min(cov[k] for k in behind):,}, the rest to "
+              f"{max(cov.values()):,}")
+        print(f"  the other kinds are left untouched until it is level")
 
     bounded = args.hi is not None
     hi_final = int(args.hi) if bounded else None
-    if bounded and lo >= hi_final:
+    if bounded and lo >= hi_final and not behind:
         print("  nothing to do: frontier is already at or past --to")
         return 0
 
     if resume:
         where = f"resuming round [{resume[0]:,}, {resume[1]:,})"
+    elif behind:
+        where = f"catching up from {min(cov[k] for k in behind):,}"
     elif bounded:
         where = f"scanning [{lo:,}, {hi_final:,})"
     else:
@@ -469,41 +559,71 @@ def main():
     print(f"  {where} across {args.jobs} workers")
     for kind in KINDS:
         row = seed.get(kind)
-        print(f"    {kind:<7} seed threshold {row[2] if row else 0}")
+        print(f"    {kind:<12} seed threshold {row[2] if row else 0}")
 
     while True:
         if resume:
-            a, b, jobs = resume
+            a, b, jobs, kinds = resume
             resume = None
-            print(f"\n  resuming round [{a:,}, {b:,})")
+            # A round that started before a kind was added scanned nothing for
+            # it below the round's own start, so its candidates must not be
+            # merged as if they covered the range from zero. Drop it here; the
+            # catch-up in the next round picks it up properly. A round that IS
+            # a catch-up names its own kinds and is left alone.
+            if set(kinds) == set(KINDS):
+                level = max(cov.values())
+                kinds = tuple(k for k in KINDS if cov[k] >= level)
+            print(f"\n  resuming round [{a:,}, {b:,}) for {','.join(kinds)}")
         else:
             jobs = args.jobs
-            a = lo
-            if bounded:
-                b = hi_final
+            level = max(cov.values())
+            behind = [k for k in KINDS if cov[k] < level]
+            if behind:
+                # A catch-up round: only the lagging kinds, and never past the
+                # point the others already reached.
+                kinds, a, ceiling = tuple(behind), min(cov[k] for k in behind), level
             else:
-                # Size the round for roughly --round-seconds of wall time.
-                b = a + max(int(jobs * scan_rate(a) * args.round_seconds), 10**6)
+                kinds, a, ceiling = KINDS, max(lo, level), hi_final
+            if ceiling is not None and a >= ceiling:
+                print(f"\n  complete. results in {args.out}/")
+                return 0
+            # Size the round for roughly --round-seconds of wall time.
+            b = a + max(int(jobs * scan_rate(a) * args.round_seconds), 10**6)
+            if bounded and not behind:
+                b = hi_final
+            if ceiling is not None:
+                b = min(b, ceiling)
             clear_shards(args.out)
-            open(state, "w").write(f"{a} {b} {jobs}\n")
-            print(f"\n  round [{a:,}, {b:,})")
+            write_round(state, a, b, jobs, kinds)
+            print(f"\n  round [{a:,}, {b:,})"
+                  + ("" if set(kinds) == set(KINDS)
+                     else f"  catch-up: {','.join(kinds)} only"))
 
-        finished, front, ranges = run_round(args.out, a, b, jobs, seed,
+        # A catch-up starts from zero for the kind it is rebuilding, so it
+        # takes no thresholds from the run it is catching up with.
+        round_seed = seed if set(kinds) == set(KINDS) else {}
+        finished, front, ranges = run_round(args.out, a, b, jobs, round_seed,
                                             args.checkpoint)
-        summary = merge(args.out, None, seed, upto=front)
-        open(frontier_file, "w").write(f"{front}\n")
+        summary = merge(args.out, None, round_seed, upto=front, kinds=kinds)
+        for kind in kinds:
+            cov[kind] = max(cov[kind], front)
+        write_coverage(args.out, cov)
+        # frontier.txt is the point below which EVERY tracked sequence is
+        # complete, so it is the minimum, not the maximum. While a kind is
+        # catching up that reads low -- deliberately. Understating the bound
+        # costs nothing; overstating it puts a false completeness claim in an
+        # OEIS submission, which is the one thing this scan must never do.
+        # coverage.txt carries the per-kind detail, and the resume point.
+        open(frontier_file, "w").write(f"{min(cov.values())}\n")
         print(f"  merged up to {front:,}")
         for kind, (n, k, best) in summary.items():
-            print(f"    {kind:<7} {n:>5} candidates -> {k:>3} records   best {best}")
+            print(f"    {kind:<12} {n:>5} candidates -> {k:>3} records   best {best}")
 
         if not finished:
             print("\n  interrupted; workers checkpointed. Re-run the same "
                   "command to continue.")
             return 0
-        lo = b
-        if bounded and lo >= hi_final:
-            print(f"\n  complete. results in {args.out}/")
-            return 0
+        lo = max(lo, min(cov.values()))
 
 
 def _run():

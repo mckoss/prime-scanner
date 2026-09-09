@@ -7,7 +7,7 @@ python3 pgaps.py --jobs 8 --out fresh
 ```
 
 Unlike [`results/`](../results/README.md), this search was **not seeded**. It
-started at 0 with every threshold at zero and re-derived all three sequences
+started at 0 with every threshold at zero and re-derived all four sequences
 from the first term, so `gap.txt` begins at p=2 rather than at a published
 record. That makes the whole file a check on the scanner rather than just its
 tail: a seeded run can only be wrong about new terms, an unseeded one has to
@@ -24,8 +24,10 @@ original single-threaded scan.
 | `gap.txt` | record prime gaps — [A005250](https://oeis.org/A005250) / [A002386](https://oeis.org/A002386) |
 | `lonely.txt` | record distance to the *nearer* neighbour — [A023186](https://oeis.org/A023186) |
 | `aloof.txt` | record total span between *both* neighbours — [A096265](https://oeis.org/A096265) |
+| `equidistant.txt` | record distance among the *balanced* primes alone — [A058867](https://oeis.org/A058867) |
 | `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/TODO.md`](../oeis/TODO.md) |
-| `frontier.txt` | the resume point — see below |
+| `frontier.txt` | the point below which **every** sequence here is complete — see below |
+| `coverage.txt` | how far each sequence is scanned, which is not always the same point — see below |
 
 Each results line is
 
@@ -38,6 +40,13 @@ self-contained proof: check that `prev`, `prime` and `next` are all prime and
 that nothing lies between them, and the record stands without rerunning the
 scan. `value` is whichever quantity that sequence maximises — `gap_above` for
 gaps, `min(below, above)` for lonely, `below + above` for aloof.
+
+`equidistant.txt` maximises the same quantity as `lonely.txt` but over a
+different population: only the primes whose two gaps are equal, ranked against
+each other. That makes it neither a filter of the lonely records nor derivable
+from them — `A058867(4) = 16787` enters on a distance of 24 that `lonely(9) =
+16033` had already reached with gaps (26, 24). It is a fourth running maximum
+in the sieve, not a view of the third.
 
 `balanced.txt` is the odd one out: it maximises nothing. It is `lonely.txt`
 filtered to `gap_below == gap_above` (and `prev != 0`, since p = 2 has no
@@ -60,15 +69,38 @@ promote a later, smaller value to "record" when the real one sits in the gap.
 
 So `frontier.txt` holds the highest point below which coverage is *provably
 contiguous* — the start of the lowest shard still running. The merged files
-are truncated to it, and the next round starts there. It is the only durable
-resume state, and it only ever moves forward.
+are truncated to it, and the next round starts there.
+
+### Why there is a second file
+
+Adding a sequence to a run that has already scanned a long way puts that one
+sequence at zero while the rest are at the frontier, so for a while a single
+number cannot describe the run. `coverage.txt` records how far each is
+actually scanned, and `pgaps.py` notices the gap on its own and runs
+**catch-up rounds** for the lagging sequence over the range the others have
+already covered — merging only that sequence, leaving the finished files
+untouched. `pgaps.py --out fresh --status` shows where each one stands.
+
+The two files are not redundant, and which is which matters:
+
+- `coverage.txt` is per sequence, and it is where the run **resumes** from —
+  the furthest any sequence has reached.
+- `frontier.txt` is the **minimum** across them: the point below which every
+  sequence here is complete. While a catch-up is pending it reads low, on
+  purpose. Understating the bound costs nothing; overstating it would put a
+  false completeness claim into an OEIS submission, which is the one thing
+  this scan must never do.
+
+Once a catch-up finishes the two agree again and stay agreed, because every
+round after it scans all four sequences together. Disjoint frontiers are a
+migration state, not a steady one.
 
 ## What is committed, and what is not
 
-Committed: the three merged record files, `balanced.txt` derived from them,
-and `frontier.txt`. Together they are the complete, resumable state of the
-search — drop them into an empty directory, rerun the same command, and it
-picks up at the frontier.
+Committed: the four merged record files, `balanced.txt` derived from them,
+and `frontier.txt` with `coverage.txt`. Together they are the complete,
+resumable state of the search — drop them into an empty directory, rerun the
+same command, and it picks up where it left off.
 
 Not committed (see `.gitignore`):
 

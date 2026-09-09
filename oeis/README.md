@@ -28,11 +28,12 @@ long-published records look like discoveries, which is exactly what happened.
 | `aloof-span.txt` | [A031132](https://oeis.org/A031132) | span between them | 67 | 1152 |
 | `equidistant.txt` | [A058867](https://oeis.org/A058867) | record distance among *balanced* primes only | 30 | 1.879e14 |
 
-`equidistant.txt` is not a counterpart of one of our files. It is the
-published sequence that must contain every term of `balanced.txt`, because a
-prime that beats all primes on `min(gap)` beats the balanced ones in
-particular — `check_oeis.py` asserts that containment. See
-[`TODO.md`](TODO.md) for why the two are not the same sequence.
+`equidistant.txt` is the published counterpart of `fresh/equidistant.txt`,
+which the sieve derives from zero like the others. It is also what
+`balanced.txt` is checked against: every balanced-lonely term must appear in
+it, because a prime that beats all primes on `min(gap)` beats the balanced
+ones in particular. See [`TODO.md`](TODO.md) for why the two are not the same
+sequence — the distinction is easy to miss and expensive to miss.
 
 Each is named for the record it holds, matching the file it is checked
 against — `oeis/gap.txt` is the published counterpart of `fresh/gap.txt`. The
