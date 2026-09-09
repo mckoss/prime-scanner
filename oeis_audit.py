@@ -86,6 +86,19 @@ FAMILIES = {
             "A122413": member("index of the upper prime (needs pi(p))"),
         },
     },
+    "balanced": {
+        "records": "balanced-lonely primes -- lonely records whose two "
+                   "neighbours are equidistant",
+        # Not in OEIS, so there are no members to lay out in a table. It is a
+        # filter on the lonely records rather than a record sequence, which is
+        # why a scan needs no threshold for it and cannot be behind on it.
+        "proposed": "oeis/proposed/balanced-lonely-primes.md",
+        "related": ("A058867",
+                    "records among balanced primes -- contains every "
+                    "balanced-lonely term, and many that are not lonely "
+                    "records"),
+        "members": {},
+    },
 }
 
 
@@ -240,6 +253,11 @@ siblings already carry have not been written down in that place.
     families = {}
     for fam, info in FAMILIES.items():
         rows = load_rows(results, fam)
+        if "proposed" in info:
+            families[fam] = {"seqs": [], "deepest": 0, "rows": rows,
+                             "info": info}
+            proposed_block(fam, info, rows, run, refresh)
+            continue
         seqs, deepest = [], 0
         for aid, m in info["members"].items():
             rec = entry(aid, refresh)
@@ -290,6 +308,24 @@ siblings already carry have not been written down in that place.
     return families
 
 
+def proposed_block(fam, info, rows, run, refresh):
+    """A family this repo tracks that OEIS does not carry yet."""
+    title = f"{fam} -- {info['records']}"
+    print(f"\n\n{title}")
+    print("-" * len(title))
+    print(f"  not in OEIS.  draft: {info['proposed']}")
+    if rows:
+        print(f"  {run}/ holds {len(rows)} terms, the last {rows[-1][1]:,} "
+              f"at distance {rows[-1][2]}")
+        print(f"  complete below the frontier: it filters the lonely records, "
+              f"so no term can be missing")
+    aid, why = info["related"]
+    pub = bfile_terms_list(aid, refresh)
+    if pub:
+        print(f"  related: {aid}, {len(pub)} terms to {pub[-1]:.4e}")
+        print(f"           {why}")
+
+
 def todo(families):
     heading("TO FIX  --  none of this is a discovery claim")
 
@@ -313,15 +349,19 @@ def todo(families):
             else:
                 continue
             any_b = True
-            print(f"  {s['aid']}  [{fam:<6}] {s['terms']:>3} terms -- {why}")
+            print(f"  {s['aid']}  [{fam:<8}] {s['terms']:>3} terms -- {why}")
     if not any_b:
         print("  nothing -- every family member is at the same depth")
 
     print("\na-files, the one place a record's bounding primes can be published:")
     for fam, f in families.items():
+        if "proposed" in f["info"]:
+            print(f"  [{fam:<8}] not applicable until the sequence exists "
+                  f"-- see {f['info']['proposed']}")
+            continue
         have = [s for s in f["seqs"] if not s["gone"] and s["af"]]
         if have:
-            print(f"  [{fam:<6}] present on " +
+            print(f"  [{fam:<8}] present on " +
                   ", ".join(s["aid"] for s in have) +
                   " -- free-form, so check it is current")
             for s in have:
@@ -331,7 +371,7 @@ def todo(families):
                 print(f"           {s['aid']}: {text}")
         else:
             note = "nothing documents the neighbours that make a record checkable"
-            print(f"  [{fam:<6}] MISSING on every member -- {note}")
+            print(f"  [{fam:<8}] MISSING on every member -- {note}")
             if f["rows"]:
                 both = sum(1 for r in f["rows"] if r[5])
                 print(f"           this run supplies both neighbours for "
@@ -350,6 +390,8 @@ def frontier_report(families, results, refresh):
     print(f"  {'family':<8}{'ours':>6}   {'published to':<14}{'terms':>6}  "
           f"{'via':<9} what is left")
     for fam, f in families.items():
+        if "extent" not in f["info"]:
+            continue
         aid, off = f["info"]["extent"]
         pub = bfile_terms_list(aid, refresh)
         if not pub:

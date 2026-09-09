@@ -24,6 +24,7 @@ original single-threaded scan.
 | `gap.txt` | record prime gaps — [A005250](https://oeis.org/A005250) / [A002386](https://oeis.org/A002386) |
 | `lonely.txt` | record distance to the *nearer* neighbour — [A023186](https://oeis.org/A023186) |
 | `aloof.txt` | record total span between *both* neighbours — [A096265](https://oeis.org/A096265) |
+| `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/TODO.md`](../oeis/TODO.md) |
 | `frontier.txt` | the resume point — see below |
 
 Each results line is
@@ -37,6 +38,13 @@ self-contained proof: check that `prev`, `prime` and `next` are all prime and
 that nothing lies between them, and the record stands without rerunning the
 scan. `value` is whichever quantity that sequence maximises — `gap_above` for
 gaps, `min(below, above)` for lonely, `below + above` for aloof.
+
+`balanced.txt` is the odd one out: it maximises nothing. It is `lonely.txt`
+filtered to `gap_below == gap_above` (and `prev != 0`, since p = 2 has no
+lower neighbour), so `value` is simply that common distance. A balanced lonely
+prime is a lonely record by definition, so the filter cannot miss one —
+`lonely.txt` already holds every term there can be below the frontier, which
+is why the workers collect nothing for it and it needs no threshold.
 
 Because three sequences are in play at once, terms are written `gap(n)`,
 `lonely(n)` and `aloof(n)` rather than `a(n)` — the nth term of A002386,
@@ -57,9 +65,10 @@ resume state, and it only ever moves forward.
 
 ## What is committed, and what is not
 
-Committed: the three merged record files and `frontier.txt`. Together they are
-the complete, resumable state of the search — drop them into an empty
-directory, rerun the same command, and it picks up at the frontier.
+Committed: the three merged record files, `balanced.txt` derived from them,
+and `frontier.txt`. Together they are the complete, resumable state of the
+search — drop them into an empty directory, rerun the same command, and it
+picks up at the frontier.
 
 Not committed (see `.gitignore`):
 
