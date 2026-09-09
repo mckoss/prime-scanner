@@ -1,5 +1,5 @@
 # aloof records: <n> <prime> <value> <gap_below> <gap_above> <prev_prime> <next_prime>
-# merged from 262 candidates across 8 workers
+# merged from 257 candidates across 8 workers
 1 2 1 1 1 0 3
 2 3 3 1 2 2 5
 3 5 4 2 2 3 7
