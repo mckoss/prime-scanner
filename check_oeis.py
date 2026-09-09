@@ -31,10 +31,15 @@ import time
 SEQ = {"gap": ("A002386", "primes at the lower end of a record gap"),
        "lonely": ("A023186", "lonely primes"),
        "aloof": ("A096265", "aloof primes")}
-CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".oeis-cache")
+CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis")
 
 
 STALE_DAYS = 30
+
+
+def read_terms(path):
+    """The a(n) column of a b-file, in order."""
+    return [int(l.split()[1]) for l in open(path) if l.strip() and l[0].isdigit()]
 
 
 def bfile(aid, refresh=False):
@@ -47,26 +52,44 @@ def bfile(aid, refresh=False):
     """
     os.makedirs(CACHE, exist_ok=True)
     path = os.path.join(CACHE, f"b{aid[1:]}.txt")
+
     if refresh or not os.path.exists(path):
         url = f"https://oeis.org/{aid}/b{aid[1:]}.txt"
+        before = read_terms(path) if os.path.exists(path) else None
         tmp = path + ".new"
         r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", tmp])
-        got = os.path.exists(tmp) and os.path.getsize(tmp) > 0
-        if r.returncode != 0 or not got:
+        if r.returncode != 0 or not os.path.exists(tmp) or not os.path.getsize(tmp):
             if os.path.exists(tmp):
                 os.remove(tmp)
-            if os.path.exists(path):
-                print(f"  ! could not refresh {url}; using the cached copy")
-            else:
+            if before is None:
                 sys.exit(f"could not fetch {url}")
+            print(f"  ! {aid}: could not refresh; using the cached copy")
         else:
+            after = read_terms(tmp)
             os.replace(tmp, path)
+            if before is None:
+                print(f"  + {aid}: fetched, {len(after)} terms")
+            elif after == before:
+                print(f"  = {aid}: unchanged, {len(after)} terms")
+            else:
+                # A published term appearing here is one this scan can no
+                # longer claim, so name them rather than just counting.
+                kind = next((k for k, (a, _) in SEQ.items() if a == aid), "a")
+                added = [t for t in after if t not in set(before)]
+                gone = [t for t in before if t not in set(after)]
+                print(f"  * {aid}: UPDATED, {len(before)} -> {len(after)} terms")
+                for t in added[:5]:
+                    print(f"      + {kind}({after.index(t) + 1}) = {t}")
+                if len(added) > 5:
+                    print(f"      + ... and {len(added) - 5} more")
+                for t in gone[:5]:
+                    print(f"      - withdrawn: {t}")
     else:
         age = (time.time() - os.path.getmtime(path)) / 86400
         if age > STALE_DAYS:
             print(f"  ! {os.path.basename(path)} cached {age:.0f} days ago; "
                   f"rerun with --refresh to check for new published terms")
-    return [int(l.split()[1]) for l in open(path) if l.strip() and l[0].isdigit()]
+    return read_terms(path)
 
 
 def miller_rabin(n):

@@ -23,8 +23,19 @@ They are small: 2.7 KB for all three.
 A b-file is the full published data and is longer than the DATA section shown
 on the sequence page, which is why these are what the check reads.
 
-To update: `python3 check_oeis.py <results> --refresh`. Without it a cached
-file more than 30 days old draws a warning but is still used.
+To update: `python3 check_oeis.py <results> --refresh`. It refetches all three
+and reports what moved, naming any new terms:
+
+```
+  = A002386: unchanged, 85 terms
+  * A096265: UPDATED, 52 -> 55 terms
+      + aloof(53) = 220578150113
+```
+
+A term appearing there is one this scan can no longer claim as new, which is
+why they are named rather than counted. A failed refetch keeps the good copy.
+Without `--refresh`, a cached file more than 30 days old draws a warning but is
+still used.
 
 ## Attribution
 
