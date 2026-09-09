@@ -21,9 +21,14 @@ import sys
 
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis", "audit")
 
+# sieve.c stores every value in an unsigned long, so nothing above this
+# is reachable no matter how long the scan runs.
+ULONG_MAX = 2 ** 64 - 1
+
 FAMILIES = {
     "gap": {
         "records": "maximal prime gaps",
+        "extent": ("A002386", 0),
         "members": {
             "A002386": "prime at the lower end",
             "A000101": "prime at the upper end",
@@ -35,6 +40,7 @@ FAMILIES = {
     },
     "lonely": {
         "records": "lonely primes -- record min(gap below, gap above)",
+        "extent": ("A023186", 0),
         "members": {
             "A023186": "the lonely prime",
             "A023187": "the distance to the nearer neighbour",
@@ -42,6 +48,9 @@ FAMILIES = {
     },
     "aloof": {
         "records": "aloof primes -- record nextprime(p) - prevprime(p)",
+        # A031134 holds the upper neighbour and runs one index below A096265,
+        # which carries an extra a(1) = 2 having no lower neighbour.
+        "extent": ("A031134", 1),
         "members": {
             "A096265": "the aloof prime",
             "A031133": "the lower neighbour",
@@ -104,11 +113,80 @@ def afile(rec, aid):
     return [l for l in (rec.get("link") or []) if own.search(l)]
 
 
+def scan_days(lo, hi):
+    """Days from lo to hi at the rate pgaps.py measured, or None."""
+    try:
+        import importlib.util
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pgaps.py")
+        spec = importlib.util.spec_from_file_location("_pg", p)
+        pg = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pg)
+    except Exception:
+        return None
+    if hi <= lo:
+        return 0.0
+    n, tot, x = 2000, 0.0, lo
+    for i in range(1, n + 1):
+        y = lo * (hi / lo) ** (i / n)
+        tot += (y - x) / pg.scan_rate((x + y) / 2)
+        x = y
+    return tot / (8 * 4.39 / 8) / 86400        # 8 workers at the measured duty
+
+
+def frontier_report(results, refresh):
+    """Where this scan stands against each family's deepest published term."""
+    fpath = os.path.join(results, "frontier.txt")
+    if not os.path.exists(fpath):
+        print(f"\n  no {fpath}; skipping the frontier comparison")
+        return
+    front = int(open(fpath).read().split()[0])
+    print(f"\n\n#################### FRONTIER vs PUBLISHED ####################")
+    print(f"\n  {results}/frontier.txt = {front:,}  ({front:.4e})\n")
+    for fam, info in FAMILIES.items():
+        aid, off = info["extent"]
+        pub = bfile_terms_list(aid, refresh)
+        ours = [int(l.split()[1]) for l
+                in open(os.path.join(results, f"{fam}.txt"))
+                if l.strip() and l[0].isdigit()] \
+            if os.path.exists(os.path.join(results, f"{fam}.txt")) else []
+        if not pub:
+            continue
+        extent = pub[-1]
+        n_pub = len(pub) + off
+        ahead = front > extent
+        print(f"  {fam:<7} published to {extent:.4e} ({n_pub} terms, via {aid})")
+        print(f"  {'':7} ours       {len(ours)} terms, frontier {front:.4e}")
+        if ahead:
+            new = len(ours) - n_pub
+            print(f"  {'':7} -> frontier is PAST it: "
+                  f"{max(new,0)} term(s) beyond publication"
+                  + ("  <- submittable" if new > 0 else ""))
+        elif extent > ULONG_MAX:
+            print(f"  {'':7} -> past this program's 2^64 ceiling "
+                  f"({ULONG_MAX:.4e}) -- unreachable, and nothing to contribute")
+        else:
+            d = scan_days(front, extent)
+            when = f"~{d:.1f} days at the measured rate" if d is not None else ""
+            print(f"  {'':7} -> {extent/front:.1f}x to go   {when}")
+        print()
+
+
+def bfile_terms_list(aid, refresh):
+    path = os.path.join(CACHE, f"b{aid[1:]}.txt")
+    if not fetch(f"https://oeis.org/{aid}/b{aid[1:]}.txt", path, refresh):
+        return []
+    return [int(l.split()[1]) for l in open(path, errors="replace")
+            if l.strip() and l[0].isdigit()]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
              formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true",
                     help="refetch entries and b-files from OEIS")
+    ap.add_argument("--results", metavar="DIR",
+                    help="a scan directory (e.g. fresh); also report where its "
+                         "frontier stands against each family's published extent")
     args = ap.parse_args()
 
     todo_b, todo_a = [], []
@@ -172,6 +250,9 @@ def main():
         else:
             print(f"  [{fam:<6}] present (check it is current: an a-file is "
                   f"free-form and is not regenerated)")
+
+    if args.results:
+        frontier_report(args.results, args.refresh)
     return 0
 
 

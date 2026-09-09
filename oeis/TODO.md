@@ -5,7 +5,15 @@ to find unpublished values — those come as a by-product, and the exhaustive
 scan's real currency is **completeness bounds**, which targeted searches cannot
 supply.
 
-Re-run `python3 oeis_audit.py --refresh` to refresh the b-file findings.
+Two tools, different jobs — neither replaces the other:
+
+    ./check_oeis.py fresh          # is the SCAN right? term-by-term diff vs
+                                   # published, plus Miller-Rabin on every record
+    ./oeis_audit.py --results fresh  # is OEIS complete? which family members lag
+                                   # their siblings, which lack a-files, and where
+                                   # the frontier stands against each family
+
+Add `--refresh` to either to refetch from OEIS.
 
 ## Plan: bake one week, then submit
 
