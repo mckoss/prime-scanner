@@ -158,9 +158,12 @@ def frontier_report(results, refresh):
         print(f"  {'':7} ours       {len(ours)} terms, frontier {front:.4e}")
         if ahead:
             new = len(ours) - n_pub
-            print(f"  {'':7} -> frontier is PAST it: "
-                  f"{max(new,0)} term(s) beyond publication"
-                  + ("  <- submittable" if new > 0 else ""))
+            if new > 0:
+                print(f"  {'':7} -> frontier is PAST it: {new} term(s) beyond "
+                      f"publication  <-- SUBMITTABLE")
+            else:
+                print(f"  {'':7} -> frontier is past it, but no term beyond "
+                      f"publication yet")
         elif extent > ULONG_MAX:
             print(f"  {'':7} -> past this program's 2^64 ceiling "
                   f"({ULONG_MAX:.4e}) -- unreachable, and nothing to contribute")
@@ -168,7 +171,30 @@ def frontier_report(results, refresh):
             d = scan_days(front, extent)
             when = f"~{d:.1f} days at the measured rate" if d is not None else ""
             print(f"  {'':7} -> {extent/front:.1f}x to go   {when}")
+        # An a-file needs the bounding primes, which this scan already has for
+        # every record it found -- no frontier advance required.
+        if not any(afile(entry(a, refresh) or {}, a)
+                   for a in info["members"]):
+            cols = rows_have_neighbours(results, fam)
+            if cols:
+                print(f"  {'':7} -> a-file: none published, and this scan has "
+                      f"bounding primes for all {cols} of its records "
+                      f"<-- BUILDABLE NOW")
         print()
+
+
+def rows_have_neighbours(results, kind):
+    """How many of our records carry prev/next, i.e. are a-file material."""
+    path = os.path.join(results, f"{kind}.txt")
+    if not os.path.exists(path):
+        return 0
+    n = 0
+    for line in open(path):
+        if line.startswith("#") or not line.strip():
+            continue
+        if len(line.split()) == 7:
+            n += 1
+    return n
 
 
 def bfile_terms_list(aid, refresh):
