@@ -468,11 +468,14 @@ def merge(out, lo, seed, upto=None, kinds=KINDS):
                 best = r[2]
                 kept.append(r)
 
+        # Header describes the DATA, and nothing about the run that produced
+        # it. A candidate count changes every round while the records do not,
+        # so recording it here churns a committed data file for no reason --
+        # it was once the only line differing between two snapshots. The live
+        # counts go to stdout in the round summary instead.
         write_records(os.path.join(out, f"{kind}.txt"), kept,
                       f"# {kind} records: <n> <prime> <value> <gap_below> "
-                      f"<gap_above> <prev_prime> <next_prime>\n"
-                      f"# merged from {len(cands)} candidates across "
-                      f"{len(os.listdir(os.path.join(out, 'shards')))} workers\n")
+                      f"<gap_above> <prev_prime> <next_prime>\n")
         summary[kind] = (len(cands), len(kept), best)
 
     # Its "candidates" are the lonely records it filters, so it reports in
