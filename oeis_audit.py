@@ -395,25 +395,32 @@ def frontier_report(families, results, refresh):
     if not os.path.exists(fpath):
         print(f"\n  no {fpath}; skipping the frontier comparison")
         return
-    front = int(open(fpath).read().split()[0])
+    text = open(fpath).read()
+    head = text.split()
     cov = {}
-    cpath = os.path.join(results, "coverage.txt")
-    if os.path.exists(cpath):
-        for line in open(cpath):
-            if not line.startswith("#") and len(line.split()) >= 2:
-                cov[line.split()[0]] = int(line.split()[1])
-    else:
-        # No coverage.txt: infer it as pgaps.py does, so a sequence the run
-        # has not scanned is not credited with the frontier.
-        for fam in families:
+    scanned = [f for f in families if "extent" in families[f]["info"]]
+    if head and head[0].isdigit():
+        # Legacy single-number frontier.txt: it applies to every sequence that
+        # has a records file; one with no file was never scanned at all.
+        front = int(head[0])
+        for fam in scanned:
             cov[fam] = front if os.path.exists(
                 os.path.join(results, f"{fam}.txt")) else 0
+    else:
+        for line in text.splitlines():
+            if not line.startswith("#") and len(line.split()) >= 2:
+                cov[line.split()[0]] = int(line.split()[1])
+        front = max(cov.values()) if cov else 0
+
     heading("FRONTIER vs PUBLISHED")
-    print(f"\n  {results}/frontier.txt = {front:,}  ({front:.4e})")
-    if cov and len(set(cov.values())) > 1:
-        low = min(cov, key=cov.get)
-        print(f"  {low} is only scanned to {cov[low]:.4e} and is being "
-              f"caught up separately; it is measured against that")
+    if len(set(cov.values())) > 1:
+        print(f"\n  {results}/frontier.txt -- the sequences are at different "
+              f"frontiers, so each is measured against its own:")
+        for fam in scanned:
+            if fam in cov:
+                print(f"      {fam:<12} {cov[fam]:>22,}")
+    else:
+        print(f"\n  {results}/frontier.txt = {front:,}  ({front:.4e})")
     print()
     print(f"  {'family':<12}{'ours':>5}   {'published to':<14}{'terms':>6}  "
           f"{'via':<9} what is left")

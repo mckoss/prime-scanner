@@ -606,6 +606,62 @@ def test_gap_search_reproduces_oeis():
 
 
 @test
+def test_legacy_frontier_is_read_per_sequence():
+    """A single-number frontier.txt means: whoever has a file reached it"""
+    # The old format recorded one number for the run. It was written by a
+    # scan that collected exactly the kinds it knew about, so a kind with a
+    # records file reached it and a kind without one was never collected --
+    # which is the state a newly added kind is in.
+    pgaps = load_pgaps()
+    with tempfile.TemporaryDirectory() as d:
+        open(os.path.join(d, "frontier.txt"), "w").write("2000000\n")
+        for kind in ("gap", "lonely", "aloof"):
+            open(os.path.join(d, f"{kind}.txt"), "w").write("# records\n")
+        got = pgaps.read_frontiers(d)
+        want = {"gap": 2000000, "lonely": 2000000, "aloof": 2000000,
+                "equidistant": 0}
+        if got != want:
+            raise SieveError(f"legacy frontier read as {got}, expected {want}")
+
+    # No frontier.txt at all reads as zero, never as progress.txt: a serial
+    # position is not the same claim as a merged frontier.
+    with tempfile.TemporaryDirectory() as d:
+        open(os.path.join(d, "gap.txt"), "w").write("# records\n")
+        open(os.path.join(d, "progress.txt"), "w").write(
+            "CHECKPOINT 999983 999979 78498 1.0\n")
+        got = pgaps.read_frontiers(d)
+        if any(got.values()):
+            raise SieveError(f"a directory with no frontier.txt read as {got}")
+
+
+@test
+def test_catch_up_rolls_each_sequence_in_at_its_own_frontier():
+    """Rounds stop at the next frontier, so a sequence rolls in on a boundary"""
+    pgaps = load_pgaps()
+
+    class Args:
+        lo, hi = 0, None
+
+    # Three distinct frontiers: the scan should walk up through them, adding
+    # one sequence at each, rather than treating it as one catch-up.
+    fronts = {"gap": 0, "lonely": 50, "aloof": 100, "equidistant": 100}
+    steps = []
+    for _ in range(4):
+        kinds, a, ceiling = pgaps.plan_round(fronts, Args(), 1)
+        steps.append((a, ceiling, kinds))
+        if ceiling is None:
+            break
+        for k in kinds:                     # pretend the round reached it
+            fronts[k] = ceiling
+
+    want = [(0, 50, ("gap",)),
+            (50, 100, ("gap", "lonely")),
+            (100, None, ("gap", "lonely", "aloof", "equidistant"))]
+    if steps != want:
+        raise SieveError(f"roll-in plan was {steps},\n           expected {want}")
+
+
+@test
 def test_merge_refuses_a_sieve_that_skips_a_kind():
     """merge() aborts rather than writing an empty file for a missing kind"""
     # The migration hazard: adding a record kind to a run whose ./sieve

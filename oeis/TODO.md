@@ -84,15 +84,18 @@ for it. That leaves it at zero while the other three sit at the frontier, so
 it has to be caught up over ground already scanned:
 
 ```
-python3 pgaps.py --out fresh --status       # shows equidistant BEHIND
-python3 pgaps.py --out fresh --jobs 8       # catches it up, then carries on
+make                                        # the sieve must know the new kind
+python3 pgaps.py --out fresh --status       # equidistant sits at 0
+python3 pgaps.py --out fresh --jobs 8       # warns, asks, then catches up
 ```
 
-The driver notices on its own. Catch-up rounds scan only the lagging sequence
-and merge only its file, so `gap.txt`, `lonely.txt` and `aloof.txt` are left
-byte-for-byte alone. About **2.3 days** from zero to the current frontier at
-the measured rate, and `frontier.txt` reads low until it finishes — that is
-deliberate, see [`../fresh/README.md`](../fresh/README.md).
+The driver notices on its own, says what it is about to do, and waits for a
+yes. Catch-up rounds scan only the lagging sequence and merge only its file,
+so `gap.txt`, `lonely.txt` and `aloof.txt` are left byte-for-byte alone; the
+other three roll back in when the scan reaches their frontier. About **2.3
+days** from zero at the measured rate. See
+[`../fresh/README.md`](../fresh/README.md) for the per-sequence
+`frontier.txt`.
 
 It is caught up from **zero, unseeded**, not from A058867's published terms.
 The point of `fresh/` is a record with no external dependencies, and a seeded

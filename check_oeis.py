@@ -177,36 +177,39 @@ def verify_rows(directory, kind):
     return problems
 
 
-def coverage(directory):
-    """How far each kind was scanned, when the run tracked that per kind.
+def frontiers(directory):
+    """Each sequence's own frontier, from frontier.txt.
 
-    A kind added to an existing run is caught up separately, so for a while
-    it is complete to a lower point than the rest. Comparing it against the
-    published sequence up to the run's frontier would then report every term
-    above its own bound as missing.
+    A sequence added to an existing run is caught up separately, so for a
+    while it is complete to a lower point than the rest. Checking it against
+    the published sequence up to the run's highest frontier would report every
+    term above its own bound as missing.
+
+    A legacy single-number frontier.txt is read the way pgaps.py reads it: it
+    applies to every sequence that has a records file, and a sequence with no
+    file was never scanned at all.
     """
-    cov = {}
-    path = os.path.join(directory, "coverage.txt")
-    if os.path.exists(path):
-        for line in open(path):
-            if line.startswith("#") or not line.strip():
-                continue
-            f = line.split()
-            if len(f) >= 2:
-                cov[f[0]] = float(f[1])
-        return cov
+    fronts = {}
+    path = os.path.join(directory, "frontier.txt")
+    if not os.path.exists(path):
+        return fronts
 
-    # A run from before coverage.txt was written has none. Infer it the same
-    # way pgaps.py does: a kind with no results file has never been scanned,
-    # whatever the frontier says.
-    fpath = os.path.join(directory, "frontier.txt")
-    if not os.path.exists(fpath):
-        return cov
-    front = float(open(fpath).read().split()[0])
-    for kind in SEQ:
-        cov[kind] = front if os.path.exists(
-            os.path.join(directory, f"{kind}.txt")) else 0.0
-    return cov
+    text = open(path).read()
+    head = text.split()
+    if head and head[0].isdigit():
+        legacy = float(head[0])
+        for kind in SEQ:
+            fronts[kind] = legacy if os.path.exists(
+                os.path.join(directory, f"{kind}.txt")) else 0.0
+        return fronts
+
+    for line in text.splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        f = line.split()
+        if len(f) >= 2:
+            fronts[f[0]] = float(f[1])
+    return fronts
 
 
 def ours(directory, kind):
@@ -354,19 +357,21 @@ def main():
         return 0
 
     forced = args.scanned is not None
-    cov = coverage(args.results)
-    frontier = os.path.join(args.results, "frontier.txt")
-    if args.scanned is None and os.path.exists(frontier):
-        args.scanned = float(open(frontier).read().strip())
-        print(f"  limit taken from frontier.txt: {args.scanned:.4e}")
-    elif args.scanned is None:
+    cov = frontiers(args.results)
+    if not forced and cov:
+        args.scanned = min(cov.values())
+        if len(set(cov.values())) == 1:
+            print(f"  limit taken from frontier.txt: {args.scanned:.4e}")
+    elif not forced:
         print("  no frontier.txt and no --scanned: comparing only as far as "
               "our own last term (weaker: cannot detect a missing tail)")
 
     if cov and len(set(cov.values())) > 1:
-        low = min(cov, key=cov.get)
-        print(f"  {low} is scanned only to {cov[low]:.4e}, below the "
-              f"frontier -- it is checked against its own bound")
+        print("  frontier.txt: the sequences are at different frontiers, so "
+              "each is checked against its own")
+        for kind in SEQ:
+            if kind in cov:
+                print(f"      {kind:<12} {cov[kind]:.4e}")
 
     rc = 0
     for kind, (aid, desc) in SEQ.items():

@@ -26,8 +26,7 @@ original single-threaded scan.
 | `aloof.txt` | record total span between *both* neighbours — [A096265](https://oeis.org/A096265) |
 | `equidistant.txt` | record distance among the *balanced* primes alone — [A058867](https://oeis.org/A058867) |
 | `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/TODO.md`](../oeis/TODO.md) |
-| `frontier.txt` | the point below which **every** sequence here is complete — see below |
-| `coverage.txt` | how far each sequence is scanned, which is not always the same point — see below |
+| `frontier.txt` | each sequence's own frontier — see below |
 
 Each results line is
 
@@ -71,36 +70,62 @@ So `frontier.txt` holds the highest point below which coverage is *provably
 contiguous* — the start of the lowest shard still running. The merged files
 are truncated to it, and the next round starts there.
 
-### Why there is a second file
+### One frontier per sequence
 
 Adding a sequence to a run that has already scanned a long way puts that one
-sequence at zero while the rest are at the frontier, so for a while a single
-number cannot describe the run. `coverage.txt` records how far each is
-actually scanned, and `pgaps.py` notices the gap on its own and runs
-**catch-up rounds** for the lagging sequence over the range the others have
-already covered — merging only that sequence, leaving the finished files
-untouched. `pgaps.py --out fresh --status` shows where each one stands.
+at zero while the rest stay where they are, so a single number stops being
+able to describe the run. `frontier.txt` therefore records a frontier **per
+sequence**:
 
-The two files are not redundant, and which is which matters:
+```
+# Each sequence's frontier: scanned contiguously from zero to
+# here. Equal in a settled run; a sequence added later sits
+# behind until the scan catches it up.
+gap 567491950838369
+lonely 567491950838369
+aloof 567491950838369
+equidistant 0
+```
 
-- `coverage.txt` is per sequence, and it is where the run **resumes** from —
-  the furthest any sequence has reached.
-- `frontier.txt` is the **minimum** across them: the point below which every
-  sequence here is complete. While a catch-up is pending it reads low, on
-  purpose. Understating the bound costs nothing; overstating it would put a
-  false completeness claim into an OEIS submission, which is the one thing
-  this scan must never do.
+They are equal in a settled run, and a number under its neighbours means
+exactly one thing: that sequence has not been scanned that far, so nothing
+about it may be claimed above its own line. Nothing has to be inferred from
+which files exist or how long the run has been going.
 
-Once a catch-up finishes the two agree again and stay agreed, because every
-round after it scans all four sequences together. Disjoint frontiers are a
-migration state, not a steady one.
+`pgaps.py --out fresh --status` prints them. When they diverge, a run **stops
+and says so** before spending hours re-scanning covered ground, and describes
+what it is about to do; `--catch-up` answers the question in advance.
+
+### How a lagging sequence catches up
+
+The scan resumes at the **lowest** frontier and collects every sequence that
+has reached it — at first, only the lagging one. Each round stops at the next
+frontier up, so when the scan arrives there, that sequence **rolls in** and is
+collected from then on:
+
+```
+scan from 0 ──────────────► 5.67e14 ──────────────►
+   collecting: equidistant │ collecting: all four
+```
+
+Rolling in on a round boundary is what makes it correct: a sequence is either
+collected across a whole round or not at all, so no round ever leaves one
+half-covered. With three distinct frontiers it walks up through them, adding a
+sequence at each.
+
+While that runs, the other sequences' files are not written at all — a
+catch-up round merges only what it collected, so `gap.txt`, `lonely.txt` and
+`aloof.txt` come out byte-for-byte identical.
+
+Disjoint frontiers are a migration state, not a steady one: once level, every
+later round scans all four together and they stay level.
 
 ## What is committed, and what is not
 
 Committed: the four merged record files, `balanced.txt` derived from them,
-and `frontier.txt` with `coverage.txt`. Together they are the complete,
-resumable state of the search — drop them into an empty directory, rerun the
-same command, and it picks up where it left off.
+and `frontier.txt`. Together they are the complete, resumable state of the
+search — drop them into an empty directory, rerun the same command, and it
+picks up where it left off.
 
 Not committed (see `.gitignore`):
 
