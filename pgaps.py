@@ -191,11 +191,11 @@ def derive_balanced(out):
     """
     rows = [r for r in read_records(os.path.join(out, "lonely.txt"))
             if r[5] and r[3] == r[4]]
+    # Column spec only, like every other data file. What this one IS belongs
+    # in fresh/README.md, not repeated at the top of the data.
     write_records(os.path.join(out, "balanced.txt"), rows,
                   "# balanced-lonely records: <n> <prime> <value> <gap_below> "
-                  "<gap_above> <prev_prime> <next_prime>\n"
-                  "# lonely.txt filtered to gap_below == gap_above; a subset "
-                  "of the lonely records, not a record sequence of its own\n")
+                  "<gap_above> <prev_prime> <next_prime>\n")
     return rows
 
 
