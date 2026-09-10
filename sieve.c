@@ -61,8 +61,10 @@ typedef uint64_t WORD;
 
 #if SIEVE_WORD_BITS == 64
 #define POPCOUNT(w) __builtin_popcountll(w)
+#define CTZ(w)      __builtin_ctzll(w)
 #else
 #define POPCOUNT(w) __builtin_popcount(w)
+#define CTZ(w)      __builtin_ctz(w)
 #endif
 
 /*
@@ -275,6 +277,11 @@ void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
 /** Slot index of a value known to be coprime to MODULUS. **/
 static inline unsigned long slot_of(unsigned long k) {
     return (k / MODULUS) * WHEEL_SLOTS + (unsigned long)dense_idx[k % MODULUS];
+}
+
+/** The value occupying slot s -- the exact inverse of slot_of(). **/
+static inline unsigned long value_of(unsigned long s) {
+    return (s / WHEEL_SLOTS) * MODULUS + (unsigned long)wheel_res[s % WHEEL_SLOTS];
 }
 
 /** Exact floor(sqrt(n)). **/
@@ -702,12 +709,11 @@ typedef struct {
 static volatile sig_atomic_t stop_requested = 0;
 static void on_signal(int sig) { (void)sig; stop_requested = 1; }
 
-/** Smallest wheel candidate >= v, with its block and slot. **/
-static unsigned long wheel_ceil(unsigned long v, unsigned long *blk, int *bi) {
+/** Smallest wheel candidate >= v. **/
+static unsigned long wheel_ceil(unsigned long v) {
     unsigned long b = v / MODULUS;
     int i = ceil_idx[v % MODULUS];
     if (i == WHEEL_SLOTS) { i = 0; ++b; }
-    *blk = b; *bi = i;
     return b * MODULUS + wheel_res[i];
 }
 
@@ -957,8 +963,7 @@ static int gap_search(unsigned long lo, unsigned long hi,
 
         base_set_ensure(&bs, isqrt_floor(seg_hi));
 
-        unsigned long blk; int bi;
-        unsigned long v_lo = wheel_ceil(seg_lo, &blk, &bi);
+        unsigned long v_lo = wheel_ceil(seg_lo);
         unsigned long v_hi = wheel_floor(seg_hi);
 
         if (v_lo <= seg_hi && v_hi >= v_lo) {
@@ -972,14 +977,38 @@ static int gap_search(unsigned long lo, unsigned long hi,
                            bs.p[i], v_lo, v_hi);
             }
 
-            unsigned long v = v_lo;
-            for (unsigned long s = s_lo; s <= s_hi; ++s) {
-                unsigned long w = s / BITS_PER_WORD - word_base;
-                if (((buf[w] >> (s % BITS_PER_WORD)) & 1) == 0) {
-                    gap_feed(&st, v);
+            /* Walk words, not slots. A marked bit is composite, so ~buf[]
+             * carries a 1 for each surviving candidate and CTZ steps straight
+             * from one to the next. The slot-at-a-time loop this replaces
+             * tested every candidate in turn -- at 1e13 about seven composites
+             * for each prime -- and rebuilt the value on every one of them;
+             * here only the primes reach value_of(). */
+            unsigned long w_lo = s_lo / BITS_PER_WORD;
+            unsigned long w_hi = s_hi / BITS_PER_WORD;
+            WORD all = (WORD)~(WORD)0;
+
+            for (unsigned long wi = w_lo; wi <= w_hi; ++wi) {
+                WORD bits = (WORD)~buf[wi - word_base];
+
+                /* The end words run past the range on both sides, and the
+                 * slots out there are unmarked, so clip them or they read as
+                 * primes. Same masking as popcount_range(), and the shift by
+                 * BITS_PER_WORD that would be undefined is likewise avoided. */
+                if (wi == w_lo) {
+                    bits &= (WORD)(all << (s_lo % BITS_PER_WORD));
                 }
-                if (++bi == WHEEL_SLOTS) { bi = 0; ++blk; }
-                v = blk * MODULUS + wheel_res[bi];
+                if (wi == w_hi) {
+                    unsigned long khi = s_hi % BITS_PER_WORD;
+                    if (khi + 1 != BITS_PER_WORD) {
+                        bits &= (WORD)(((WORD)1 << (khi + 1)) - 1);
+                    }
+                }
+
+                while (bits) {
+                    unsigned long s = wi * BITS_PER_WORD + (unsigned long)CTZ(bits);
+                    bits &= (WORD)(bits - 1);          /* clear lowest set bit */
+                    gap_feed(&st, value_of(s));
+                }
             }
         }
 
