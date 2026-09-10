@@ -280,7 +280,7 @@ def check_aloof_family(directory, refresh, rc):
     return rc
 
 
-def check_balanced(directory, rc):
+def check_balanced(directory, rc, fronts):
     """Check balanced.txt against lonely.txt, and against equidistant.txt.
 
     Two independent things can go wrong and each has its own check: the filter
@@ -288,6 +288,10 @@ def check_balanced(directory, rc):
     terms can come from), or a row could not be a balanced record at all
     (caught against equidistant.txt, which the sieve derives independently and
     which is itself diffed against A058867 above).
+
+    balanced.txt has no frontier of its own -- it is a filter of lonely.txt,
+    so it reaches wherever lonely does. The second check therefore spans two
+    sequences' frontiers, and while a catch-up is running they differ.
     """
     got, lonely = rows(directory, "balanced"), rows(directory, "lonely")
     if not lonely:
@@ -319,14 +323,27 @@ def check_balanced(directory, rc):
 
     super_ = [r[1] for r in rows(directory, BALANCED_SUPER)]
     if super_:
-        missing = [p for p in mine if p not in set(super_)]
+        # Only where BOTH sequences have been scanned. balanced.txt runs to
+        # the lonely frontier; equidistant.txt stops at its own, which sits
+        # lower until a catch-up finishes. A term in the band between them is
+        # not missing from equidistant.txt -- that ground is not scanned yet,
+        # and saying otherwise reports a migration state as a failure.
+        bound = min(fronts.get("lonely", float("inf")),
+                    fronts.get(BALANCED_SUPER, float("inf")))
+        checked = [p for p in mine if p <= bound]
+        ahead = len(mine) - len(checked)
+
+        missing = [p for p in checked if p not in set(super_)]
         if missing:
             rc = 1
             print(f"       {len(missing)} term(s) NOT in {BALANCED_SUPER}.txt, "
                   f"which must contain every one: {missing[:3]}")
         else:
-            print(f"       all {len(mine)} appear in {BALANCED_SUPER}.txt "
+            print(f"       all {len(checked)} appear in {BALANCED_SUPER}.txt "
                   f"({len(super_)} records), as they must")
+        if ahead:
+            print(f"       {ahead} not checked: above the {BALANCED_SUPER} "
+                  f"frontier {bound:.4e}, which has not reached them yet")
     return rc
 
 
@@ -417,7 +434,7 @@ def main():
                       f"(Miller-Rabin, independent of the sieve)")
 
     rc = check_aloof_family(args.results, args.refresh, rc)
-    rc = check_balanced(args.results, rc)
+    rc = check_balanced(args.results, rc, cov)
     return rc
 
 
