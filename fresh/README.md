@@ -7,7 +7,7 @@ python3 pgaps.py --jobs 8 --out fresh
 ```
 
 Unlike [`results/`](../results/README.md), this search was **not seeded**. It
-started at 0 with every threshold at zero and re-derived all three sequences
+started at 0 with every threshold at zero and re-derived all four sequences
 from the first term, so `gap.txt` begins at p=2 rather than at a published
 record. That makes the whole file a check on the scanner rather than just its
 tail: a seeded run can only be wrong about new terms, an unseeded one has to
@@ -24,8 +24,9 @@ original single-threaded scan.
 | `gap.txt` | record prime gaps — [A005250](https://oeis.org/A005250) / [A002386](https://oeis.org/A002386) |
 | `lonely.txt` | record distance to the *nearer* neighbour — [A023186](https://oeis.org/A023186) |
 | `aloof.txt` | record total span between *both* neighbours — [A096265](https://oeis.org/A096265) |
+| `equidistant.txt` | record distance among the *balanced* primes alone — [A058867](https://oeis.org/A058867) |
 | `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/TODO.md`](../oeis/TODO.md) |
-| `frontier.txt` | the resume point — see below |
+| `frontier.txt` | each sequence's own frontier — see below |
 
 Each results line is
 
@@ -38,6 +39,13 @@ self-contained proof: check that `prev`, `prime` and `next` are all prime and
 that nothing lies between them, and the record stands without rerunning the
 scan. `value` is whichever quantity that sequence maximises — `gap_above` for
 gaps, `min(below, above)` for lonely, `below + above` for aloof.
+
+`equidistant.txt` maximises the same quantity as `lonely.txt` but over a
+different population: only the primes whose two gaps are equal, ranked against
+each other. That makes it neither a filter of the lonely records nor derivable
+from them — `A058867(4) = 16787` enters on a distance of 24 that `lonely(9) =
+16033` had already reached with gaps (26, 24). It is a fourth running maximum
+in the sieve, not a view of the third.
 
 `balanced.txt` is the odd one out: it maximises nothing. It is `lonely.txt`
 filtered to `gap_below == gap_above` (and `prev != 0`, since p = 2 has no
@@ -60,15 +68,64 @@ promote a later, smaller value to "record" when the real one sits in the gap.
 
 So `frontier.txt` holds the highest point below which coverage is *provably
 contiguous* — the start of the lowest shard still running. The merged files
-are truncated to it, and the next round starts there. It is the only durable
-resume state, and it only ever moves forward.
+are truncated to it, and the next round starts there.
+
+### One frontier per sequence
+
+Adding a sequence to a run that has already scanned a long way puts that one
+at zero while the rest stay where they are, so a single number stops being
+able to describe the run. `frontier.txt` therefore records a frontier **per
+sequence**:
+
+```
+# Each sequence's frontier: scanned contiguously from zero to
+# here. Equal in a settled run; a sequence added later sits
+# behind until the scan catches it up.
+gap 567491950838369
+lonely 567491950838369
+aloof 567491950838369
+equidistant 0
+```
+
+They are equal in a settled run, and a number under its neighbours means
+exactly one thing: that sequence has not been scanned that far, so nothing
+about it may be claimed above its own line. Nothing has to be inferred from
+which files exist or how long the run has been going.
+
+`pgaps.py --out fresh --status` prints them. When they diverge, a run **stops
+and says so** before spending hours re-scanning covered ground, and describes
+what it is about to do; `--catch-up` answers the question in advance.
+
+### How a lagging sequence catches up
+
+The scan resumes at the **lowest** frontier and collects every sequence that
+has reached it — at first, only the lagging one. Each round stops at the next
+frontier up, so when the scan arrives there, that sequence **rolls in** and is
+collected from then on:
+
+```
+scan from 0 ──────────────► 5.67e14 ──────────────►
+   collecting: equidistant │ collecting: all four
+```
+
+Rolling in on a round boundary is what makes it correct: a sequence is either
+collected across a whole round or not at all, so no round ever leaves one
+half-covered. With three distinct frontiers it walks up through them, adding a
+sequence at each.
+
+While that runs, the other sequences' files are not written at all — a
+catch-up round merges only what it collected, so `gap.txt`, `lonely.txt` and
+`aloof.txt` come out byte-for-byte identical.
+
+Disjoint frontiers are a migration state, not a steady one: once level, every
+later round scans all four together and they stay level.
 
 ## What is committed, and what is not
 
-Committed: the three merged record files, `balanced.txt` derived from them,
+Committed: the four merged record files, `balanced.txt` derived from them,
 and `frontier.txt`. Together they are the complete, resumable state of the
 search — drop them into an empty directory, rerun the same command, and it
-picks up at the frontier.
+picks up where it left off.
 
 Not committed (see `.gitignore`):
 

@@ -86,6 +86,17 @@ FAMILIES = {
             "A122413": member("index of the upper prime (needs pi(p))"),
         },
     },
+    "equidistant": {
+        "records": "equidistant primes -- record distance among the BALANCED "
+                   "primes only",
+        "extent": ("A058867", 0),
+        "members": {
+            "A058867": member("the balanced prime", col=2,
+                              local="equidistant", needs_both=True),
+            "A058868": member("the distance to each neighbour", col=3,
+                              needs_both=True),
+        },
+    },
     "balanced": {
         "records": "balanced-lonely primes -- lonely records whose two "
                    "neighbours are equidistant",
@@ -384,10 +395,34 @@ def frontier_report(families, results, refresh):
     if not os.path.exists(fpath):
         print(f"\n  no {fpath}; skipping the frontier comparison")
         return
-    front = int(open(fpath).read().split()[0])
+    text = open(fpath).read()
+    head = text.split()
+    cov = {}
+    scanned = [f for f in families if "extent" in families[f]["info"]]
+    if head and head[0].isdigit():
+        # Legacy single-number frontier.txt: it applies to every sequence that
+        # has a records file; one with no file was never scanned at all.
+        front = int(head[0])
+        for fam in scanned:
+            cov[fam] = front if os.path.exists(
+                os.path.join(results, f"{fam}.txt")) else 0
+    else:
+        for line in text.splitlines():
+            if not line.startswith("#") and len(line.split()) >= 2:
+                cov[line.split()[0]] = int(line.split()[1])
+        front = max(cov.values()) if cov else 0
+
     heading("FRONTIER vs PUBLISHED")
-    print(f"\n  {results}/frontier.txt = {front:,}  ({front:.4e})\n")
-    print(f"  {'family':<8}{'ours':>6}   {'published to':<14}{'terms':>6}  "
+    if len(set(cov.values())) > 1:
+        print(f"\n  {results}/frontier.txt -- the sequences are at different "
+              f"frontiers, so each is measured against its own:")
+        for fam in scanned:
+            if fam in cov:
+                print(f"      {fam:<12} {cov[fam]:>22,}")
+    else:
+        print(f"\n  {results}/frontier.txt = {front:,}  ({front:.4e})")
+    print()
+    print(f"  {'family':<12}{'ours':>5}   {'published to':<14}{'terms':>6}  "
           f"{'via':<9} what is left")
     for fam, f in families.items():
         if "extent" not in f["info"]:
@@ -398,17 +433,22 @@ def frontier_report(families, results, refresh):
             continue
         extent, n_pub = pub[-1], len(pub) + off
         ours = len(f["rows"])
-        if front > extent:
+        # A kind still catching up is measured against its own bound, not the
+        # run's frontier, which it has not reached yet.
+        reach = cov.get(fam, front)
+        if reach > extent:
             new = ours - n_pub
             left = (f"PAST it -- {new} term(s) beyond publication  <-- SUBMITTABLE"
                     if new > 0 else "past it, but no term beyond publication yet")
         elif extent > ULONG_MAX:
             left = f"unreachable -- past our 2^64 ceiling, {ULONG_MAX:.3e}"
+        elif reach == 0:
+            left = f"not scanned yet -- catch-up will cover [0, {front:.4e})"
         else:
-            d = scan_days(front, extent)
+            d = scan_days(reach, extent)
             when = f", ~{d:.1f} days at the measured rate" if d is not None else ""
-            left = f"{extent / front:.1f}x to go{when}"
-        print(f"  {fam:<8}{ours:>6}   {extent:<14.4e}{n_pub:>6}  {aid:<9} {left}")
+            left = f"{extent / reach:.1f}x to go{when}"
+        print(f"  {fam:<12}{ours:>5}   {extent:<14.4e}{n_pub:>6}  {aid:<9} {left}")
 
 
 def main():

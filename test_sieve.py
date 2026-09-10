@@ -516,14 +516,44 @@ OEIS_A023186 = [2, 5, 23, 53, 211, 1847, 2179, 3967, 16033, 24281, 38501,
 OEIS_A096265 = [2, 3, 5, 7, 23, 53, 89, 113, 211, 1129, 1327, 2179, 2503,
                 5623, 9587, 14107, 19609, 19661, 31397, 31469, 38501, 58831,
                 155921, 360749, 370261, 396833, 1357201, 1561919]
+OEIS_A058867 = [5, 53, 211, 16787, 69623, 247141]
 
 GAP_LIMIT = 2000000
+
+# The same four sequences, complete to 1e7. A058867 is the reason this range
+# is worth the extra time: below 2e6 it agrees with A023186 on the only three
+# terms they share, so the range above is where the two sequences actually
+# diverge and a filter-of-lonely bug would still pass.
+OEIS_1E7 = {
+    "gap": [2, 3, 7, 23, 89, 113, 523, 887, 1129, 1327, 9551, 15683, 19609,
+            31397, 155921, 360653, 370261, 492113, 1349533, 1357201, 2010733,
+            4652353],
+    "lonely": [2, 5, 23, 53, 211, 1847, 2179, 3967, 16033, 24281, 38501,
+               58831, 203713, 206699, 413353, 1272749, 2198981, 5102953],
+    "aloof": [2, 3, 5, 7, 23, 53, 89, 113, 211, 1129, 1327, 2179, 2503, 5623,
+              9587, 14107, 19609, 19661, 31397, 31469, 38501, 58831, 155921,
+              360749, 370261, 396833, 1357201, 1561919, 4652353, 8917523],
+    "equidistant": [5, 53, 211, 16787, 69623, 247141, 3565979, 4911311],
+}
+OEIS_1E7_NAMES = {"gap": "A002386", "lonely": "A023186",
+                  "aloof": "A096265", "equidistant": "A058867"}
+GAP_LIMIT_SLOW = 10000000
+
+
+def load_pgaps():
+    """Import pgaps.py as a module, for testing its merge directly."""
+    import importlib.util
+    path = os.path.join(HERE, "pgaps.py")
+    spec = importlib.util.spec_from_file_location("_pgaps", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def read_results(outdir):
     """Read the per-kind results files and the checkpoint file."""
     records = {}
-    for kind in ("gap", "lonely", "aloof"):
+    for kind in ("gap", "lonely", "aloof", "equidistant"):
         rows = []
         path = os.path.join(outdir, f"{kind}.txt")
         if os.path.exists(path):
@@ -552,7 +582,7 @@ def run_gap_search(outdir, limit, extra=()):
 
 @test
 def test_gap_search_reproduces_oeis():
-    """--gaps reproduces A002386, A023186 and A096265 from scratch"""
+    """--gaps reproduces A002386, A023186, A096265 and A058867 from scratch"""
     with tempfile.TemporaryDirectory() as d:
         prefix = os.path.join(d, "g")
         run_gap_search(prefix, GAP_LIMIT)
@@ -560,7 +590,9 @@ def test_gap_search_reproduces_oeis():
 
         for kind, expected, name in (("gap", OEIS_A002386, "A002386"),
                                      ("lonely", OEIS_A023186, "A023186"),
-                                     ("aloof", OEIS_A096265, "A096265")):
+                                     ("aloof", OEIS_A096265, "A096265"),
+                                     ("equidistant", OEIS_A058867,
+                                      "A058867")):
             got = [r[1] for r in records[kind]]   # column 2 is the prime
             if got != expected:
                 for i, (a, b) in enumerate(zip(got, expected)):
@@ -571,6 +603,115 @@ def test_gap_search_reproduces_oeis():
                                  f"OEIS has {len(expected)} below {GAP_LIMIT}")
         if not checkpoints:
             raise SieveError("no CHECKPOINT line was written")
+
+
+@test
+def test_legacy_frontier_is_read_per_sequence():
+    """A single-number frontier.txt means: whoever has a file reached it"""
+    # The old format recorded one number for the run. It was written by a
+    # scan that collected exactly the kinds it knew about, so a kind with a
+    # records file reached it and a kind without one was never collected --
+    # which is the state a newly added kind is in.
+    pgaps = load_pgaps()
+    with tempfile.TemporaryDirectory() as d:
+        open(os.path.join(d, "frontier.txt"), "w").write("2000000\n")
+        for kind in ("gap", "lonely", "aloof"):
+            open(os.path.join(d, f"{kind}.txt"), "w").write("# records\n")
+        got = pgaps.read_frontiers(d)
+        want = {"gap": 2000000, "lonely": 2000000, "aloof": 2000000,
+                "equidistant": 0}
+        if got != want:
+            raise SieveError(f"legacy frontier read as {got}, expected {want}")
+
+    # No frontier.txt at all reads as zero, never as progress.txt: a serial
+    # position is not the same claim as a merged frontier.
+    with tempfile.TemporaryDirectory() as d:
+        open(os.path.join(d, "gap.txt"), "w").write("# records\n")
+        open(os.path.join(d, "progress.txt"), "w").write(
+            "CHECKPOINT 999983 999979 78498 1.0\n")
+        got = pgaps.read_frontiers(d)
+        if any(got.values()):
+            raise SieveError(f"a directory with no frontier.txt read as {got}")
+
+
+@test
+def test_catch_up_rolls_each_sequence_in_at_its_own_frontier():
+    """Rounds stop at the next frontier, so a sequence rolls in on a boundary"""
+    pgaps = load_pgaps()
+
+    class Args:
+        lo, hi = 0, None
+
+    # Three distinct frontiers: the scan should walk up through them, adding
+    # one sequence at each, rather than treating it as one catch-up.
+    fronts = {"gap": 0, "lonely": 50, "aloof": 100, "equidistant": 100}
+    steps = []
+    for _ in range(4):
+        kinds, a, ceiling = pgaps.plan_round(fronts, Args(), 1)
+        steps.append((a, ceiling, kinds))
+        if ceiling is None:
+            break
+        for k in kinds:                     # pretend the round reached it
+            fronts[k] = ceiling
+
+    want = [(0, 50, ("gap",)),
+            (50, 100, ("gap", "lonely")),
+            (100, None, ("gap", "lonely", "aloof", "equidistant"))]
+    if steps != want:
+        raise SieveError(f"roll-in plan was {steps},\n           expected {want}")
+
+
+@test
+def test_merge_refuses_a_sieve_that_skips_a_kind():
+    """merge() aborts rather than writing an empty file for a missing kind"""
+    # The migration hazard: adding a record kind to a run whose ./sieve
+    # predates it. The workers write no file, so the merge would see no
+    # candidates, write an empty records file and mark it fully covered.
+    pgaps = load_pgaps()
+    with tempfile.TemporaryDirectory() as d:
+        os.makedirs(os.path.join(d, "shards", "000"))
+        for kind in ("gap", "lonely", "aloof"):        # note: no equidistant
+            open(os.path.join(d, "shards", "000", f"{kind}.txt"), "w").write(
+                f"# {kind} candidates\n")
+        try:
+            pgaps.merge(d, None, {}, kinds=("equidistant",))
+        except SystemExit as e:
+            if "does not know that record kind" not in str(e):
+                raise SieveError(f"wrong message: {e}")
+        else:
+            raise SieveError("merge() accepted a sieve that emitted no "
+                             "equidistant.txt")
+        if os.path.exists(os.path.join(d, "equidistant.txt")):
+            raise SieveError("merge() wrote an equidistant.txt anyway")
+
+
+@test
+def test_gap_search_reproduces_oeis_to_ten_million():
+    """--gaps reproduces all four sequences from zero to 1e7"""
+    # 2e6 is not far enough to be convincing about A058867: below it, the
+    # only balanced primes that set a record are the three A023186 also has,
+    # so a "filter the lonely records" implementation would pass. 3565979 and
+    # 4911311 are the first two terms where the two sequences part company.
+    with tempfile.TemporaryDirectory() as d:
+        prefix = os.path.join(d, "g")
+        run_gap_search(prefix, GAP_LIMIT_SLOW)
+        records, _ = read_results(prefix)
+
+        for kind, expected in OEIS_1E7.items():
+            name = OEIS_1E7_NAMES[kind]
+            got = [r[1] for r in records[kind]]
+            if got == expected:
+                continue
+            for i, (x, y) in enumerate(zip(got, expected)):
+                if x != y:
+                    raise SieveError(f"{kind} ({name}) differs at term "
+                                     f"{i+1}: got {x}, OEIS has {y}")
+            raise SieveError(f"{kind} ({name}): found {len(got)} terms, "
+                             f"OEIS has {len(expected)} below "
+                             f"{GAP_LIMIT_SLOW}")
+
+
+test_gap_search_reproduces_oeis_to_ten_million.slow = True
 
 
 @test
@@ -588,7 +729,7 @@ def test_gap_search_resume_is_lossless():
 
         a, _ = read_results(whole)
         b, _ = read_results(staged)
-        for kind in ("gap", "lonely", "aloof"):
+        for kind in ("gap", "lonely", "aloof", "equidistant"):
             if a[kind] != b[kind]:
                 raise SieveError(f"{kind}: resumed run differs from one pass\n"
                                  f"  one pass: {a[kind][:6]}\n"
@@ -735,7 +876,7 @@ def test_parallel_merge_matches_serial():
 
         a, _ = read_results(serial)
         b, _ = read_results(par)
-        for kind in ("gap", "lonely", "aloof"):
+        for kind in ("gap", "lonely", "aloof", "equidistant"):
             sa = [r[1:] for r in a[kind]]
             sb = [r[1:] for r in b[kind]]
             if sa != sb:

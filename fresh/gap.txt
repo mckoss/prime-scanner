@@ -1,5 +1,4 @@
 # gap records: <n> <prime> <value> <gap_below> <gap_above> <prev_prime> <next_prime>
-# merged from 241 candidates across 8 workers
 1 2 1 0 1 0 3
 2 3 2 1 2 2 5
 3 7 4 2 4 5 11
