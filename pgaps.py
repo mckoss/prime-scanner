@@ -406,6 +406,28 @@ def wait_key(fd, timeout):
             return os.read(fd, 1).decode("utf-8", "replace")
 
 
+def scan_progress(out, procs, ranges):
+    """(workers finished, numbers covered, numbers in the round).
+
+    Covered counts each shard only as far as its last checkpoint, so it lags
+    the truth by up to one checkpoint interval -- see the note in monitor().
+    """
+    for i, p, _ in procs:
+        if p.poll() == 0 and not is_done(out, i):
+            mark_done(out, i)
+    done = sum(1 for _, p, _ in procs if p.poll() is not None)
+
+    scanned = 0
+    for i, (a, b) in enumerate(ranges):
+        if is_done(out, i):
+            scanned += b - a
+            continue
+        pos = position_of(out, i)
+        if pos:
+            scanned += max(0, min(pos, b) - a)
+    return done, scanned, ranges[-1][1] - ranges[0][0]
+
+
 def monitor(out, procs, ranges, interval=15):
     """Report progress until the workers finish; space pauses and resumes.
 
@@ -427,13 +449,23 @@ def monitor(out, procs, ranges, interval=15):
 
     try:
         with cbreak_stdin() as fd:
+            if fd is not None:
+                print("  press SPACE to pause or resume", flush=True)
+
             while any(p.poll() is None for _, p, _ in procs):
                 if wait_key(fd, interval) == " ":
                     paused = not paused
                     if paused:
                         signal_all(signal.SIGSTOP)
                         paused_since = time.time()
-                        print("  paused -- space to resume", flush=True)
+                        # Where a resume would pick up, not where the workers
+                        # happen to sit: the frontier is the contiguous point,
+                        # and the shards ahead of it are the ones with holes.
+                        _, scanned, total = scan_progress(out, procs, ranges)
+                        print(f"  paused at {safe_frontier(out, ranges):,} "
+                              f"-- {100.0 * scanned / total:.1f}% of "
+                              f"[{ranges[0][0]:,}, {ranges[-1][1]:,})"
+                              f" -- SPACE to resume", flush=True)
                     else:
                         signal_all(signal.SIGCONT)
                         paused_total += time.time() - paused_since
@@ -442,20 +474,7 @@ def monitor(out, procs, ranges, interval=15):
                 if paused:
                     continue
 
-                for i, p, _ in procs:
-                    rc = p.poll()
-                    if rc == 0 and not is_done(out, i):
-                        mark_done(out, i)
-                done = sum(1 for _, p, _ in procs if p.poll() is not None)
-                scanned = 0
-                for i, (a, b) in enumerate(ranges):
-                    if is_done(out, i):
-                        scanned += b - a
-                        continue
-                    pos = position_of(out, i)
-                    if pos:
-                        scanned += max(0, min(pos, b) - a)
-                total = ranges[-1][1] - ranges[0][0]
+                done, scanned, total = scan_progress(out, procs, ranges)
                 el = time.time() - started - paused_total
                 print(f"  [{el:7.0f}s] {done}/{len(procs)} workers done  "
                       f"{100.0 * scanned / total:5.1f}% of range  "
