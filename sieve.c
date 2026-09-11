@@ -434,6 +434,72 @@ static void mark_prime(WORD *buf, unsigned long word_base, unsigned long last_wo
     }
 }
 
+/*
+ * SPARSE-PRIME CURSOR.
+ *
+ * Consecutive multiples of p that land on wheel slots sit exactly p slots
+ * apart, so a prime larger than one segment's slot count marks at most once
+ * per segment. That is not a minority case: at 5.7e14 it is 81% of the
+ * sieving primes, and at 1e16 it is 95%.
+ *
+ * mark_prime() rediscovers where such a prime lands every single segment --
+ * hi/p, lo/p, c0/MODULUS, then two more divisions inside slot_of() for each
+ * mark placed. When there is only one mark to place, that search *is* the
+ * cost, and it is paid once per prime per segment whether the prime hits the
+ * segment or not.
+ *
+ * A cursor remembers the answer instead. Segments are contiguous in slot
+ * space (seg_lo = seg_hi + 1 keeps them so), so a multiple that overshoots
+ * one segment is exactly the one the next segment wants, and advancing costs
+ * no division at all -- it reuses the same identity the pattern build relies
+ * on, with p = P*210 + wheel_res[a] and c = C*210 + wheel_res[b]:
+ *
+ *     slot(p*c) = (48*p)*C + P*(48*rb) + T[a][b]
+ */
+typedef struct {
+    unsigned long next;      /* absolute slot of the next multiple to mark */
+    unsigned long p_step;    /* 48*p: slot advance per whole block of c */
+    unsigned long C;         /* block of the cofactor c */
+    uint32_t      P;         /* p / MODULUS */
+    uint8_t       a;         /* dense_idx[p % MODULUS] */
+    uint8_t       b;         /* wheel slot of the cofactor c */
+} cursor;
+
+static inline void cursor_place(cursor *q) {
+    q->next = q->p_step * q->C
+            + (unsigned long)q->P * (unsigned long)wheel_scaled[q->b]
+            + (unsigned long)wheel_prod[q->a][q->b];
+}
+
+static inline void cursor_advance(cursor *q) {
+    if (++q->b == WHEEL_SLOTS) { q->b = 0; ++q->C; }
+    cursor_place(q);
+}
+
+/** Aim a cursor at the first multiple of p at or above lo that p owns. **/
+static void cursor_init(cursor *q, unsigned long p, unsigned long lo) {
+    q->p_step = p * WHEEL_SLOTS;
+    q->P = (uint32_t)(p / MODULUS);
+    q->a = (uint8_t)dense_idx[p % MODULUS];
+
+    /* Never below p itself: a smaller multiple carries a factor under p and
+     * was marked when that prime was handled. */
+    unsigned long c0 = p;
+    if (lo > 0) {
+        /* ceil(lo / p), written so (lo + p - 1) cannot wrap near ULONG_MAX. */
+        unsigned long need = lo / p;
+        if (need * p < lo) ++need;
+        if (need > c0) c0 = need;
+    }
+
+    unsigned long blk = c0 / MODULUS;
+    int bi = ceil_idx[c0 % MODULUS];
+    if (bi == WHEEL_SLOTS) { bi = 0; ++blk; }
+    q->C = blk;
+    q->b = (uint8_t)bi;
+    cursor_place(q);
+}
+
 /** Sieve [0, m] into a fresh buffer, discovering its own primes as it goes. **/
 static WORD *self_sieve(unsigned long m, size_t *words_out) {
     unsigned long num_blocks = (m / MODULUS) + 1;
@@ -687,7 +753,13 @@ unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
  * of writing its known terms into the results file first.
  * ===================================================================== */
 
-#define SEG_WORDS  65536u          /* segment bitmap: 512 KB at 64-bit words */
+/* Segment bitmap: 512 KB at 64-bit words. Overridable so the tests can
+ * shrink it: a small segment pushes the dense/sparse split down to tiny
+ * primes, which is the only way to exercise the cursors without scanning
+ * past 1.76e13 (= seg_slots^2) first. */
+#ifndef SEG_WORDS
+#define SEG_WORDS  65536u
+#endif
 
 typedef struct {
     FILE *out;
@@ -957,11 +1029,39 @@ static int gap_search(unsigned long lo, unsigned long hi,
     double next_ck = ck_secs, t_mark = 0.0;
     unsigned long pos_at_mark = pos;
 
+    /* Primes past one segment's worth of slots mark at most once per segment
+     * and get cursors; the rest keep mark_prime(), whose pattern build has
+     * enough marks to amortise. */
+    unsigned long seg_slots = span / MODULUS * WHEEL_SLOTS;
+    cursor *cur = NULL;
+    size_t n_cur = 0, dense = 0;
+
     unsigned long seg_lo = (pos < 11) ? 11 : pos;
     while (seg_lo <= hi && !stop_requested) {
         unsigned long seg_hi = (hi - seg_lo < span) ? hi : seg_lo + span;
 
         base_set_ensure(&bs, isqrt_floor(seg_hi));
+
+        /* base_set_ensure() rebuilds bs.p from scratch when it grows, but the
+         * primes it already held keep their positions, so the cursors built
+         * for them stay valid and only the new tail needs aiming. If the
+         * dense/sparse split itself moves, every index shifts and they all go. */
+        size_t split = dense;
+        while (split < bs.n && bs.p[split] <= seg_slots) ++split;
+        if (split != dense) { dense = split; n_cur = 0; }
+
+        if (bs.n - dense > n_cur) {
+            cursor *grown = realloc(cur, (bs.n - dense) * sizeof *cur);
+            if (grown == NULL) {
+                fprintf(stderr, "out of memory: %zu cursors\n", bs.n - dense);
+                exit(1);
+            }
+            cur = grown;
+            for (size_t i = n_cur; i < bs.n - dense; ++i) {
+                cursor_init(&cur[i], bs.p[dense + i], seg_lo);
+            }
+            n_cur = bs.n - dense;
+        }
 
         unsigned long v_lo = wheel_ceil(seg_lo);
         unsigned long v_hi = wheel_floor(seg_hi);
@@ -972,9 +1072,19 @@ static int gap_search(unsigned long lo, unsigned long hi,
             size_t nwords = (size_t)(s_hi / BITS_PER_WORD - word_base) + 2;
 
             memset(buf, 0, nwords * sizeof(WORD));
-            for (size_t i = 0; i < bs.n; ++i) {
+            for (size_t i = 0; i < dense; ++i) {
                 mark_prime(buf, word_base, (unsigned long)nwords - 1,
                            bs.p[i], v_lo, v_hi);
+            }
+            for (size_t i = 0; i < n_cur; ++i) {
+                cursor *q = &cur[i];
+                while (q->next <= s_hi) {
+                    if (q->next >= s_lo) {
+                        buf[q->next / BITS_PER_WORD - word_base]
+                            |= (WORD)1 << (q->next % BITS_PER_WORD);
+                    }
+                    cursor_advance(q);
+                }
             }
 
             /* Walk words, not slots. A marked bit is composite, so ~buf[]
@@ -1041,6 +1151,7 @@ static int gap_search(unsigned long lo, unsigned long hi,
 
     free(buf);
     free(bs.p);
+    free(cur);
     fclose(st.gap.out);
     fclose(st.lonely.out);
     fclose(st.aloof.out);
