@@ -129,8 +129,17 @@ def write_frontiers(out, fronts):
 def est_seconds(lo, hi, jobs):
     """Rough wall time to scan [lo, hi) on `jobs` workers.
 
-    RATE_POINTS are per-worker; 0.549 is the measured per-worker efficiency at
-    8 workers. Only used to tell the user how long a catch-up will take.
+    Only used to tell the user how long a catch-up will take.
+
+    RATE_POINTS already describe a worker running alongside seven others, so
+    contention is in the rate and dividing by `jobs` is the whole of it. This
+    used to divide by jobs * 0.549 as well, which double-counted contention
+    and made every estimate about 1.8x too long -- the source of the "47
+    years to 1e18" line that was quoted in the README.
+
+    Fewer than 8 jobs leaves each worker somewhat faster than the table says,
+    so the estimate is conservative there; more than 8 oversubscribes an
+    8-performance-core machine and it is optimistic.
     """
     if hi <= lo:
         return 0.0
@@ -139,7 +148,7 @@ def est_seconds(lo, hi, jobs):
         y = max(lo, 1e6) * (hi / max(lo, 1e6)) ** (i / n)
         tot += (y - x) / scan_rate((x + y) / 2)
         x = y
-    return tot / max(jobs * 0.549, 1e-9)
+    return tot / max(jobs, 1e-9)
 
 
 def plan_round(fronts, args, jobs):
@@ -271,10 +280,26 @@ def shard_dir(out, i):
     return os.path.join(out, "shards", f"{i:03d}")
 
 
-# Measured scan rate (log10 x -> numbers/sec) on an M1 Max. Used only to
-# balance the shards; being a little off costs load balance, not correctness.
-RATE_POINTS = [(12, 1.071e9), (13, 9.643e8), (14, 7.463e8),
-               (15, 5.168e8), (16, 3.256e8)]
+# Measured scan rate (log10 x -> numbers/sec per worker) on an M1 Max.
+#
+# These are what ONE worker achieves while EIGHT are running, not what a
+# worker reaches alone, so every consumer here multiplies by jobs and none
+# applies a separate efficiency factor. Measured 2026-09-10 on an otherwise
+# idle machine: 8 workers on disjoint 1.2e11 windows per decade, rate from a
+# least-squares fit over the middle checkpoints -- dropping the first, which
+# carries the sieving-prime build, and the last, which lands an arbitrarily
+# short interval after it when the worker is signalled. Spread across the
+# eight was under 2% from 1e13 up.
+#
+# Cross-check: this curve puts 2.58e14 at 1.110e9, against 1.117e9 observed
+# on the live catch-up at that height.
+#
+# Re-measure after anything that touches the segment loop. The previous
+# values predated the CTZ extraction and the sparse-prime cursors and had
+# gone optimistic by 1.5-2x, worse at the top, because the cursors changed
+# the SHAPE of the decay and not merely its level.
+RATE_POINTS = [(12, 1.757e9), (13, 1.449e9), (14, 1.205e9),
+               (15, 9.868e8), (16, 6.428e8), (17, 3.183e8)]
 
 
 def scan_rate(x):
