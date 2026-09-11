@@ -23,11 +23,15 @@ Usage:
 """
 
 import argparse
+import contextlib
 import os
+import select
 import signal
 import subprocess
 import sys
+import termios
 import time
+import tty
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(HERE, "sieve")
@@ -367,31 +371,101 @@ def position_of(out, i):
     return int(last[2]) if last else None
 
 
-def monitor(out, procs, ranges, interval=15):
-    started = time.time()
+@contextlib.contextmanager
+def cbreak_stdin():
+    """Deliver single keypresses without waiting for Enter.
+
+    Yields None when stdin is not a terminal -- under nohup, a pipe or a
+    cron job there is nothing to put into cbreak, and the scan still has to
+    run. The old terminal settings are restored on every exit path, including
+    Ctrl-C, or the shell is left with echo off.
+    """
+    if not sys.stdin.isatty():
+        yield None
+        return
+    fd = sys.stdin.fileno()
+    saved = termios.tcgetattr(fd)
     try:
-        while any(p.poll() is None for _, p, _ in procs):
-            time.sleep(interval)
-            for i, p, _ in procs:
-                rc = p.poll()
-                if rc == 0 and not is_done(out, i):
-                    mark_done(out, i)
-            done = sum(1 for _, p, _ in procs if p.poll() is not None)
-            scanned = 0
-            for i, (a, b) in enumerate(ranges):
-                if is_done(out, i):
-                    scanned += b - a
+        tty.setcbreak(fd)
+        yield fd
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+
+
+def wait_key(fd, timeout):
+    """The next keypress, or None if `timeout` seconds pass without one."""
+    if fd is None:
+        time.sleep(timeout)
+        return None
+    end = time.time() + timeout
+    while True:
+        left = end - time.time()
+        if left <= 0:
+            return None
+        if select.select([fd], [], [], left)[0]:
+            return os.read(fd, 1).decode("utf-8", "replace")
+
+
+def monitor(out, procs, ranges, interval=15):
+    """Report progress until the workers finish; space pauses and resumes.
+
+    SIGSTOP is safe for these workers: they time themselves with clock(), so
+    a stopped worker's checkpoint clock does not advance and nothing is
+    re-scanned on resume. Paused time is kept out of the rate below for the
+    same reason -- it is not time the scan spent working.
+    """
+    started = time.time()
+    paused, paused_since, paused_total = False, 0.0, 0.0
+
+    def signal_all(sig):
+        for _, p, _ in procs:
+            if p.poll() is None:
+                try:
+                    p.send_signal(sig)
+                except ProcessLookupError:
+                    pass
+
+    try:
+        with cbreak_stdin() as fd:
+            while any(p.poll() is None for _, p, _ in procs):
+                if wait_key(fd, interval) == " ":
+                    paused = not paused
+                    if paused:
+                        signal_all(signal.SIGSTOP)
+                        paused_since = time.time()
+                        print("  paused -- space to resume", flush=True)
+                    else:
+                        signal_all(signal.SIGCONT)
+                        paused_total += time.time() - paused_since
+                        print("  resumed", flush=True)
                     continue
-                pos = position_of(out, i)
-                if pos:
-                    scanned += max(0, min(pos, b) - a)
-            total = ranges[-1][1] - ranges[0][0]
-            el = time.time() - started
-            print(f"  [{el:7.0f}s] {done}/{len(procs)} workers done  "
-                  f"{100.0 * scanned / total:5.1f}% of range  "
-                  f"{scanned / max(el, 1e-9):.2e} nums/s aggregate", flush=True)
+                if paused:
+                    continue
+
+                for i, p, _ in procs:
+                    rc = p.poll()
+                    if rc == 0 and not is_done(out, i):
+                        mark_done(out, i)
+                done = sum(1 for _, p, _ in procs if p.poll() is not None)
+                scanned = 0
+                for i, (a, b) in enumerate(ranges):
+                    if is_done(out, i):
+                        scanned += b - a
+                        continue
+                    pos = position_of(out, i)
+                    if pos:
+                        scanned += max(0, min(pos, b) - a)
+                total = ranges[-1][1] - ranges[0][0]
+                el = time.time() - started - paused_total
+                print(f"  [{el:7.0f}s] {done}/{len(procs)} workers done  "
+                      f"{100.0 * scanned / total:5.1f}% of range  "
+                      f"{scanned / max(el, 1e-9):.2e} nums/s aggregate", flush=True)
     except KeyboardInterrupt:
         print("\n  interrupted -- signalling workers to checkpoint", flush=True)
+        # A stopped worker cannot act on SIGTERM, so it would never reach its
+        # checkpoint and kill_workers() would fall through to SIGKILL.
+        if paused:
+            signal_all(signal.SIGCONT)
         kill_workers(procs)
         return False
     return True

@@ -19,7 +19,7 @@ LDLIBS := -lm
 BIN := sieve
 REF := reference/mod30
 
-.PHONY: all test test-slow test-widths bench reference clean pause resume
+.PHONY: all test test-slow test-widths bench reference clean
 
 all: $(BIN)
 
@@ -54,26 +54,3 @@ bench: $(BIN) $(REF)
 
 clean:
 	rm -f $(BIN) $(REF) sieve-w8 sieve-w16 sieve-w32 sieve-w64
-
-# Freeze and thaw a scan in place, without losing work.
-#
-# SIGSTOP is safe here because a worker times itself with clock(), which counts
-# CPU time: a stopped worker's clock does not advance, so its checkpoint
-# timings stay honest and nothing has to be re-scanned on resume. The driver's
-# own progress line divides by WALL time, so it reports a sagging rate while
-# paused -- cosmetic, and it recovers once the round ends.
-#
-# Workers are matched by process NAME. `pgrep -f <path>` would also match the
-# shell running this recipe, whose command line contains that same path, and
-# stopping that shell would hang make itself.
-WORKERS = pgrep -x $(BIN)
-
-pause:
-	@pids=$$($(WORKERS)) || { echo "no $(BIN) workers running"; exit 1; }; \
-	kill -STOP $$pids && \
-	echo "paused $$(echo $$pids | wc -w | tr -d ' ') worker(s) -- 'make resume' to continue"
-
-resume:
-	@pids=$$($(WORKERS)) || { echo "no $(BIN) workers running"; exit 1; }; \
-	kill -CONT $$pids && \
-	echo "resumed $$(echo $$pids | wc -w | tr -d ' ') worker(s)"
