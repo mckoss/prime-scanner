@@ -431,6 +431,45 @@ def wait_key(fd, timeout):
             return os.read(fd, 1).decode("utf-8", "replace")
 
 
+def power_source():
+    """'ac', 'battery', or None when it cannot be determined."""
+    if sys.platform != "darwin":
+        return None
+    try:
+        out = subprocess.run(["pmset", "-g", "batt"], capture_output=True,
+                             text=True, timeout=5).stdout
+    except Exception:
+        return None
+    if "AC Power" in out:
+        return "ac"
+    if "Battery Power" in out:
+        return "battery"
+    return None
+
+
+def hold_awake():
+    """Stop the machine idle-sleeping for as long as this driver runs.
+
+    A pegged CPU does not prevent sleep on macOS -- only a power assertion
+    does, and nothing here took one. On 2026-09-10 a scan started at 23:06,
+    the machine idle-slept at 23:10 on battery, and nine hours produced
+    thirteen minutes of work: the workers time themselves with clock(), so
+    they resumed none the wiser and only their CPU total gave it away.
+
+    `caffeinate -w` ties the assertion to this process, so it lifts when the
+    driver exits however it exits -- including SIGKILL, which no handler here
+    would survive. Returns the child so the caller can mention it, or None
+    where there is nothing to do.
+    """
+    if sys.platform != "darwin":
+        return None
+    try:
+        return subprocess.Popen(["caffeinate", "-i", "-m", "-w",
+                                 str(os.getpid())])
+    except Exception:
+        return None            # no caffeinate: not worth failing the scan over
+
+
 def scan_progress(out, procs, ranges):
     """(workers finished, numbers covered, numbers in the round).
 
@@ -716,6 +755,17 @@ def main():
         for kind, (n, k, best) in summary.items():
             print(f"    {kind:<12} {n:>5} candidates -> {k:>3} records   best {best}")
         return 0
+
+    # Past here the run actually scans, which is the only case that needs the
+    # machine awake for hours. --status and --merge-only returned above.
+    if hold_awake() is not None:
+        print("  holding the machine awake (caffeinate) for as long as this runs")
+    if power_source() == "battery":
+        # Staying awake on battery is the other way to lose a night: eight
+        # workers outrun the charge in an hour or two, so it only changes how
+        # the run dies.
+        print("  !! ON BATTERY -- 8 workers will flatten it in under two hours.\n"
+              "     Plug in: asleep or dead, neither makes progress.", flush=True)
 
     # An unfinished round takes precedence: resume it before advancing.
     resume = None
