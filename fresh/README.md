@@ -189,7 +189,7 @@ real result — 63 terms rederived from zero, agreeing exactly — but it is
 verification, not discovery, and the earlier claim of eight new terms was
 wrong. `check_oeis.py` now compares against the family, so this cannot recur.
 
-The genuine aloof frontier is 1.693e15, about 6.7 days from here — which is
+The genuine aloof frontier is 1.693e15, about 1.7 days from here — which is
 also where the gap checkpoints run out. That one point is now the milestone for
 both.
 
@@ -244,17 +244,26 @@ to sqrt(hi), 8 bytes each:
 | 2^64 | 1.9e8 | 1.5 GB | 11.5 GB |
 
 The binding constraint is time. Integrating the measured rate curve from the
-current frontier, at the 8-worker throughput actually observed here:
+5.700e14 frontier, at the 8-worker throughput actually observed here:
 
 | target | added time |
 |--------|-----------|
-| 9.41e14 — last published A023186 term | +2.6 days |
-| 1.19e15 — gap(62) | +3.9 days |
-| 1.69e15 — gap(64) | +6.7 days |
-| 1e16 | +66 days |
-| 4.38e16 — gap(65) | +1.1 years |
-| 1e18 | ~47 years |
-| 2^64 | ~1500 years |
+| 9.41e14 — last published A023186 term | +13 hours |
+| 1.19e15 — gap(62) | +22 hours |
+| 1.69e15 — gap(64) | +1.7 days |
+| 1e16 | +18 days |
+| 4.38e16 — gap(65) | +120 days |
+| 1e17 | +0.96 years |
+| 1e18 | +19 years |
+| 2^64 | +865 years |
+
+From `pgaps.py`'s `RATE_POINTS`, re-measured 2026-09-10 against the current
+binary. An earlier version of this table ran 3-4x longer, for two compounding
+reasons: the segment loop has since gained CTZ prime extraction and
+per-prime cursors, together worth 1.98x at this frontier, and `est_seconds()`
+was applying an 8-worker efficiency factor to rates that already had
+contention measured into them, inflating every figure by a further 1.8x.
+Re-measure after anything that touches the segment loop.
 
 ## Extending, not just validating
 
@@ -362,15 +371,15 @@ One caution against reading too much into the shape of the data: merit
 signature of a hole, but it is not — those three ranks carry verification dates
 like the rest. Unusually high-merit gaps are simply rare and clustered.
 
-So **1.7e15 is the meaningful milestone**, not 9.41e14: about a week from the
-current frontier, it collects the last three gap checkpoints available for a
-very long way, while extending A023186 and A096265 past everything published.
-Beyond it the scan runs 26x — call it a year — with no external check at all
-until 4.38e16.
+So **1.7e15 is the meaningful milestone**, not 9.41e14: under two days from
+the current frontier, it collects the last three gap checkpoints available for
+a very long way, while extending A023186 and A096265 past everything
+published. Beyond it the scan runs 26x further in magnitude — about four
+months — with no external check at all until 4.38e16.
 
-At the recent cadence of aloof records (~4 per decade of magnitude) that week
-should also yield two or three new A096265 terms and one or two new A023186
-terms.
+At the recent cadence of aloof records (~4 per decade of magnitude) those two
+days should also yield two or three new A096265 terms and one or two new
+A023186 terms.
 
 Nothing needs to be passed to the running scan to do this: it is open-ended
 already and will simply keep going. Adding `--to` would only make it stop.
