@@ -35,9 +35,25 @@ started from, using **2.2x less memory** than either.
 Every number in this file and in `reference/README.md` was measured on:
 
 - **Apple M1 Max** (MacBookPro18,2), 10 cores (8 performance + 2 efficiency)
-- 64 GB RAM, 64 KB L1d, 4 MB L2
+- 64 GB RAM; per **performance** core 128 KB L1d, and 12 MB L2 shared by
+  each cluster of four
 - macOS 26.5.2 (arm64), Apple clang 21.0.0
 - `-O3 -march=native -flto -funroll-loops`
+
+Those cache figures are easy to get wrong, and every number here was measured
+on the performance cores. `sysctl hw.l1dcachesize` and `hw.cachesize` report
+the **efficiency** cores' 64 KB / 4 MB on Apple silicon; the performance
+cores are under `hw.perflevel0.*`:
+
+```
+hw.l1dcachesize             65536       <- efficiency core
+hw.perflevel0.l1dcachesize  131072      <- performance core, 2x
+hw.perflevel0.l2cachesize   12582912    <- 12 MB, 3x the generic figure
+hw.perflevel0.cpusperl2     4
+```
+
+With eight workers running, two clusters of four share 12 MB apiece, so about
+3 MB of L2 backs each worker's 512 KB segment.
 
 The L2 size matters for one of the findings below. The original 2021 analysis
 was run on an Intel i7-8700K @ 3.7GHz, and several conclusions differ between
@@ -204,8 +220,8 @@ Two 2021 conclusions hold; one has inverted.
 - **Still true:** dense packing loses to sparse, in both pairs.
 - **Inverted:** the byte-map is now the *fastest* naive algorithm (0.378 ms)
   where it was the *slowest* in 2021 (0.814 ms). A 1 MB byte buffer sits
-  comfortably inside this machine's 4 MB L2, so the memory that bitmaps save no
-  longer pays for the bit twiddling. This is the single largest change.
+  comfortably inside this machine's 12 MB L2, so the memory that bitmaps save
+  no longer pays for the bit twiddling. This is the single largest change.
 
 **Why this sieve is dense anyway.** Both 2021 dense variants carry the comment:
 
