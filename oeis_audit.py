@@ -107,6 +107,18 @@ FAMILIES = {
                               needs_both=True),
         },
     },
+    "pairwise": {
+        "records": "pairwise lonely primes -- BOTH gaps beat the previous "
+                   "term's, a chain rather than a maximum",
+        "extent": ("A087770", 0),
+        "members": {
+            # 2 is a(1) with nothing below it, so it counts without a lower
+            # neighbour; the gap columns carry the chain, the value column
+            # only the nearer distance.
+            "A087770": member("the pairwise lonely prime", col=2,
+                              local="pairwise"),
+        },
+    },
     "balanced": {
         "records": "balanced-lonely primes -- lonely records whose two "
                    "neighbours are equidistant",
@@ -158,10 +170,6 @@ def verdict(note, open_=False):
 
 
 TRIAGED = {
-    "A087770": verdict("pairwise lonely primes: BOTH gaps beat the previous "
-                       "term's. Stale at 29 terms to 9.16e12; our lonely(51) "
-                       "proves a(30) <= 26923643849953. Tracking being added",
-                       open_=True),
     "A120384": verdict("record geometric mean of the two gaps. b-file 54 "
                        "terms to 31587561361; not yet examined in depth",
                        open_=True),
@@ -657,6 +665,10 @@ def read_frontier(results):
     for line in text.splitlines():
         if not line.startswith("#") and len(line.split()) >= 2:
             cov[line.split()[0]] = int(line.split()[1])
+    # A family with no line was added after the run last wrote this file, so
+    # it has not been scanned at all -- not scanned to the run's frontier.
+    for fam in scanned:
+        cov.setdefault(fam, 0)
     return cov, (max(cov.values()) if cov else 0)
 
 
