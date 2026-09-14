@@ -678,9 +678,14 @@ def test_merge_refuses_a_sieve_that_skips_a_kind():
     pgaps = load_pgaps()
     with tempfile.TemporaryDirectory() as d:
         os.makedirs(os.path.join(d, "shards", "000"))
-        for kind in ("gap", "lonely", "aloof"):        # note: no equidistant
+        # prepare() writes a candidates file for every kind the DRIVER knows,
+        # so the file exists either way; the old sieve's checkpoints are what
+        # leave the kind out. This is exactly how a stale binary looked.
+        for kind in ("gap", "lonely", "aloof", "equidistant"):
             open(os.path.join(d, "shards", "000", f"{kind}.txt"), "w").write(
                 f"# {kind} candidates\n")
+        open(os.path.join(d, "shards", "000", "progress.txt"), "w").write(
+            "CHECKPOINT 999983 999979 78498 1.0  gap=114 lonely=40 aloof=210\n")
         try:
             pgaps.merge(d, None, {}, kinds=("equidistant",))
         except SystemExit as e:

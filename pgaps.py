@@ -687,21 +687,52 @@ def safe_frontier(out, ranges):
 
 def shard_candidates(out, kind):
     """Every worker's candidates for one kind, and whether any wrote a file."""
-    cands, emitted = [], False
+    cands, checked, emitted = [], False, False
     shards = sorted(os.listdir(os.path.join(out, "shards")))
     for d in shards:
-        path = os.path.join(out, "shards", d, f"{kind}.txt")
-        emitted = emitted or os.path.exists(path)
-        cands += read_records(path)
+        cands += read_records(os.path.join(out, "shards", d, f"{kind}.txt"))
+        # Not the candidates file: prepare() writes that itself, as a header
+        # for every kind, so it exists whatever the sieve knows. On
+        # 2026-09-14 that let a pre-pairwise ./sieve run a whole round of
+        # pairwise catch-up. A sieve names every kind it tracks in each
+        # CHECKPOINT line, so that is the evidence.
+        prog = os.path.join(out, "shards", d, "progress.txt")
+        if os.path.exists(prog):
+            text = open(prog).read()
+            if "CHECKPOINT" in text:
+                checked = True
+                emitted = emitted or f" {kind}=" in text
     # A sieve older than this driver knows nothing about a kind added
-    # since, and writes no file for it. Merging that silently produces an
+    # since, and collects nothing for it. Merging that silently produces an
     # EMPTY records file and then marks it covered -- a false completeness
     # claim, which is the one failure this whole scan exists to avoid.
-    if shards and not emitted:
+    if checked and not emitted:
         sys.exit(f"no worker produced {kind}.txt: ./sieve does not know "
                  f"that record kind.\nIt is older than this driver -- "
                  f"run 'make' and start again.")
     return cands
+
+
+def check_binary():
+    """Refuse to start workers on a ./sieve older than this driver.
+
+    `make` is easy to forget after pulling a change that adds a record kind,
+    and an old sieve ignores flags it does not know, so nothing fails: the
+    new kind is simply never collected. Its help text names every results
+    file it writes, and --candidates, so check those before scanning.
+    """
+    try:
+        r = subprocess.run([BINARY, "--help"], capture_output=True, text=True,
+                           timeout=30)
+        text = r.stdout + r.stderr
+    except Exception as e:
+        sys.exit(f"could not run {BINARY} --help: {e}")
+    missing = [f"{k}.txt" for k in KINDS if f"{k}.txt" not in text]
+    if "--candidates" not in text:
+        missing.append("--candidates")
+    if missing:
+        sys.exit(f"./sieve is older than this driver: it knows nothing of "
+                 f"{', '.join(missing)}.\nRun 'make' and start again.")
 
 
 def hold(out, kind, lo, upto):
@@ -873,6 +904,7 @@ def main():
 
     if not os.path.exists(BINARY):
         sys.exit("./sieve not built -- run 'make' first")
+    check_binary()
 
     os.makedirs(args.out, exist_ok=True)
     install_signal_handlers()
