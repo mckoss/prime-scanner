@@ -191,6 +191,22 @@ def check_chain(directory, kind):
             for a, b in zip(got, got[1:]) if not (b[3] > a[3] and b[4] > a[4])]
 
 
+def published_depth(kind, pub, refresh):
+    """(terms, last term, source) for everything OEIS has, frontier or not.
+
+    For aloof that is the A031133/4 family, which runs 13 terms past
+    A096265's own b-file; its last term is the upper neighbour, a bound on
+    the aloof prime rather than the prime itself.
+    """
+    if kind != "aloof":
+        return len(pub), (pub[-1] if pub else 0), SEQ[kind][0]
+    upper = bfile("aloof-upper", ALOOF_FAMILY["aloof-upper"][0], refresh)
+    lower = bfile("aloof-lower", ALOOF_FAMILY["aloof-lower"][0], refresh)
+    if len(lower) + ALOOF_OFFSET > len(pub):
+        return len(lower) + ALOOF_OFFSET, upper[-1], "A031133/4"
+    return len(pub), pub[-1], SEQ[kind][0]
+
+
 def frontiers(directory):
     """Each sequence's own frontier, from frontier.txt.
 
@@ -417,6 +433,15 @@ def main():
         status = "OK " if not bad and len(got) >= len(expect) else "!! "
         print(f"  {status}{kind:<11} {aid}  ours {len(got):>3} terms | "
               f"OEIS {len(expect):>3} below {limit:.3e}  ({desc})")
+        total, last, source = published_depth(kind, pub, args.refresh)
+        if len(got) < total:
+            where = f"{total - len(got)} BEHIND"
+        elif len(got) > total:
+            where = f"{len(got) - total} AHEAD"
+        else:
+            where = "level"
+        print(f"       published: {total} terms to {last:.3e} ({source}) "
+              f"-- we are {where}")
         for i, a, b in bad[:3]:
             print(f"       term {i}: ours {a}, OEIS {b}")
             rc = 1
