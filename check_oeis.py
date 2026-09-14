@@ -32,7 +32,8 @@ import time
 SEQ = {"gap": ("A002386", "primes at the lower end of a record gap"),
        "lonely": ("A023186", "lonely primes"),
        "aloof": ("A096265", "aloof primes"),
-       "equidistant": ("A058867", "record distance among balanced primes")}
+       "equidistant": ("A058867", "record distance among balanced primes"),
+       "pairwise": ("A087770", "both gaps beat the previous term's")}
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis")
 
 # A096265 lists the aloof primes, but its b-file stops at 55 terms while the
@@ -163,7 +164,7 @@ def verify_rows(directory, kind):
                             f"not balanced")
         want = {"gap": above, "lonely": min(below, above),
                 "aloof": below + above, "balanced": below,
-                "equidistant": below}[kind]
+                "equidistant": below, "pairwise": min(below, above)}[kind]
         if value != want:
             problems.append(f"{kind}({n}): value {value}, expected {want}")
         for q in range(prev + 1, p):
@@ -175,6 +176,19 @@ def verify_rows(directory, kind):
                 problems.append(f"{kind}({n}): {q} lies between {p} and {nxt}")
                 break
     return problems
+
+
+def check_chain(directory, kind):
+    """A087770's defining property, row by row: both gaps strictly grow.
+
+    verify_rows() confirms each line's primes; this confirms the lines belong
+    together. It cannot show no term is missing between two rows -- only the
+    diff against the published sequence and the scan's completeness can.
+    """
+    got = rows(directory, kind)
+    return [f"{kind}({b[0]}): gaps ({b[3]}, {b[4]}) do not both beat "
+            f"{kind}({a[0]})'s ({a[3]}, {a[4]})"
+            for a, b in zip(got, got[1:]) if not (b[3] > a[3] and b[4] > a[4])]
 
 
 def frontiers(directory):
@@ -423,6 +437,8 @@ def main():
 
         if not args.no_verify:
             problems = verify_rows(args.results, kind)
+            if kind == "pairwise":
+                problems += check_chain(args.results, kind)
             if problems:
                 rc = 1
                 print(f"       {len(problems)} record(s) fail primality "

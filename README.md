@@ -31,11 +31,13 @@ Where that stands, and what is being submitted, is in
 | **lonely** | [A023186](https://oeis.org/A023186), [A023187](https://oeis.org/A023187) (distance) | `min(gap below, gap above)` | 2, 5, 23, 53, 211, 1847, … |
 | **aloof** | [A096265](https://oeis.org/A096265); also [A031133](https://oeis.org/A031133)/[A031134](https://oeis.org/A031134)/[A031132](https://oeis.org/A031132), indexed one lower | `nextprime(p) − prevprime(p)` | 2, 3, 5, 7, 23, 53, 89, … |
 | **equidistant** | [A058867](https://oeis.org/A058867), [A058868](https://oeis.org/A058868) (distance) | the common gap, ranked among *balanced* primes only | 5, 53, 211, 16787, 69623, … |
+| **pairwise** | [A087770](https://oeis.org/A087770) | a chain, not a maximum: gap below *and* gap above both beat the previous term's | 2, 3, 7, 23, 89, 211, 1847, … |
 | **balanced-lonely** | not yet in OEIS — [draft](oeis/proposed/balanced-lonely-primes.md) | lonely records that are also balanced primes | 5, 53, 211, 26923643849953, 187891466722913 |
 
 Several sequences are in play at once, so `a(n)` would be ambiguous. Terms are
-written `gap(n)`, `lonely(n)`, `aloof(n)` and `equidistant(n)`: the *n*th term
-of A002386, A023186, A096265 and A058867.
+written `gap(n)`, `lonely(n)`, `aloof(n)`, `equidistant(n)` and `pairwise(n)`:
+the *n*th term of A002386, A023186, A096265, A058867 and A087770. The full list
+of related sequences, covered or not, is in [`oeis/README.md`](oeis/README.md).
 
 Equidistant and balanced-lonely are easy to conflate. A058867 ranks balanced
 primes only against each other, so 16787, with gaps (24, 24), is a term there
@@ -63,6 +65,11 @@ python3 pgaps.py --jobs 8 --out myrun              # open-ended
 python3 pgaps.py --to 1e14 --jobs 8 --out myrun    # or stop at a bound
 python3 pgaps.py --out myrun --status              # each sequence's frontier
 ```
+
+When a sequence is added to a run that has already come a long way, the
+driver asks whether to catch it up from zero first or to skip that for now.
+Skipping keeps every sequence advancing and holds the new one's candidates
+until a later catch-up; `--catch-up` and `--skip-catch-up` answer in advance.
 
 Then check it:
 

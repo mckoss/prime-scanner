@@ -203,16 +203,23 @@ void show_help(const char *prog) {
             "                   neighbour, OEIS A023186), 'aloof' primes (max\n"
             "                   distance between BOTH neighbours, A096265) and\n"
             "                   'equidistant' primes (max distance among the\n"
-            "                   BALANCED primes only, A058867).\n"
+            "                   BALANCED primes only, A058867) and 'pairwise'\n"
+            "                   lonely primes (BOTH gaps beat the previous\n"
+            "                   term's, A087770).\n"
             "  --out <dir>      Output directory for --gaps, created if needed.\n"
-            "                   Writes gap.txt, lonely.txt, aloof.txt and\n"
-            "                   equidistant.txt (one record per line, carrying\n"
+            "                   Writes gap.txt, lonely.txt, aloof.txt,\n"
+            "                   equidistant.txt and pairwise.txt (one record\n"
+            "                   per line, carrying\n"
             "                   both neighbour primes so each line is\n"
             "                   self-contained proof), plus progress.txt for\n"
             "                   checkpoints. Every line is flushed, so a killed\n"
             "                   run resumes without losing work.\n"
             "  --checkpoint <s> Seconds between progress lines and checkpoints\n"
-            "                   (default 15).\n\n"
+            "                   (default 15).\n"
+            "  --candidates     Worker mode for pgaps.py: pairwise.txt gets every\n"
+            "                   prime that could be an A087770 term for SOME\n"
+            "                   state at the start of the range, not the chain\n"
+            "                   itself. The driver's merge replays the chain.\n\n"
             "  This sieve is single-threaded. To scan a range across several\n"
             "  cores, use the driver alongside it, which shards the range and\n"
             "  merges the workers' output:\n"
@@ -228,7 +235,8 @@ void show_help(const char *prog) {
 /** Parses command line arguments safely. **/
 void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
                 unsigned long *repeat, unsigned long *from, int *has_from,
-                int *gaps, const char **out_path, double *ck_secs) {
+                int *gaps, const char **out_path, double *ck_secs,
+                int *candidates) {
     for (int i = 1; i < argc; ++i) {
         if ((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
             show_help(argv[0]);
@@ -237,6 +245,8 @@ void parse_args(int argc, char *argv[], unsigned long *limit, int *count_only,
             *count_only = 1;
         } else if (strcmp(argv[i], "--gaps") == 0) {
             *gaps = 1;
+        } else if (strcmp(argv[i], "--candidates") == 0) {
+            *candidates = 1;
         } else if (strcmp(argv[i], "--out") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "Error: --out needs a directory.\n");
@@ -708,12 +718,13 @@ unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
  * RECORD GAP SEARCH
  *
  * Scans upward in cache-sized segments, streaming consecutive primes and
- * recording four kinds of record:
+ * recording five kinds of record:
  *
  *   gap          record difference between consecutive primes  (OEIS A005250)
  *   lonely       record distance to the NEARER neighbour       (OEIS A023186)
  *   aloof        record total distance between BOTH neighbours (OEIS A096265)
  *   equidistant  record distance among the BALANCED primes     (OEIS A058867)
+ *   pairwise     BOTH gaps beat the previous term's            (OEIS A087770)
  *
  * The first three take their maximum over every prime. The fourth does not:
  * it ranks only the primes whose two gaps are EQUAL, against each other. So
@@ -723,12 +734,20 @@ unsigned long sieve_window(unsigned long lo, unsigned long hi, out_mode mode) {
  * balanced.txt, which pgaps.py filters out of the lonely records and which
  * *is* a subsequence of them.)
  *
- * --out <dir> writes five files into that directory, creating it if needed:
+ * The fifth is not a running maximum at all. A087770 is a chain: p is the
+ * next term when its gap below AND its gap above each exceed those of the
+ * previous term. Its state is a pair, and it is a different sequence from
+ * A023186 -- 53, at gaps (6, 6), is a lonely record but not a pairwise term,
+ * because 23 had already reached (4, 6). See pair_dominated() for how a
+ * worker that cannot know the state at its own start still misses nothing.
+ *
+ * --out <dir> writes six files into that directory, creating it if needed:
  *
  *   <dir>/gap.txt          results only, one record per line
  *   <dir>/lonely.txt         "
  *   <dir>/aloof.txt          "
  *   <dir>/equidistant.txt    "
+ *   <dir>/pairwise.txt       "
  *   <dir>/progress.txt     checkpoints, for resuming
  *
  * Results lines are
@@ -765,14 +784,23 @@ typedef struct {
     FILE *out;
     unsigned long best;            /* largest value recorded so far */
     unsigned long count;           /* records written */
+    unsigned long below, above;    /* gaps of the last record written */
 } record_file;
+
+/* Largest gap pair_dom[] indexes. Maximal prime gaps stay under 1600 all the
+ * way to 2^64, and a gap past the table is handled exactly, just not cheaply. */
+#define PAIR_DOM 4096
 
 typedef struct {
     unsigned long p_prev, p_last;  /* trailing two primes of the stream */
     unsigned long primes;
     double seconds;
     int resumed;
-    record_file gap, lonely, aloof, equi;
+    record_file gap, lonely, aloof, equi, pair;
+    int candidates;                /* --candidates: emit the pairwise staircase */
+    /* pair_dom[g] = the largest gap above among primes seen so far whose gap
+     * below is at least g. Only maintained with --candidates. */
+    uint32_t pair_dom[PAIR_DOM];
     FILE *progress;
 } gap_state;
 
@@ -868,17 +896,20 @@ static void rf_open(record_file *rf, const char *dir, const char *kind) {
 
     rf->best = 0;
     rf->count = 0;
+    rf->below = rf->above = 0;
 
     FILE *r = fopen(path, "r");
     if (r != NULL) {
         char line[512];
         while (fgets(line, sizeof line, r) != NULL) {
-            unsigned long n, p, v;
+            unsigned long n, p, v, b, a;
             if (line[0] == '#') continue;
-            if (sscanf(line, "%lu %lu %lu", &n, &p, &v) == 3) {
+            int got = sscanf(line, "%lu %lu %lu %lu %lu", &n, &p, &v, &b, &a);
+            if (got >= 3) {
                 if (v > rf->best) rf->best = v;
                 ++rf->count;
             }
+            if (got == 5) { rf->below = b; rf->above = a; }
         }
         fclose(r);
     }
@@ -897,6 +928,8 @@ static void rf_write(record_file *rf, const char *kind, unsigned long p,
                      unsigned long above, unsigned long prev,
                      unsigned long next) {
     rf->best = value;
+    rf->below = below;
+    rf->above = above;
     ++rf->count;
     fprintf(rf->out, "%lu %lu %lu %lu %lu %lu %lu\n",
             rf->count, p, value, below, above, prev, next);
@@ -911,10 +944,50 @@ static void rf_write(record_file *rf, const char *kind, unsigned long p,
 static void gap_checkpoint(gap_state *st) {
     fprintf(st->progress,
             "CHECKPOINT %lu %lu %lu %.1f  gap=%lu lonely=%lu aloof=%lu "
-            "equidistant=%lu\n",
+            "equidistant=%lu pairwise=%lu/%lu\n",
             st->p_prev, st->p_last, st->primes, st->seconds,
-            st->gap.best, st->lonely.best, st->aloof.best, st->equi.best);
+            st->gap.best, st->lonely.best, st->aloof.best, st->equi.best,
+            st->pair.below, st->pair.above);
     fflush(st->progress);
+}
+
+/** Could a prime with these gaps be an A087770 term, whatever the state?
+ *
+ * A worker scanning [1e15, 2e15) cannot know which pair of gaps the chain
+ * carries into its range, so it cannot run the chain -- starting from nothing
+ * it would take some early lopsided prime as a term and wrongly reject a real
+ * one after it. What it can do is rule a prime out for EVERY possible state.
+ *
+ * If an earlier prime y has gaps at least as large as x's on both sides, x is
+ * never a term. Either y joined the chain, and the state has reached y's gaps,
+ * which x does not beat; or y was rejected, because the state already matched
+ * or beat y on one side -- and so matches or beats x on that side too. The
+ * state only ever rises, so either way x fails. This holds wherever the
+ * earlier prime lies, even below the worker's own range.
+ *
+ * Every prime NOT so dominated is emitted. For some state it is a term, so
+ * nothing can be missed, and there are few of them: points that no earlier
+ * point dominates number about (ln n)^2 / 2 among n, a few hundred a shard.
+ * The driver's merge replays the chain over them in order.
+ */
+static int pair_dominated(const gap_state *st, unsigned long below,
+                          unsigned long above) {
+    /* A gap past the table is never dominated by an entry in it: pair_dom[]
+     * cannot say which earlier primes reached a gap that large. Emitting is
+     * the safe answer, and it essentially never happens. */
+    return below < PAIR_DOM && st->pair_dom[below] >= above;
+}
+
+static void pair_insert(gap_state *st, unsigned long below, unsigned long above) {
+    uint32_t a = (above > UINT32_MAX) ? UINT32_MAX : (uint32_t)above;
+    unsigned long g = (below < PAIR_DOM) ? below : PAIR_DOM - 1;
+    /* Suffix maxima never shrink toward g = 0, so once one already covers a,
+     * every entry below it does too. */
+    for (;; --g) {
+        if (st->pair_dom[g] >= a) break;
+        st->pair_dom[g] = a;
+        if (g == 0) break;
+    }
 }
 
 /** Feed one prime into the stream, emitting any record it completes. **/
@@ -957,6 +1030,25 @@ static void gap_feed(gap_state *st, unsigned long q) {
                 rf_write(&st->equi, "equidistant", st->p_last, below,
                          below, above, st->p_prev, q);
             }
+
+            /* A087770 counts 2 as a(1) with nothing below it, so its gap
+             * below is 0 here rather than the stand-in the others use -- that
+             * is what lets 3, at (1, 2), follow it. The value column is the
+             * nearer distance, for symmetry with lonely.txt; the chain itself
+             * is carried in the two gap columns. */
+            unsigned long pb = (st->p_prev != 0) ? below : 0;
+            unsigned long pn = (pb < above) ? pb : above;
+            if (st->candidates) {
+                if (!pair_dominated(st, pb, above)) {
+                    pair_insert(st, pb, above);
+                    rf_write(&st->pair, "pairwise", st->p_last, pn, pb, above,
+                             st->p_prev, q);
+                }
+            } else if (st->pair.count == 0 ||
+                       (pb > st->pair.below && above > st->pair.above)) {
+                rf_write(&st->pair, "pairwise", st->p_last, pn, pb, above,
+                         st->p_prev, q);
+            }
         }
     }
     st->p_prev = st->p_last;
@@ -965,9 +1057,10 @@ static void gap_feed(gap_state *st, unsigned long q) {
 
 /* Returns 1 if the whole range was scanned, 0 if a signal cut it short. */
 static int gap_search(unsigned long lo, unsigned long hi,
-                      const char *dir, double ck_secs) {
+                      const char *dir, double ck_secs, int candidates) {
     gap_state st;
     memset(&st, 0, sizeof st);
+    st.candidates = candidates;
 
     mkdir_p(dir);
 
@@ -976,6 +1069,7 @@ static int gap_search(unsigned long lo, unsigned long hi,
     rf_open(&st.lonely, dir, "lonely");
     rf_open(&st.aloof, dir, "aloof");
     rf_open(&st.equi, dir, "equidistant");
+    rf_open(&st.pair, dir, "pairwise");
 
     char path[1024];
     snprintf(path, sizeof path, "%s/progress.txt", dir);
@@ -998,11 +1092,11 @@ static int gap_search(unsigned long lo, unsigned long hi,
     unsigned long pos = st.resumed ? st.p_last + 1 : lo;
     if (st.resumed) {
         fprintf(stderr, "resuming at %lu  (records: gap %lu, lonely %lu, "
-                        "aloof %lu, equidistant %lu; "
-                        "thresholds %lu / %lu / %lu / %lu)\n",
+                        "aloof %lu, equidistant %lu, pairwise %lu; "
+                        "thresholds %lu / %lu / %lu / %lu / (%lu, %lu))\n",
                 pos, st.gap.count, st.lonely.count, st.aloof.count,
-                st.equi.count, st.gap.best, st.lonely.best, st.aloof.best,
-                st.equi.best);
+                st.equi.count, st.pair.count, st.gap.best, st.lonely.best,
+                st.aloof.best, st.equi.best, st.pair.below, st.pair.above);
     } else {
         fprintf(st.progress, "# CHECKPOINT <p_prev> <p_last> <primes> <seconds>\n");
         fflush(st.progress);
@@ -1129,9 +1223,11 @@ static int gap_search(unsigned long lo, unsigned long hi,
             st.seconds = base_seconds + now;
             fprintf(stderr,
                     "[%8.0fs] pos %.6e  %.2e nums/s  %lu primes  "
-                    "best: gap %lu lonely %lu aloof %lu equidistant %lu\n",
+                    "best: gap %lu lonely %lu aloof %lu equidistant %lu "
+                    "pairwise (%lu, %lu)\n",
                     st.seconds, (double)seg_hi, rate, st.primes,
-                    st.gap.best, st.lonely.best, st.aloof.best, st.equi.best);
+                    st.gap.best, st.lonely.best, st.aloof.best, st.equi.best,
+                    st.pair.below, st.pair.above);
             fflush(stderr);
             gap_checkpoint(&st);
             next_ck = now + ck_secs;
@@ -1156,6 +1252,7 @@ static int gap_search(unsigned long lo, unsigned long hi,
     fclose(st.lonely.out);
     fclose(st.aloof.out);
     fclose(st.equi.out);
+    fclose(st.pair.out);
     fclose(st.progress);
 
     return !stop_requested;
@@ -1173,12 +1270,13 @@ int main(int argc, char *argv[]) {
     int gaps = 0;
     const char *out_path = NULL;
     double ck_secs = 15.0;
+    int candidates = 0;
 
     /* Initialize dense packing map: residues [0..209] -> bit-slot [0..47]. */
     init_wheel();
 
     parse_args(argc, argv, &limit, &count_only, &repeat, &from, &has_from,
-               &gaps, &out_path, &ck_secs);
+               &gaps, &out_path, &ck_secs, &candidates);
 
     if (gaps) {
         if (out_path == NULL) {
@@ -1190,7 +1288,8 @@ int main(int argc, char *argv[]) {
         if (limit == 500) end = ULONG_MAX;
         /* Exit 2 when interrupted, so a caller can tell "finished the range"
          * from "stopped early but checkpointed". */
-        if (!gap_search(has_from ? from : 0, end, out_path, ck_secs)) return 2;
+        if (!gap_search(has_from ? from : 0, end, out_path, ck_secs,
+                        candidates)) return 2;
     } else if (has_from) {
         for (unsigned long r = 1; r < repeat; ++r) {
             bench_sink += sieve_window(from, limit, OUT_NONE);

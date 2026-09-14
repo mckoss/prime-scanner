@@ -26,7 +26,9 @@ original single-threaded scan.
 | `aloof.txt` | record total span between *both* neighbours — [A096265](https://oeis.org/A096265) |
 | `equidistant.txt` | record distance among the *balanced* primes alone — [A058867](https://oeis.org/A058867) |
 | `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/TODO.md`](../oeis/TODO.md) |
+| `pairwise.txt` | A087770's chain: gap below *and* gap above both beat the previous term's — [A087770](https://oeis.org/A087770) |
 | `frontier.txt` | each sequence's own frontier — see below |
+| `pending/<kind>.txt` | candidates held for a sequence that skipped its catch-up — see below; not terms |
 
 Each results line is
 
@@ -94,7 +96,8 @@ which files exist or how long the run has been going.
 
 `pgaps.py --out fresh --status` prints them. When they diverge, a run **stops
 and says so** before spending hours re-scanning covered ground, and describes
-what it is about to do; `--catch-up` answers the question in advance.
+what it is about to do, and asks whether to catch up or skip: `--catch-up`
+and `--skip-catch-up` answer in advance.
 
 ### How a lagging sequence catches up
 
@@ -118,12 +121,41 @@ catch-up round merges only what it collected, so `gap.txt`, `lonely.txt` and
 `aloof.txt` come out byte-for-byte identical.
 
 Disjoint frontiers are a migration state, not a steady one: once level, every
-later round scans all four together and they stay level.
+later round scans them all together and they stay level.
+
+### Skipping the catch-up, and holding candidates
+
+A catch-up from zero to 2e15 is three days on 8 cores during which nothing
+else advances. Skipping it instead scans every sequence together from the
+highest frontier, as if the new one were level — but the new one's results
+there cannot be *terms*, because a record, or a chain term, is defined by
+everything below it, and that ground is not covered.
+
+They are not thrown away either. Each round's candidates for the lagging
+sequence go to `pending/<kind>.txt`, whose header names the band they cover:
+
+```
+scan from 2.08e15 ─────────────────────────────►
+   collecting: all five, pairwise held in pending/ for [2.08e15, ...)
+```
+
+A later catch-up scans up from the sequence's own frontier and stops where the
+band begins. There the band **rolls in**: the merge replays the rule over the
+settled terms plus the held candidates, the frontier jumps to the band's top,
+and `pending/<kind>.txt` is deleted.
+
+That is lossless because a candidate is chosen without knowing the state
+below it. For a running maximum, every true record is a record within its own
+shard. For pairwise, every term is a prime no earlier prime matches on both
+gaps; see `pair_dominated()` in `sieve.c`. A candidate an earlier candidate
+already rules out is dropped as the band grows, so it stays a few hundred
+rows. Until the roll-in, the sequence's frontier stays where it was, so
+`check_oeis.py` claims nothing for it above that line.
 
 ## What is committed, and what is not
 
-Committed: the four merged record files, `balanced.txt` derived from them,
-and `frontier.txt`. Together they are the complete, resumable state of the
+Committed: the merged record files, `balanced.txt` derived from them,
+`frontier.txt`, and any `pending/` band. Together they are the complete, resumable state of the
 search — drop them into an empty directory, rerun the same command, and it
 picks up where it left off.
 

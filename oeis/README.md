@@ -62,7 +62,10 @@ Nothing here is a discovery claim. In order (details in [`TODO.md`](TODO.md)):
    further terms below the frontier.
 5. **a-files** for lonely, aloof and equidistant from `fresh/`, and an update
    of Beveridge's gap a-file (75 rows against 85 terms).
-6. b-files for A005669 and A107578 from Andersen–Luhn, and for A122412/3
+6. **A087770 extension.** Tracking was added on 2026-09-14 as `pairwise`, and
+   the sequence has 29 terms, stale since 2003. Our lonely(51) already proves
+   a(30) ≤ 26923643849953, so new terms are expected once the scan covers it.
+7. b-files for A005669 and A107578 from Andersen–Luhn, and for A122412/3
    (needs π(p)).
 
 ## Compute cost
@@ -88,6 +91,105 @@ catch-up cost ~140 of those only because the sequence was added after the
 scan had started. From scratch on today's binary, the whole scan to 2.07e15
 would take ~590 core-hours, 73 hours on 8 workers.
 
+## Related OEIS sequences
+
+Every sequence this project covers, and every related sequence it has looked
+at and decided not to. `python3 oeis_audit.py` finds the related ones: it
+follows cross-references both ways from the covered sequences, and keeps
+those sharing at least 3 terms above 1000 with our records.
+
+Columns: **a-file** — the entry has its own a-file; **b-file** — terms in its
+uploaded b-file, or `DATA n` when none is uploaded; **here** — terms `fresh/`
+holds at the 2026-09-14 checkpoint.
+
+### Covered
+
+| sequence | name here | what it holds | a-file | b-file | here |
+|----------|-----------|---------------|:------:|-------:|-----:|
+| [A002386](https://oeis.org/A002386) | **gap** | lower prime of a record gap | — | 85 | 64 |
+| [A000101](https://oeis.org/A000101) | gap | upper prime of a record gap | yes | 85 | 64 |
+| [A005250](https://oeis.org/A005250) | gap | the record gap size | yes | 85 | 64 |
+| [A053695](https://oeis.org/A053695) | gap | differences between record gaps | — | 84 | 63 |
+| [A023186](https://oeis.org/A023186) | **lonely** | record min(gap below, gap above) | — | 56 | 56 |
+| [A023187](https://oeis.org/A023187) | lonely | that distance | — | DATA 56 | 56 |
+| [A096265](https://oeis.org/A096265) | **aloof** | record nextprime(p) − prevprime(p) | — | 55 | 68 |
+| [A031133](https://oeis.org/A031133) | aloof | lower neighbour, indexed one lower | — | 67 | 67 |
+| [A031134](https://oeis.org/A031134) | aloof | upper neighbour, indexed one lower | — | 67 | 67 |
+| [A031132](https://oeis.org/A031132) | aloof | the span | — | DATA 67 | 67 |
+| [A058867](https://oeis.org/A058867) | **equidistant** | record distance among balanced primes only | — | DATA 30 | 30 |
+| [A058868](https://oeis.org/A058868) | equidistant | that distance | — | DATA 30 | 30 |
+| [A087770](https://oeis.org/A087770) | **pairwise** | both gaps beat the previous term's | — | DATA 29 | catch-up pending |
+| not in OEIS | **balanced** | lonely records that are balanced primes | — | — | 5 |
+
+### In a covered family, but not computable here
+
+These need π(p), the prime's index, which a scan does not count. `primecount`
+can supply it.
+
+| sequence | family | what it holds | a-file | b-file |
+|----------|--------|---------------|:------:|-------:|
+| [A005669](https://oeis.org/A005669) | gap | index of the lower prime | — | 82 |
+| [A107578](https://oeis.org/A107578) | gap | index of the upper prime | yes | 80 |
+| [A122412](https://oeis.org/A122412) | aloof | index of the lower neighbour | — | 52 |
+| [A122413](https://oeis.org/A122413) | aloof | index of the upper neighbour | — | 52 |
+
+### Open: worth tracking, not yet tracked
+
+| sequence | what it holds | a-file | b-file | why it matters |
+|----------|---------------|:------:|-------:|----------------|
+| [A120384](https://oeis.org/A120384) | record geometric mean of the two gaps | — | 54 | a running maximum like lonely and aloof, and its b-file stops at 3.16e10; not yet examined in depth |
+
+### Not tracked: not record sequences
+
+A scan can only improve an entry whose terms are records it visits in order.
+First-occurrence tables list the least prime for each value of some quantity,
+so they have holes wherever that value has not been seen yet. Their terms
+come out of the same scan, but not as a complete prefix.
+
+| sequence | what it holds | a-file | b-file | why not |
+|----------|---------------|:------:|-------:|---------|
+| [A102723](https://oeis.org/A102723) | least prime with every integer within n composite | — | 479 | first occurrences; its b-file ends at lonely(56), so lonely(57) would extend it too |
+| [A023188](https://oeis.org/A023188) | least prime at each nearest-prime distance | — | 191 | first occurrences |
+| [A120937](https://oeis.org/A120937) | least prime with both gaps ≥ 2n | — | DATA 35 | first occurrences |
+| [A054342](https://oeis.org/A054342) | first balanced prime at each distance | — | 53 | first occurrences |
+| [A046931](https://oeis.org/A046931) | least prime whose neighbours are exactly 2n apart | — | 312 | first occurrences |
+| [A000230](https://oeis.org/A000230) | least prime starting a gap of exactly 2n | — | 721 | first occurrences |
+| [A001632](https://oeis.org/A001632) | least prime ending a gap of exactly 2n | — | 595 | first occurrences |
+| [A100964](https://oeis.org/A100964) | least prime starting a gap ≥ 2n | — | 775 | the gap records re-indexed by size |
+| [A111870](https://oeis.org/A111870) | record merit, gap / log p | — | 39 | a subset of A002386 |
+| [A111943](https://oeis.org/A111943) | record gap / log² p | — | DATA 12 | a subset of A002386 |
+| [A051650](https://oeis.org/A051650) | lonely *numbers*: record distance to the nearest prime | — | 211 | over all integers, not primes |
+| [A051652](https://oeis.org/A051652) | least number at each distance from a prime | yes | 228 | over all integers |
+| [A051728](https://oeis.org/A051728) | least number at distance 2n from a prime | — | DATA 38 | over all integers |
+| [A051729](https://oeis.org/A051729) | least number at distance 2n+1 from a prime | — | DATA 37 | over all integers |
+| [A051730](https://oeis.org/A051730) | distance from A051650(n) to its nearest prime | — | 211 | over all integers |
+| [A182315](https://oeis.org/A182315) | primes whose next gap exceeds log² n | — | DATA 18 | a threshold set, not records; its terms come from A002386 |
+| [A124147](https://oeis.org/A124147) | primes with p < √g·e^√g | — | DATA 13 | a threshold set; all but 5 and 13 are in A002386 |
+
+### Not tracked: dense
+
+A record sequence grows roughly geometrically, so a scan to 2e15 yields tens of
+terms. A dense sequence yields millions, and nobody uploads a b-file that size.
+The audit calls a sequence dense when its b-file holds more than 1000 terms
+and the terms add under 0.005 digits each.
+
+| sequence | what it holds | a-file | b-file | why not |
+|----------|---------------|:------:|-------:|---------|
+| [A211073](https://oeis.org/A211073) | every prime followed by a gap ≥ log²(p)/2 | — | 10000 | dense: 10000 terms reach only 1.1e12 |
+| [A079296](https://oeis.org/A079296) | all primes, ordered by √q − √p | — | 10000 | dense: it is every prime, reordered |
+| [A391411](https://oeis.org/A391411) | first prime of each new pattern of two consecutive gaps | yes | 7500 | dense: 7500 terms reach only 4.2e9 |
+
+### Not yet reviewed
+
+The audit also surfaces these, each sharing at least 3 large terms with our
+records. None has been judged yet. A330428 looks likeliest to matter: its last
+term is our lonely(51).
+
+A002540, A053302, A058193, A060771, A073861, A075051, A075741, A084105,
+A103709, A104138, A123995, A123996, A134266, A138198, A167236, A205827,
+A209407, A214757, A224522, A241886, A243593, A268140, A309877, A330428,
+A335366, A335367, A350095, A350096.
+
 ---
 
 ## The cached b-files
@@ -111,6 +213,7 @@ ignored, for three reasons:
 | `aloof-upper.txt` | [A031134](https://oeis.org/A031134) | upper neighbour of the same records | 67 | 1.693e15 |
 | `aloof-span.txt` | [A031132](https://oeis.org/A031132) | span between them | 67 | 1152 |
 | `equidistant.txt` | [A058867](https://oeis.org/A058867) | record distance among *balanced* primes only | 30 | 1.879e14 |
+| `pairwise.txt` | [A087770](https://oeis.org/A087770) | both gaps beat the previous term's (a chain) | 29 | 9.16e12 |
 
 Each file is named for the file in `fresh/` it is checked against, and this
 table maps it to its A-number (upstream, `gap.txt` is `b002386.txt`). The three
