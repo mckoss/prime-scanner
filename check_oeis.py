@@ -299,14 +299,14 @@ def check_aloof_family(directory, refresh, rc):
               f"lower, upper and span")
     beyond = len(got) - covered
     if beyond > 0:
-        print(f"       {beyond} term(s) genuinely beyond the family:")
+        print(f"       we are {beyond} AHEAD of the family:")
         for r in got[covered:]:
             print(f"         aloof({r[0]}) = {r[1]}  span {r[2]}")
+    elif beyond < 0:
+        print(f"       we are {-beyond} BEHIND the family (its next is at "
+              f"{hi[len(got) - ALOOF_OFFSET]:,})")
     else:
-        print(f"       nothing new: the family is {-beyond} term(s) AHEAD of "
-              f"this scan (its next is at {hi[len(got) - ALOOF_OFFSET]:,})"
-              if len(hi) > len(got) - ALOOF_OFFSET else
-              f"       nothing new yet")
+        print(f"       we are level with the family")
     return rc
 
 
@@ -449,8 +449,9 @@ def main():
             if kind == "aloof":
                 # A096265 is not the deepest published source for these
                 # records; the family check below is authoritative.
-                print(f"       {len(got) - len(expect)} term(s) past "
-                      f"{aid}'s b-file -- see the family check below")
+                print(f"       {aid}'s own b-file stops at {len(pub)}; the other "
+                      f"{len(got) - len(expect)} are published under "
+                      f"A031133/4 -- see the family check below")
             else:
                 for p in got[len(expect):]:
                     print(f"       NEW: {kind}({got.index(p) + 1}) = {p} "
