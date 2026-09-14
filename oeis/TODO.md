@@ -148,6 +148,31 @@ replace.
       30 of 30 agree
 - [ ] then B and C below, for A058867/A058868
 
+## A3. A087770 — pairwise lonely primes, now tracked
+
+A second "lonely primes" sequence, by pairs: p is the next term when its gap
+below AND its gap above both exceed the previous term's. 29 terms to
+9156364643509, with no extension since 2003. Our lonely(51) = 26923643849953,
+at gaps (390, 390), beats a(29)'s (372, 340) on both sides, so **a(30) exists
+and is unpublished**; more are expected below 2e15.
+
+Found late because `oeis_audit.py` did not follow cross-references; it now
+does (PR #6).
+
+The sieve tracks it as `pairwise`. It is a chain, not a running maximum, so
+workers emit a staircase of candidates and the merge replays the chain; see
+`pgaps.py`. Like A058867 it starts at zero in `fresh/`, and the driver offers
+two ways on:
+
+- **catch up**: ~73 h on 8 cores from zero to the current frontier, and the
+  other four do not advance meanwhile;
+- **skip**: carry on with all five from the frontier, holding pairwise
+  candidates in `fresh/pending/`, and catch up later.
+
+- [ ] stop the running scan at a round boundary, `make`, restart, choose
+- [ ] after the catch-up, `check_oeis.py fresh` against the 29 published terms
+- [ ] then submit the new terms, with a b-file and the completeness bound
+
 ## B. b-files — stale within their own family
 
 Each is fixable from already-published data; none is a discovery claim.

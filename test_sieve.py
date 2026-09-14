@@ -517,6 +517,8 @@ OEIS_A096265 = [2, 3, 5, 7, 23, 53, 89, 113, 211, 1129, 1327, 2179, 2503,
                 5623, 9587, 14107, 19609, 19661, 31397, 31469, 38501, 58831,
                 155921, 360749, 370261, 396833, 1357201, 1561919]
 OEIS_A058867 = [5, 53, 211, 16787, 69623, 247141]
+OEIS_A087770 = [2, 3, 7, 23, 89, 211, 1847, 2179, 14107, 33247, 38501, 58831,
+                268343, 1272749]
 
 GAP_LIMIT = 2000000
 
@@ -534,9 +536,12 @@ OEIS_1E7 = {
               9587, 14107, 19609, 19661, 31397, 31469, 38501, 58831, 155921,
               360749, 370261, 396833, 1357201, 1561919, 4652353, 8917523],
     "equidistant": [5, 53, 211, 16787, 69623, 247141, 3565979, 4911311],
+    "pairwise": [2, 3, 7, 23, 89, 211, 1847, 2179, 14107, 33247, 38501, 58831,
+                 268343, 1272749, 2198981],
 }
 OEIS_1E7_NAMES = {"gap": "A002386", "lonely": "A023186",
-                  "aloof": "A096265", "equidistant": "A058867"}
+                  "aloof": "A096265", "equidistant": "A058867",
+                  "pairwise": "A087770"}
 GAP_LIMIT_SLOW = 10000000
 
 
@@ -553,7 +558,7 @@ def load_pgaps():
 def read_results(outdir):
     """Read the per-kind results files and the checkpoint file."""
     records = {}
-    for kind in ("gap", "lonely", "aloof", "equidistant"):
+    for kind in ("gap", "lonely", "aloof", "equidistant", "pairwise"):
         rows = []
         path = os.path.join(outdir, f"{kind}.txt")
         if os.path.exists(path):
@@ -582,7 +587,7 @@ def run_gap_search(outdir, limit, extra=()):
 
 @test
 def test_gap_search_reproduces_oeis():
-    """--gaps reproduces A002386, A023186, A096265 and A058867 from scratch"""
+    """--gaps reproduces A002386, A023186, A096265, A058867, A087770 from scratch"""
     with tempfile.TemporaryDirectory() as d:
         prefix = os.path.join(d, "g")
         run_gap_search(prefix, GAP_LIMIT)
@@ -592,7 +597,8 @@ def test_gap_search_reproduces_oeis():
                                      ("lonely", OEIS_A023186, "A023186"),
                                      ("aloof", OEIS_A096265, "A096265"),
                                      ("equidistant", OEIS_A058867,
-                                      "A058867")):
+                                      "A058867"),
+                                     ("pairwise", OEIS_A087770, "A087770")):
             got = [r[1] for r in records[kind]]   # column 2 is the prime
             if got != expected:
                 for i, (a, b) in enumerate(zip(got, expected)):
@@ -619,7 +625,7 @@ def test_legacy_frontier_is_read_per_sequence():
             open(os.path.join(d, f"{kind}.txt"), "w").write("# records\n")
         got = pgaps.read_frontiers(d)
         want = {"gap": 2000000, "lonely": 2000000, "aloof": 2000000,
-                "equidistant": 0}
+                "equidistant": 0, "pairwise": 0}
         if got != want:
             raise SieveError(f"legacy frontier read as {got}, expected {want}")
 
@@ -644,7 +650,8 @@ def test_catch_up_rolls_each_sequence_in_at_its_own_frontier():
 
     # Three distinct frontiers: the scan should walk up through them, adding
     # one sequence at each, rather than treating it as one catch-up.
-    fronts = {"gap": 0, "lonely": 50, "aloof": 100, "equidistant": 100}
+    fronts = {"gap": 0, "lonely": 50, "aloof": 100, "equidistant": 100,
+              "pairwise": 100}
     steps = []
     for _ in range(4):
         kinds, a, ceiling = pgaps.plan_round(fronts, Args(), 1)
@@ -656,7 +663,8 @@ def test_catch_up_rolls_each_sequence_in_at_its_own_frontier():
 
     want = [(0, 50, ("gap",)),
             (50, 100, ("gap", "lonely")),
-            (100, None, ("gap", "lonely", "aloof", "equidistant"))]
+            (100, None, ("gap", "lonely", "aloof", "equidistant",
+                         "pairwise"))]
     if steps != want:
         raise SieveError(f"roll-in plan was {steps},\n           expected {want}")
 
@@ -687,7 +695,7 @@ def test_merge_refuses_a_sieve_that_skips_a_kind():
 
 @test
 def test_gap_search_reproduces_oeis_to_ten_million():
-    """--gaps reproduces all four sequences from zero to 1e7"""
+    """--gaps reproduces all five sequences from zero to 1e7"""
     # 2e6 is not far enough to be convincing about A058867: below it, the
     # only balanced primes that set a record are the three A023186 also has,
     # so a "filter the lonely records" implementation would pass. 3565979 and
@@ -729,7 +737,7 @@ def test_gap_search_resume_is_lossless():
 
         a, _ = read_results(whole)
         b, _ = read_results(staged)
-        for kind in ("gap", "lonely", "aloof", "equidistant"):
+        for kind in ("gap", "lonely", "aloof", "equidistant", "pairwise"):
             if a[kind] != b[kind]:
                 raise SieveError(f"{kind}: resumed run differs from one pass\n"
                                  f"  one pass: {a[kind][:6]}\n"
@@ -876,7 +884,7 @@ def test_parallel_merge_matches_serial():
 
         a, _ = read_results(serial)
         b, _ = read_results(par)
-        for kind in ("gap", "lonely", "aloof", "equidistant"):
+        for kind in ("gap", "lonely", "aloof", "equidistant", "pairwise"):
             sa = [r[1:] for r in a[kind]]
             sb = [r[1:] for r in b[kind]]
             if sa != sb:
@@ -890,6 +898,115 @@ def test_parallel_merge_matches_serial():
 
 
 test_parallel_merge_matches_serial.slow = True
+
+
+def pairwise_candidates(d, shards, overlap=100000):
+    """Run each [a, b) shard with --candidates, as pgaps.py launches workers.
+
+    Each lands in d/shards/NNN/pairwise.txt, where merge() and hold() read it.
+    Returns the rows, sorted and deduplicated.
+    """
+    pgaps = load_pgaps()
+    rows = []
+    for i, (a, b) in enumerate(shards):
+        out = os.path.join(d, "shards", f"{i:03d}")
+        proc = run_sieve("--gaps", "--candidates", "--from",
+                         str(max(a - overlap, 2)), "--out", out, str(b),
+                         timeout=120)
+        if proc.returncode != 0:
+            raise SieveError(f"--candidates [{a}, {b}): exit {proc.returncode}")
+        rows += pgaps.read_records(os.path.join(out, "pairwise.txt"))
+    return pgaps.sorted_unique(rows)
+
+
+@test
+def test_pairwise_candidates_replay_to_the_serial_chain():
+    """Sharded --candidates output replays to exactly the serial A087770 chain"""
+    # A worker cannot run the chain: it does not know the pair of gaps in
+    # force where its shard begins. Started from nothing it takes some early
+    # lopsided prime as a term and rejects a real one after it. The staircase
+    # of undominated primes has to contain every term for EVERY entry state.
+    pgaps = load_pgaps()
+    limit = 30000000
+    with tempfile.TemporaryDirectory() as d:
+        serial = os.path.join(d, "serial")
+        run_gap_search(serial, limit)
+        want = [r[1:] for r in read_results(serial)[0]["pairwise"]]
+
+        edges = [0, 1500000, 4000000, 9000000, 17000000, limit]
+        cands = pairwise_candidates(d, list(zip(edges, edges[1:])))
+        got = [r[1:] for r in pgaps.replay("pairwise", cands)]
+        if got != want:
+            raise SieveError(f"replayed chain differs from serial\n"
+                             f"  serial {[r[0] for r in want]}\n"
+                             f"  replay {[r[0] for r in got]}")
+
+        # Vacuity guard: if every candidate were a term, the staircase would
+        # be doing nothing a local chain could not, and this would prove less.
+        if len(cands) <= len(want):
+            raise SieveError(f"{len(cands)} candidates for {len(want)} terms "
+                             f"-- the test exercises nothing")
+
+
+@test
+def test_skip_plans_at_the_level_and_catch_up_stops_at_the_held_band():
+    """--skip-catch-up rounds collect every kind; a catch-up ends at a held band"""
+    pgaps = load_pgaps()
+
+    class Args:
+        lo, hi = 0, None
+
+    fronts = {"gap": 100, "lonely": 100, "aloof": 100, "equidistant": 100,
+              "pairwise": 0}
+    kinds, a, ceiling = pgaps.plan_round(fronts, Args(), 1, {}, skip=True)
+    if (kinds, a, ceiling) != (pgaps.KINDS, 100, None):
+        raise SieveError(f"skip planned {(kinds, a, ceiling)}")
+
+    held = {"pairwise": (100, 250, [])}
+    fronts = dict(fronts, gap=250, lonely=250, aloof=250, equidistant=250)
+    kinds, a, ceiling = pgaps.plan_round(fronts, Args(), 1, held)
+    if (kinds, a, ceiling) != (("pairwise",), 0, 100):
+        raise SieveError(f"catch-up planned {(kinds, a, ceiling)}, expected "
+                         f"to scan pairwise alone from 0 and stop at 100")
+
+
+@test
+def test_skipped_catch_up_rolls_in_to_the_serial_chain():
+    """Hold candidates past a skipped catch-up, catch up later, get the chain"""
+    # The order of events --skip-catch-up produces: two rounds above F whose
+    # candidates are held, then a catch-up over [0, F) that merges normally,
+    # then the held band rolling in. The result must equal one serial pass.
+    import shutil
+    pgaps = load_pgaps()
+    limit, F = 20000000, 6000000
+    with tempfile.TemporaryDirectory() as d:
+        serial = os.path.join(d, "serial")
+        run_gap_search(serial, limit)
+        want = [r[1:] for r in read_results(serial)[0]["pairwise"]]
+
+        out = os.path.join(d, "run")
+        for lo, hi in ((F, 12000000), (12000000, limit)):
+            mid = (lo + hi) // 2
+            pairwise_candidates(out, [(lo, mid), (mid, hi)])
+            pgaps.hold(out, "pairwise", lo, hi)
+            shutil.rmtree(os.path.join(out, "shards"))
+        held = pgaps.read_pending(out)["pairwise"]
+        if held[:2] != (F, limit):
+            raise SieveError(f"held band is {held[:2]}, expected ({F}, {limit})")
+
+        pairwise_candidates(out, [(0, 2000000), (2000000, F)])
+        pgaps.merge(out, None, {}, upto=F, kinds=("pairwise",))
+        hi, _ = pgaps.roll_in(out, "pairwise")
+        got = [r[1:] for r in
+               pgaps.read_records(os.path.join(out, "pairwise.txt"))]
+        if hi != limit or got != want:
+            raise SieveError(f"rolled-in chain differs from serial (to {hi})\n"
+                             f"  serial {[r[0] for r in want]}\n"
+                             f"  rolled {[r[0] for r in got]}")
+        if os.path.exists(pgaps.pending_path(out, "pairwise")):
+            raise SieveError("the held band was not removed after rolling in")
+        if not any(F <= r[0] for r in got):
+            raise SieveError("no term above F -- the held band was never tested")
 
 
 # --------------------------------------------------------------------------

@@ -16,6 +16,12 @@ Workers overlap slightly at their lower edge so the 3-prime sliding window is
 primed before the range they are responsible for; the duplicate candidates
 that produces are removed by the merge.
 
+pairwise (A087770) is the exception: it is a chain whose state is a pair of
+gaps, so "beats the threshold in force when the search began" is not enough
+to catch every term. Its workers run with --candidates instead and emit every
+prime no earlier prime dominates on both gaps -- see pair_dominated() in
+sieve.c -- and the merge replays the chain over those.
+
 Usage:
     python3 pgaps.py --to 1e13 --jobs 8 --out verify          # from scratch
     python3 pgaps.py --from 2e12 --to 1e13 --jobs 8 --out run --seed results
@@ -25,6 +31,7 @@ Usage:
 import argparse
 import contextlib
 import os
+import re
 import select
 import signal
 import subprocess
@@ -35,7 +42,11 @@ import tty
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BINARY = os.path.join(HERE, "sieve")
-KINDS = ("gap", "lonely", "aloof", "equidistant")
+KINDS = ("gap", "lonely", "aloof", "equidistant", "pairwise")
+
+# Kinds whose next term depends on the previous term's two gaps rather than on
+# one running maximum. Their workers emit a staircase, not local records.
+CHAINS = ("pairwise",)
 
 # balanced.txt is deliberately not here: it is filtered out of the merged
 # lonely records afterwards, and the sieve never emits a candidate for it.
@@ -59,6 +70,55 @@ def read_records(path):
             if len(f) == 7:
                 rows.append(tuple(int(x) for x in f))
     return rows
+
+
+def extends(kind, r, last):
+    """Does row r become the next term after `last`, the last row kept?"""
+    if last is None:
+        return True
+    if kind in CHAINS:
+        return r[3] > last[3] and r[4] > last[4]
+    return r[2] > last[2]
+
+
+def replay(kind, rows, last=None):
+    """The terms among `rows`, which must be sorted by prime and deduped."""
+    kept = []
+    for r in rows:
+        if extends(kind, r, last):
+            kept.append(r)
+            last = r
+    return kept
+
+
+def prune_held(kind, rows):
+    """Drop held candidates that no state below them could make terms.
+
+    Held candidates wait for a catch-up that has not happened, so they have to
+    stay valid whatever the sequence turns out to be below them. For a running
+    maximum, a candidate is dead once an earlier one reaches its value; for a
+    chain, once an earlier one matches or beats it on both gaps. Either way the
+    earlier candidate settles it for every state, and what survives is a few
+    hundred rows however long the band grows.
+    """
+    kept = []
+    for r in rows:
+        if kind in CHAINS:
+            if any(k[3] >= r[3] and k[4] >= r[4] for k in kept):
+                continue
+        elif kept and kept[-1][2] >= r[2]:
+            continue
+        kept.append(r)
+    return kept
+
+
+def sorted_unique(rows):
+    seen, out = set(), []
+    for r in sorted(rows, key=lambda r: r[1]):
+        if r[1] not in seen:
+            seen.add(r[1])
+            out.append(r)
+    return out
 
 
 def write_records(path, rows, header):
@@ -117,6 +177,37 @@ def read_frontiers(out):
     return fronts
 
 
+def pending_path(out, kind):
+    return os.path.join(out, "pending", f"{kind}.txt")
+
+
+def read_pending(out):
+    """{kind: (lo, hi, rows)} for every kind holding candidates.
+
+    A kind that skipped its catch-up is scanned alongside the others from the
+    frontier it skipped to, but its terms there cannot be settled until the
+    ground below is covered. Its candidates for [lo, hi) wait in
+    pending/<kind>.txt, and roll in when its own frontier reaches lo.
+    """
+    held = {}
+    for kind in KINDS:
+        path = pending_path(out, kind)
+        if not os.path.exists(path):
+            continue
+        head = open(path).readline()
+        m = re.search(r"\[(\d+), (\d+)\)", head)
+        if m:
+            held[kind] = (int(m.group(1)), int(m.group(2)), read_records(path))
+    return held
+
+
+def write_pending(out, kind, lo, hi, rows):
+    os.makedirs(os.path.join(out, "pending"), exist_ok=True)
+    write_records(pending_path(out, kind), rows,
+                  f"# {kind} candidates held for [{lo}, {hi}) -- not terms: they "
+                  f"roll in once {kind} is caught up to {lo}\n")
+
+
 def write_frontiers(out, fronts):
     with open(os.path.join(out, "frontier.txt"), "w") as f:
         f.write("# Each sequence's frontier: scanned contiguously from zero to\n"
@@ -151,19 +242,31 @@ def est_seconds(lo, hi, jobs):
     return tot / max(jobs, 1e-9)
 
 
-def plan_round(fronts, args, jobs):
+def plan_round(fronts, args, jobs, held=None, skip=False):
     """(kinds, lo, ceiling) for the next round.
 
     The scan resumes at the LOWEST frontier and collects every sequence that
     has reached it. It stops at the next frontier above -- so when the scan
     arrives there, that sequence rolls in and is collected from then on,
-    instead of being under-collected across part of a round.
+    instead of being under-collected across part of a round. A band of held
+    candidates is a stop too: a catch-up ends where that band begins.
+
+    With `skip`, a lagging sequence is planned as though it were level: it is
+    collected with the others from the highest frontier, and its candidates
+    are held rather than merged (see run_rounds).
     """
-    a = min(fronts.values())
-    if len(set(fronts.values())) == 1:
+    held = held or {}
+    eff = dict(fronts)
+    if skip:
+        level = max(fronts.values())
+        eff = {k: level for k in fronts}
+    a = min(eff.values())
+    if len(set(eff.values())) == 1:
         a = max(a, int(args.lo))
-    kinds = tuple(k for k in KINDS if fronts[k] <= a)
-    above = sorted(v for v in set(fronts.values()) if v > a)
+    kinds = tuple(k for k in KINDS if eff[k] <= a)
+    stops = {v for v in eff.values() if v > a}
+    stops |= {lo for lo, _, _ in held.values() if lo > a}
+    above = sorted(stops)
     ceiling = above[0] if above else None
     if args.hi is not None:
         hi = int(args.hi)
@@ -171,13 +274,15 @@ def plan_round(fronts, args, jobs):
     return kinds, a, ceiling
 
 
-def confirm(prompt):
+def choose(prompt, options):
+    """One letter from `options`, or None when nobody is there to answer."""
     if not sys.stdin.isatty():
-        return False
+        return None
     try:
-        return input(prompt).strip().lower() in ("y", "yes")
+        answer = input(prompt).strip().lower()[:1]
     except EOFError:
-        return False
+        return None
+    return answer if answer in options else None
 
 
 def read_round(path):
@@ -217,7 +322,12 @@ def seed_from(directory):
     seed = {}
     for kind in KINDS:
         rows = read_records(os.path.join(directory, f"{kind}.txt")) if directory else []
-        seed[kind] = max(rows, key=lambda r: r[2]) if rows else None
+        if not rows:
+            seed[kind] = None
+        elif kind in CHAINS:
+            seed[kind] = rows[-1]            # a chain's state is its last term
+        else:
+            seed[kind] = max(rows, key=lambda r: r[2])
     return seed
 
 
@@ -357,7 +467,9 @@ def prepare(out, jobs, lo, hi, seed):
                 with open(os.path.join(d, f"{kind}.txt"), "w") as f:
                     f.write(f"# {kind} candidates for shard {i} "
                             f"[{a}, {b}) -- merge before use\n")
-                    if row:
+                    # A chain's workers ignore state entirely (--candidates),
+                    # so a seed row would only be echoed back as a candidate.
+                    if row and kind not in CHAINS:
                         f.write(" ".join(str(x) for x in row) + "\n")
     return ranges
 
@@ -371,8 +483,8 @@ def launch(out, ranges, checkpoint, ids=None):
         start = max(a - min(OVERLAP, max(span // 4, 1000)), 2)
         log = open(os.path.join(d, "log.txt"), "a")
         p = subprocess.Popen(
-            [BINARY, "--gaps", "--from", str(start), "--out", d,
-             "--checkpoint", str(checkpoint), str(b)],
+            [BINARY, "--gaps", "--candidates", "--from", str(start),
+             "--out", d, "--checkpoint", str(checkpoint), str(b)],
             stdout=subprocess.DEVNULL, stderr=log)
         procs.append((i, p, log))
     return procs
@@ -573,8 +685,58 @@ def safe_frontier(out, ranges):
     return front
 
 
+def shard_candidates(out, kind):
+    """Every worker's candidates for one kind, and whether any wrote a file."""
+    cands, emitted = [], False
+    shards = sorted(os.listdir(os.path.join(out, "shards")))
+    for d in shards:
+        path = os.path.join(out, "shards", d, f"{kind}.txt")
+        emitted = emitted or os.path.exists(path)
+        cands += read_records(path)
+    # A sieve older than this driver knows nothing about a kind added
+    # since, and writes no file for it. Merging that silently produces an
+    # EMPTY records file and then marks it covered -- a false completeness
+    # claim, which is the one failure this whole scan exists to avoid.
+    if shards and not emitted:
+        sys.exit(f"no worker produced {kind}.txt: ./sieve does not know "
+                 f"that record kind.\nIt is older than this driver -- "
+                 f"run 'make' and start again.")
+    return cands
+
+
+def hold(out, kind, lo, upto):
+    """Add this round's candidates for `kind` to its held band.
+
+    The band must continue exactly where it left off. A gap in it would be
+    ground nobody collected, and rolling in across it could settle a term
+    the gap would have ruled out.
+    """
+    held = read_pending(out).get(kind)
+    rows = held[2] if held else []
+    if held and held[1] != lo:
+        sys.exit(f"{pending_path(out, kind)} covers [{held[0]:,}, {held[1]:,}), "
+                 f"but this round starts at {lo:,}: the band would have a hole.")
+    start = held[0] if held else lo
+    new = [r for r in shard_candidates(out, kind) if lo <= r[1] <= upto]
+    rows = prune_held(kind, sorted_unique(rows + new))
+    write_pending(out, kind, start, upto, rows)
+    return len(new), len(rows)
+
+
+def roll_in(out, kind):
+    """Settle a held band once `kind` is caught up to where the band begins."""
+    lo, hi, rows = read_pending(out)[kind]
+    path = os.path.join(out, f"{kind}.txt")
+    kept = replay(kind, sorted_unique(read_records(path) + rows))
+    write_records(path, kept,
+                  f"# {kind} records: <n> <prime> <value> <gap_below> "
+                  f"<gap_above> <prev_prime> <next_prime>\n")
+    os.remove(pending_path(out, kind))
+    return hi, len(kept)
+
+
 def merge(out, lo, seed, upto=None, kinds=KINDS):
-    """Apply the running-maximum rule across every worker's candidates.
+    """Apply each kind's rule across every worker's candidates.
 
     Incremental: records already in <out> are kept and act as the threshold,
     so rounds can be merged one after another.
@@ -586,22 +748,9 @@ def merge(out, lo, seed, upto=None, kinds=KINDS):
     """
     os.makedirs(out, exist_ok=True)
     summary = {}
-    shards = sorted(os.listdir(os.path.join(out, "shards")))
     for kind in kinds:
         cands = read_records(os.path.join(out, f"{kind}.txt"))
-        emitted = False
-        for d in shards:
-            path = os.path.join(out, "shards", d, f"{kind}.txt")
-            emitted = emitted or os.path.exists(path)
-            cands += read_records(path)
-        # A sieve older than this driver knows nothing about a kind added
-        # since, and writes no file for it. Merging that silently produces an
-        # EMPTY records file and then marks it covered -- a false completeness
-        # claim, which is the one failure this whole scan exists to avoid.
-        if shards and not emitted:
-            sys.exit(f"no worker produced {kind}.txt: ./sieve does not know "
-                     f"that record kind.\nIt is older than this driver -- "
-                     f"run 'make' and start again.")
+        cands += shard_candidates(out, kind)
         if upto is not None:
             cands = [r for r in cands if r[1] <= upto]
 
@@ -616,14 +765,12 @@ def merge(out, lo, seed, upto=None, kinds=KINDS):
             seen.add(r[1])
             uniq.append(r)
 
-        best = seed[kind][2] if seed.get(kind) else 0
-        kept = [seed[kind]] if seed.get(kind) else []
+        last = seed.get(kind)
+        kept = [last] if last else []
         if kept and uniq and uniq[0][1] <= kept[0][1]:
-            kept = []           # the seed row is already among the candidates
-        for r in uniq:
-            if r[2] > best:
-                best = r[2]
-                kept.append(r)
+            kept, last = [], None   # the seed row is already among the candidates
+        kept += replay(kind, uniq, last)
+        best = kept[-1][2] if kept else 0
 
         # Header describes the DATA, and nothing about the run that produced
         # it. A candidate count changes every round while the records do not,
@@ -716,8 +863,12 @@ def main():
     ap.add_argument("--status", action="store_true",
                     help="print each sequence's frontier, and exit")
     ap.add_argument("--catch-up", dest="catch_up", action="store_true",
-                    help="proceed without asking when the sequences' frontiers "
-                         "diverge and one has to be caught up")
+                    help="when the sequences' frontiers diverge, catch the "
+                         "lagging ones up without asking")
+    ap.add_argument("--skip-catch-up", dest="skip_catch_up", action="store_true",
+                    help="when they diverge, carry on from the highest "
+                         "frontier without asking, holding the lagging ones' "
+                         "candidates until a later catch-up")
     args = ap.parse_args()
 
     if not os.path.exists(BINARY):
@@ -730,6 +881,7 @@ def main():
     state = os.path.join(args.out, "round.txt")
 
     fronts = read_frontiers(args.out)
+    held = read_pending(args.out)
     settled = len(set(fronts.values())) == 1
 
     if args.status:
@@ -741,6 +893,10 @@ def main():
                    f"   <-- {level - fronts[kind]:,} behind"
             print(f"    {kind:<12} {n:>3} records   frontier "
                   f"{fronts[kind]:,}{flag}")
+            if kind in held:
+                lo, hi, rows = held[kind]
+                print(f"    {'':<12} {len(rows):>3} candidates held for "
+                      f"[{lo:,}, {hi:,})")
         if not settled:
             print("  frontiers diverge; a run will catch the lagging ones up")
         return 0
@@ -751,6 +907,9 @@ def main():
         lo, hi, jobs, kinds = read_round(state)
         ranges = prepare(args.out, jobs, lo, hi, seed)
         front = safe_frontier(args.out, ranges)
+        # Held kinds are not re-merged here: their band lives in pending/ and
+        # is extended only by a round that advances the frontier with it.
+        kinds = tuple(k for k in kinds if fronts[k] >= lo)
         summary = merge(args.out, None, seed, upto=front, kinds=kinds)
         for kind, (n, k, best) in summary.items():
             print(f"    {kind:<12} {n:>5} candidates -> {k:>3} records   best {best}")
@@ -777,7 +936,9 @@ def main():
 
     # Diverged frontiers are worth stopping for: the run is about to spend
     # real time re-scanning ground it has already covered, and the plan is
-    # not what someone typing the usual command expects.
+    # not what someone typing the usual command expects. There are two ways
+    # on, and which is better depends on what the machine is wanted for.
+    skip = False
     if not settled:
         level = max(fronts.values())
         low = min(fronts.values())
@@ -786,26 +947,53 @@ def main():
         for kind in KINDS:
             mark = "  <-- behind" if fronts[kind] < level else ""
             print(f"       {kind:<12} {fronts[kind]:>22,}{mark}")
-        hrs = est_seconds(low, level, args.jobs) / 3600.0
-        print(f"\n     plan: scan up from {low:,}, collecting "
-              f"{', '.join(behind)} only,")
+            if kind in held:
+                lo, hi, rows = held[kind]
+                print(f"       {'':<12} {len(rows):>3} candidates held for "
+                      f"[{lo:,}, {hi:,})")
+        # A catch-up stops where a held band begins, and the band itself
+        # needs no rescanning, so that is the ground still to cover.
+        target = min([held[k][0] for k in behind if k in held] or [level])
+        hrs = est_seconds(low, target, args.jobs) / 3600.0
         rolled = [k for k in KINDS if k not in behind]
-        print(f"           rolling in {', '.join(rolled)} on reaching "
-              f"{level:,}.")
-        print(f"           roughly {hrs:.1f}h to level at {args.jobs} workers. "
-              f"The others' files")
-        print(f"           are not written until then.")
+        print(f"\n     [c] catch up now: scan up from {low:,}, collecting "
+              f"{', '.join(behind)} only,")
+        print(f"         roughly {hrs:.1f}h at {args.jobs} workers. "
+              f"{', '.join(rolled)} do not advance until then.")
+        print(f"     [s] skip for now: carry on from {level:,} with all "
+              f"{len(KINDS)} sequences.")
+        print(f"         {', '.join(behind)} candidates above it are held in "
+              f"pending/ -- lossless,")
+        print(f"         but none of its terms there count until a later "
+              f"catch-up covers the")
+        print(f"         ground below, so it has no frontier to claim meanwhile.")
+        print(f"     [q] quit")
         if resume:
             print(f"\n     first, the unfinished round [{resume[0]:,}, "
                   f"{resume[1]:,}) is resumed.")
-        if not args.catch_up and not confirm("\n  proceed? [y/N] "):
-            print("  stopped. Re-run with --catch-up to skip this question.")
+        if args.catch_up:
+            answer = "c"
+        elif args.skip_catch_up:
+            answer = "s"
+        else:
+            answer = choose("\n  catch up, skip, or quit? [c/s/Q] ", "csq")
+        if answer not in ("c", "s"):
+            print("  stopped. Re-run with --catch-up or --skip-catch-up to "
+                  "answer in advance.")
             return 0
+        skip = answer == "s"
+        if skip:
+            # A held band has to continue from where it stopped. If the level
+            # moved on without it, the band has a hole only a catch-up fixes.
+            for k in behind:
+                if k in held and held[k][1] != level:
+                    sys.exit(f"  cannot skip: {k}'s held band ends at "
+                             f"{held[k][1]:,}, not at {level:,}. Catch up.")
 
     if resume:
         where = f"resuming round [{resume[0]:,}, {resume[1]:,})"
     else:
-        _, a0, ceil0 = plan_round(fronts, args, args.jobs)
+        _, a0, ceil0 = plan_round(fronts, args, args.jobs, held, skip)
         where = (f"scanning [{a0:,}, {int(args.hi):,})" if args.hi is not None
                  else f"scanning from {a0:,}, open-ended")
     print(f"  {where} across {args.jobs} workers")
@@ -821,7 +1009,9 @@ def main():
             # it below the round's own start, so its candidates must not be
             # merged as though they covered the range from zero. A kind whose
             # frontier reaches the round's start was being collected by it.
-            kinds = tuple(k for k in kinds if fronts[k] >= a)
+            held = read_pending(args.out)
+            kinds = tuple(k for k in kinds
+                          if fronts[k] >= a or (k in held and held[k][1] == a))
             if not kinds:
                 print(f"\n  discarding round [{a:,}, {b:,}): it collected "
                       f"nothing still wanted")
@@ -830,7 +1020,8 @@ def main():
             print(f"\n  resuming round [{a:,}, {b:,}) for {','.join(kinds)}")
         else:
             jobs = args.jobs
-            kinds, a, ceiling = plan_round(fronts, args, jobs)
+            held = read_pending(args.out)
+            kinds, a, ceiling = plan_round(fronts, args, jobs, held, skip)
             if ceiling is not None and a >= ceiling:
                 print(f"\n  complete. results in {args.out}/")
                 return 0
@@ -842,22 +1033,40 @@ def main():
                 b = min(b, ceiling)
             clear_shards(args.out)
             write_round(state, a, b, jobs, kinds)
+            lagging = [k for k in kinds if fronts[k] < a]
             print(f"\n  round [{a:,}, {b:,})"
-                  + ("" if set(kinds) == set(KINDS)
-                     else f"  catching up: {','.join(kinds)} only"))
+                  + (f"  catching up: {','.join(kinds)} only"
+                     if set(kinds) != set(KINDS) else "")
+                  + (f"  holding: {','.join(lagging)}" if lagging else ""))
 
         # A sequence being caught up is rebuilt from zero, so it takes no
         # threshold from the run it is catching up with.
         round_seed = seed if set(kinds) == set(KINDS) else {}
         finished, front, ranges = run_round(args.out, a, b, jobs, round_seed,
                                             args.checkpoint)
-        summary = merge(args.out, None, round_seed, upto=front, kinds=kinds)
-        for kind in kinds:
+        # A kind collected here without having reached a is one that skipped
+        # its catch-up: its candidates join its held band instead.
+        lagging = tuple(k for k in kinds if fronts[k] < a)
+        merged = tuple(k for k in kinds if k not in lagging)
+        summary = merge(args.out, None, round_seed, upto=front, kinds=merged)
+        for kind in merged:
             fronts[kind] = max(fronts[kind], front)
+        held_now = {k: hold(args.out, k, a, front) for k in lagging}
+        rolled = {}
+        for kind, (lo, hi, _) in read_pending(args.out).items():
+            if kind not in lagging and fronts[kind] >= lo:
+                hi, n = roll_in(args.out, kind)
+                fronts[kind] = max(fronts[kind], hi)
+                rolled[kind] = (lo, hi, n)
         write_frontiers(args.out, fronts)
         print(f"  merged up to {front:,}")
         for kind, (n, k, best) in summary.items():
             print(f"    {kind:<12} {n:>5} candidates -> {k:>3} records   best {best}")
+        for kind, (n, k) in held_now.items():
+            print(f"    {kind:<12} {n:>5} candidates -> {k:>3} held, not merged")
+        for kind, (lo, hi, n) in rolled.items():
+            print(f"    {kind:<12} caught up to {lo:,}: held band rolled in, "
+                  f"now {n} records to {hi:,}")
 
         if not finished:
             print("\n  interrupted; workers checkpointed. Re-run the same "
