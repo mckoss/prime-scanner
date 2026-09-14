@@ -22,16 +22,17 @@ list, which is exactly the mistake this project made.
   not be well defined
 - `A031134(k) − A031133(k) == A031132(k)` at all 67 terms
 - terms 1–55 reproduce the published b096265 exactly
-- terms 1–63 reproduce this project's own from-scratch exhaustive scan exactly
+- **all 68 terms reproduce this project's own from-scratch exhaustive scan
+  exactly**, which found no aloof(69) below 2*10^15 (frontier
+  2,075,805,595,153,846 on 2026-09-14). So the file is an independent
+  verification of A031133/A031134, not a transcription of them, and the header
+  says so.
 - format checked against the [b-file spec](https://oeis.org/wiki/B-files):
   pure ASCII, no BOM, LF endings, final newline, no tabs, `n a(n)` per line,
   indices consecutive from the offset
 
-### Still worth doing before submitting
-
-This scan reaches 1.693e15 in roughly a week. At that point terms 64–68 are
-independently confirmed here rather than taken from A031133/A031134, which
-makes the submission an independent verification instead of a transcription.
+Before submitting, recheck against the frontier then current and date the
+header. The completeness bound in it is rounded down.
 
 ### Also worth proposing
 
@@ -43,7 +44,7 @@ duplication findable from either end.
 
 # Audit: what else is missing
 
-`python3 oeis_audit.py [--refresh]` walks the three families and reports where
+`python3 oeis_audit.py [--refresh]` walks the four families and reports where
 one member is shallower than its siblings. Within a family every sequence
 describes the *same* records, so any depth difference is stale bookkeeping that
 can be fixed from published data alone.
@@ -52,11 +53,11 @@ can be fixed from published data alone.
 
 | priority | sequence | state | source for the fix |
 |---|---|---|---|
-| **1** | A096265 | 55 terms, **12 behind** | done — `b096265.txt` here |
+| **1** | A096265 | 55 terms, **12 behind** | done — `b096265.txt` here, confirmed by the scan |
 | **2** | A005669 | 82 terms, 3 behind | the "Index via primecount.exe" column of [Andersen–Luhn](https://www.pzktupel.de/RecordGaps/risinggap.php) |
 | **3** | A107578 | 80 terms, 5 behind | `A107578(n) = A005669(n) + 1`, verified at all 80 shared terms |
 | **4** | A122412 / A122413 | 52 terms, **15 behind** | needs π(p) at p ≈ 1.69e15 — real compute, e.g. `primecount` |
-| low | A023187, A031132 | no uploaded b-file | DATA already holds every known term; only worth doing once they grow |
+| low | A023187, A031132, A058867, A058868 | no uploaded b-file | DATA already holds every known term; only worth doing once they grow |
 
 A053695 looks short at 84 terms but is a difference sequence, so 84 is complete
 against A005250's 85. The audit accounts for that.
@@ -69,11 +70,13 @@ that makes each record checkable without rerunning a scan.
 | family | state |
 |---|---|
 | gap | **stale.** Alex Beveridge's [a005250.txt](https://oeis.org/A005250/a005250.txt) has 75 rows against 85 known terms, last updated Oct 2010 |
-| lonely | **missing entirely** |
-| aloof | **missing entirely** |
+| lonely | **missing entirely** — all 56 records with both neighbours are in `fresh/lonely.txt` |
+| aloof | **missing entirely** — all 68 are in `fresh/aloof.txt` |
+| equidistant | **missing entirely** — all 30 are in `fresh/equidistant.txt` |
 
 The gap a-file is the model to copy: columns for the upper prime, the gap and
 the prime index, with a header naming the A-number each column belongs to. The
-same table for lonely and aloof — prime, both neighbours, both gaps — would let
-anyone verify a term from the entry alone, and would have made this project's
-duplicate-sequence mistake impossible to miss.
+same table for lonely, aloof and equidistant — prime, both neighbours, both
+gaps — would let anyone verify a term from the entry alone, and would have made
+this project's duplicate-sequence mistake impossible to miss. None of them is
+blocked any longer; the scan covers every published term of all three.

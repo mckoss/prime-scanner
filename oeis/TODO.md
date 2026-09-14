@@ -18,7 +18,7 @@ Add `--refresh` to either to refetch from OEIS.
 ## Status 2026-09-14: publishing checkpoint reached
 
 The bake is done, two days ahead of the plan. `fresh/frontier.txt` stands at
-**2,075,805,595,153,846 (2.08e15)** with all four sequences level, so the
+**2,075,805,595,153,846 (2.0758e15)** with all four sequences level, so the
 A058867 catch-up (A2) is finished. The scan is still running, open-ended, and
 the bound only improves from here — but nothing below waits on it.
 
@@ -37,17 +37,17 @@ What the week bought, against the original plan:
 
 | planned | frontier | outcome |
 |---------|----------|---------|
-| past **lonely(56)** | 9.41e14 | confirmed `941114429467073`; **no lonely(57)** below 2.08e15 |
+| past **lonely(56)** | 9.41e14 | confirmed `941114429467073`; **no lonely(57)** below 2.07e15 |
 | **gap(62)** | 1.19e15 | confirmed `1189459969825483` |
 | **gap(63)**, **gap(64)** | 1.69e15 | confirmed `1686994940955803`, `1693182318746371` |
-| past the aloof family | 1.69e15 | aloof(67), aloof(68) confirmed; **no aloof(69)** below 2.08e15 |
-| A058867 catch-up | 2.08e15 | caught up; its 30 terms reproduced, **no 31st** below 2.08e15 |
+| past the aloof family | 1.69e15 | aloof(67), aloof(68) confirmed; **no aloof(69)** below 2.07e15 |
+| A058867 catch-up | 2.07e15 | caught up; its 30 terms reproduced, **no 31st** below 2.07e15 |
 
 `1693182318746371` is both gap(64) and aloof(68): the 1132 gap above it is a
 record on its own, and with the 20 below it a record span of 1152.
 
 No new terms, then — the result is **completeness bounds**, every one of them
-now at 2.08e15, which is 11x A058867's published reach, 2.2x A023186's and
+now at 2.07e15, which is 11x A058867's published reach, 2.2x A023186's and
 1.2x A031134's.
 
 Use the frontier in `fresh/frontier.txt` at submission time, not `round.txt`:
@@ -60,10 +60,14 @@ Do **not** pass `--to` to the running scan; it is open-ended and should stay so.
 1. **B1 — A096265 b-file.** Ready; every term now confirmed here.
 2. **D — A031133/A031134 reverse link to A096265.** Goes with B1.
 3. **A — balanced lonely primes.** Refresh the bound, then submit.
-4. **B5/B6, C — A058867/A058868 b-files and a-files, lonely/aloof a-files.**
+4. **E — search-bound comments** on A023186, A058867 and A031133.
+5. **B5/B6, C — A058867/A058868 b-files and a-files, lonely/aloof a-files.**
    Built from `fresh/`; no longer blocked.
-5. B2/B3 (A005669, A107578) from Andersen–Luhn — independent of this scan.
-6. B4 (A122412/3) — needs `primecount`.
+6. B2/B3 (A005669, A107578) from Andersen–Luhn — independent of this scan.
+7. B4 (A122412/3) — needs `primecount`.
+
+State every bound rounded **down** from `fresh/frontier.txt`: "no further terms
+below 2*10^15", never 2.1*10^15.
 
 ---
 
@@ -72,8 +76,8 @@ Do **not** pass `--to` to the running scan; it is open-ended and should stay so.
 Draft: [`proposed/balanced-lonely-primes.md`](proposed/balanced-lonely-primes.md)
 Terms: `<run>/balanced.txt`, filtered out of `lonely.txt` at every merge.
 
-- [ ] refresh the completeness bound to the frontier at submission time — the
-      draft still says 5.67e14; it is 2.08e15 now
+- [x] update the completeness bound: the draft says 2*10^15 as of 2026-09-14
+- [ ] recheck it against the frontier at submission time, rounded down
 - [x] **distinguish it from A058867 in the Comments** — see below; an editor
       will ask, and the entry should answer before they do
 - [x] add `A058867` and `A054342` to the cross-references
@@ -106,7 +110,7 @@ against `lonely(49) = 16303344721399` with gaps (348, 378).
 ## A2. A058867 — caught up
 
 **Done.** Caught up from zero and rolled back in with the other three; at
-2.08e15 it reproduces all 30 published terms and finds no 31st. What it
+2.07e15 it reproduces all 30 published terms and finds no 31st. What it
 contributes is a completeness bound 11x past A058867's last term, and the
 bounding primes for an a-file. The rest of this section is how it was run.
 
@@ -150,7 +154,7 @@ Each is fixable from already-published data; none is a discovery claim.
 
 | # | sequence | state | source | status |
 |---|----------|-------|--------|--------|
-| 1 | **A096265** | 55 terms, 12 behind its siblings | A031133/A031134, and now this scan | **ready to submit**: [`proposed/b096265.txt`](proposed/b096265.txt) — all 68 terms match `fresh/aloof.txt`, so it is an independent confirmation, not a transcription. Refresh the header comment and the "Still worth doing" note in [`proposed/README.md`](proposed/README.md) first |
+| 1 | **A096265** | 55 terms, 12 behind its siblings | A031133/A031134, and now this scan | **ready to submit**: [`proposed/b096265.txt`](proposed/b096265.txt) — all 68 terms match `fresh/aloof.txt`, so it is an independent confirmation, not a transcription. Header and [`proposed/README.md`](proposed/README.md) updated 2026-09-14 |
 | 2 | **A005669** | 82 terms, 3 behind | "Index via primecount.exe" column of [Andersen–Luhn](https://www.pzktupel.de/RecordGaps/risinggap.php) | not started |
 | 3 | **A107578** | 80 terms, 5 behind | `A107578(n) = A005669(n) + 1`, verified at all 80 shared terms | not started |
 | 4 | A122412 / A122413 | 52 terms, 15 behind | needs π(p) at p ≈ 1.69e15 — real compute (`primecount`) | not started |
@@ -171,8 +175,8 @@ free-form and is where they belong.
 |--------|-------|--------|
 | gap | **stale** — Beveridge's [a005250.txt](https://oeis.org/A005250/a005250.txt) has 75 rows against 85 terms, last updated Oct 2010 | extend to 85 |
 | aloof | **missing** | build from A031133/A031134/A031132 — can be done today, no scan needed |
-| lonely | **missing** | build from this scan: prime, both neighbours, both gaps — all 56 records, complete to 2.08e15 |
-| equidistant | **missing** | build from this scan; `fresh/equidistant.txt` has all 30, complete to 2.08e15 |
+| lonely | **missing** | build from this scan: prime, both neighbours, both gaps — all 56 records, complete to 2.07e15 |
+| equidistant | **missing** | build from this scan; `fresh/equidistant.txt` has all 30, complete to 2.07e15 |
 
 Beveridge's file is the format to copy: one column per contributing sequence,
 with a header naming the A-number each column belongs to. Not our 7-column
@@ -183,6 +187,22 @@ layout — theirs is the established convention.
 - [ ] A031133 and A031134 cite A031131/2/4 and A122412/3 but **not** A096265,
       so the aloof duplication is findable in only one direction. Propose the
       reverse link.
+
+## E. Search-bound comments
+
+The scan's completeness bounds exist nowhere in OEIS except as a line in the
+new sequence (A). Each family whose published terms the scan has passed can
+take a one-line comment in the usual form:
+
+| sequence | last published term | comment |
+|----------|---------------------|---------|
+| A023186 (and A023187) | lonely(56) = 941114429467073 | no further terms below 2*10^15 |
+| A058867 (and A058868) | 187891466722913 | no further terms below 2*10^15 |
+| A031133/4/2 (and A096265) | aloof(68) = 1693182318746371 | no further terms below 2*10^15 |
+
+- [ ] check each entry for an existing search-limit comment, and word the new
+      one to supersede it
+- [ ] submit, citing an exhaustive scan from 0 and the date
 
 ---
 

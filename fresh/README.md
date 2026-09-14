@@ -143,55 +143,20 @@ of them.
 ## Status
 
 Checked with `python3 check_oeis.py fresh`, a full positional diff against the
-published b-files — every published term below the frontier must appear at the
-same index, with nothing missing and nothing extra — plus a deterministic
-Miller-Rabin re-test of each record, independent of the sieve.
+published b-files, plus a deterministic Miller-Rabin re-test of each record,
+independent of the sieve. Every published term below the frontier must appear
+at the same index, with nothing missing and nothing extra.
 
-Snapshot at frontier 385,545,873,435,488 (≈3.86e14, ~20 hours on 8 cores).
-Rerun the command above for the current numbers — the scan is still moving.
+At the 2026-09-14 checkpoint (frontier 2,075,805,595,153,846) every family
+matches: gap 64 of 64, lonely 56 of 56, aloof 68 of 68 against the
+A031133/4/2 family, and equidistant 30 of 30. There are no new terms. What
+that establishes for OEIS, and what it cost, is summarised in
+[`../oeis/README.md`](../oeis/README.md).
 
-| sequence | published | …below the frontier | ours | |
-|----------|-----------|---------------------|------|---|
-| gap A002386 | 85 | 61 | 61 | exact match |
-| lonely A023186 | 56 | 54 | 54 | exact match |
-| aloof A096265 | 55 | 55 | 63 | all published — see below |
-
-The middle column is the honest denominator: a term above the frontier is not
-a miss, it is simply not reached yet.
-
-**A096265's b-file is not the deepest source for aloof records**, so that last
-row understates the published data badly. See "Aloof is not new ground" below.
-
-### Aloof is not new ground
-
-The eight aloof terms past A096265 are **not discoveries**. The same records
-are published far deeper as a three-sequence family:
-
-| sequence | holds |
-|----------|-------|
-| [A031133](https://oeis.org/A031133) | the lower neighbour |
-| [A031134](https://oeis.org/A031134) | the upper neighbour |
-| [A031132](https://oeis.org/A031132) | the span between them |
-
-`prime(n+2) − prime(n)` is exactly `nextprime(p) − prevprime(p)` for the middle
-prime, so these are the same records under a different name. They are indexed
-one lower than A096265, which carries an extra a(1) = 2 having no lower
-neighbour: **family term k is A096265 term k+1**.
-
-Their b-files hold **67 terms, equivalent to A096265 index 68, reaching
-1.693e15** — while A096265's own b-file stopped at 55. Checked against the
-family, all 63 aloof records this scan has produced agree on lower neighbour,
-upper neighbour and span, and the family is **5 terms ahead**, its next at
-471,911,699,385,743.
-
-So the scan has reproduced published aloof data, not extended it. That is a
-real result — 63 terms rederived from zero, agreeing exactly — but it is
-verification, not discovery, and the earlier claim of eight new terms was
-wrong. `check_oeis.py` now compares against the family, so this cannot recur.
-
-The genuine aloof frontier is 1.693e15, about 1.7 days from here — which is
-also where the gap checkpoints run out. That one point is now the milestone for
-both.
+Aloof records are published twice: as A096265, whose b-file stops at 55, and
+as the A031133/A031134/A031132 family, indexed one lower, which reaches
+A096265 index 68. `check_oeis.py` compares against the family, because checking
+A096265 alone once made published records look like discoveries.
 
 ## How far can this go?
 
@@ -266,6 +231,9 @@ contention measured into them, inflating every figure by a further 1.8x.
 Re-measure after anything that touches the segment loop.
 
 ## Extending, not just validating
+
+*Written at frontier 5.7e14. The milestones below have since been passed; see
+the status above for how they came out.*
 
 9.41e14 is only a milestone for *validation* — it is where the published
 A023186 data runs out. It is not a stopping point for the search, and past it

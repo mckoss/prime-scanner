@@ -40,9 +40,9 @@ an editor will otherwise ask.
     the prime 16033, whose gaps are (26, 24), so 16787 sets no record over all
     primes. This sequence is the 5 terms of A058867 that are in A023186.
 
-    There are no further terms below 5.67e14. The terms of A023186 were
-    rederived from zero by an exhaustive scan, so the sequence is complete
-    below that bound. - Mike Koss, <date>
+    There are no further terms below 2*10^15. An exhaustive scan from zero
+    rederived every term of A023186 and of A058867 below that bound, and found
+    no others, so the sequence is complete there. - Mike Koss, <date>
 
 **Example**
 
@@ -70,13 +70,21 @@ No b-file: five terms fit in DATA.
   If an editor asks, the answer is that it is unknown.
 - Offer to reduce the A023186 comment to `Cf.` this sequence once it is
   allocated, so the list is not maintained in two places.
-- The bound rises as the scan advances; use the frontier at submission time.
+- The bound rises as the scan advances; use the frontier at submission time,
+  rounded **down**. At 2026-09-14 `fresh/frontier.txt` stood at
+  2,075,805,595,153,846, stated above as 2*10^15. Rounding to 2.1*10^15
+  would claim ground the scan has not covered.
 
 ## Verification
 
 Every term checked against this project's own exhaustive scan: `p - prev`,
 `next - p`, equality of the two gaps, and each of `prev`, `p`, `next` prime by
 deterministic Miller-Rabin.
+
+The scan it filters is itself checked: at the 2026-09-14 frontier,
+`check_oeis.py fresh` matches all 56 terms of A023186 and all 30 of A058867
+position by position. It also confirms that all 5 terms here appear in
+A058867, as they must.
 
 A trap worth recording: `fresh/lonely.txt` stores A023186(1) = 2 as
 `below=1, above=1, prev=0`, so a naive `below == above` filter returns 2 as

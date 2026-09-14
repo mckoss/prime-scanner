@@ -2,7 +2,9 @@
 # terms 56..68 derived from A031133/A031134,
 # whose b-files reach 67 terms (A096265 index 68).
 # A096265(k+1) is the prime between A031133(k) and A031134(k).
-# 2026-09-09
+# All 68 terms confirmed by an exhaustive scan from 0 to 2*10^15,
+# which finds no further term below that bound.
+# 2026-09-14
 1 2
 2 3
 3 5
