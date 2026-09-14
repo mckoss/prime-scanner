@@ -5,8 +5,10 @@ and equidistant prime families: independent confirmation of the published
 terms, completeness bounds, and the bounding primes that make each record
 checkable. This page summarises what the unseeded scan in
 [`../fresh/`](../fresh/README.md) has established so far.
-[`TODO.md`](TODO.md) is the working checklist, and [`proposed/`](proposed/)
-holds the drafts.
+[`TODO.md`](TODO.md) is the live list of what can be contributed, generated
+by `oeis_audit.py` -- never edit it; record progress in
+[`submissions.txt`](submissions.txt) and keep notes in [`NOTES.md`](NOTES.md).
+[`proposed/`](proposed/) holds the drafts.
 
 ## Progress
 
@@ -50,7 +52,8 @@ above will rise before submission.
 
 ### What is being submitted
 
-Nothing here is a discovery claim. In order (details in [`TODO.md`](TODO.md)):
+Nothing here is a discovery claim. In order, as of this snapshot; the live
+list, with every item's current state, is [`TODO.md`](TODO.md):
 
 1. **A096265 b-file**, 55 → 68 terms: [`proposed/b096265.txt`](proposed/b096265.txt).
    Terms 56–68 were already published under A031133/A031134, and all 68 are now

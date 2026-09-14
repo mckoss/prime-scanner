@@ -22,10 +22,16 @@ cross-reference on A096265 mentions.
 
     python3 oeis_audit.py                   # audit, using the cached copies
     python3 oeis_audit.py --refresh         # refetch from OEIS first
-    python3 oeis_audit.py --results fresh   # add that run's column and frontier
+    python3 oeis_audit.py --results fresh   # add that run, and rewrite oeis/TODO.md
+
+With --results it ends by turning all of that into CONTRIBUTIONS -- new terms,
+completeness bounds, stale b-files and a-files, one-way cross-references,
+sequences to review -- and writes them to oeis/TODO.md. That file is generated;
+progress on an item goes in oeis/submissions.txt under the item's id.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -323,14 +329,9 @@ def scan_days(lo, hi):
         spec.loader.exec_module(pg)
     except Exception:
         return None
-    if hi <= lo:
-        return 0.0
-    n, tot, x = 2000, 0.0, lo
-    for i in range(1, n + 1):
-        y = lo * (hi / lo) ** (i / n)
-        tot += (y - x) / pg.scan_rate((x + y) / 2)
-        x = y
-    return tot / (8 * 4.39 / 8) / 86400        # 8 workers at the measured duty
+    # pgaps.est_seconds() already has contention in its rates; dividing by a
+    # duty factor on top, as this once did, made every estimate ~1.8x long.
+    return pg.est_seconds(lo, hi, 8) / 86400
 
 
 def bfile_terms_list(aid, refresh):
@@ -460,6 +461,7 @@ siblings already carry have not been written down in that place.
             terms = n if have_b else data_n
             deepest = max(deepest, terms - m["delta"])
             seqs.append({"aid": aid, "m": m, "gone": False, "data": data_n,
+                         "rec": rec,
                          "b": n if have_b else None, "terms": terms,
                          "af": afile(rec, aid), "local": snapshot_terms(m["local"]),
                          "scan": scan_terms(rows, m)})
@@ -514,58 +516,6 @@ def proposed_block(fam, info, rows, run, refresh):
     if pub:
         print(f"  related: {aid}, {len(pub)} terms to {pub[-1]:.4e}")
         print(f"           {why}")
-
-
-def todo(families):
-    heading("TO FIX  --  none of this is a discovery claim")
-
-    print("\nb-files, extendable from already-published data:")
-    any_b = False
-    for fam, f in families.items():
-        for s in f["seqs"]:
-            if s["gone"]:
-                continue
-            deep = f["deepest"] + s["m"]["delta"]
-            if s["b"] is None:
-                # OEIS synthesizes a b-file from DATA, and DATA holds ~260
-                # characters. If every known term already fits there, an
-                # uploaded b-file adds nothing until the sequence grows.
-                why = ("no b-file uploaded, but DATA holds every known term "
-                       "-- low priority")
-                if s["terms"] < deep:
-                    why = f"no b-file, and DATA is {deep - s['terms']} short"
-            elif s["terms"] < deep:
-                why = f"{deep - s['terms']} behind its siblings ({deep})"
-            else:
-                continue
-            any_b = True
-            print(f"  {s['aid']}  [{fam:<8}] {s['terms']:>3} terms -- {why}")
-    if not any_b:
-        print("  nothing -- every family member is at the same depth")
-
-    print("\na-files, the one place a record's bounding primes can be published:")
-    for fam, f in families.items():
-        if "proposed" in f["info"]:
-            print(f"  [{fam:<8}] not applicable until the sequence exists "
-                  f"-- see {f['info']['proposed']}")
-            continue
-        have = [s for s in f["seqs"] if not s["gone"] and s["af"]]
-        if have:
-            print(f"  [{fam:<8}] present on " +
-                  ", ".join(s["aid"] for s in have) +
-                  " -- free-form, so check it is current")
-            for s in have:
-                text = plain(s["af"][0])
-                if len(text) > 72:
-                    text = text[:71].rsplit(" ", 1)[0] + " ..."
-                print(f"           {s['aid']}: {text}")
-        else:
-            note = "nothing documents the neighbours that make a record checkable"
-            print(f"  [{fam:<8}] MISSING on every member -- {note}")
-            if f["rows"]:
-                both = sum(1 for r in f["rows"] if r[5])
-                print(f"           this run supplies both neighbours for "
-                      f"{both} of its {len(f['rows'])} records  <-- BUILDABLE NOW")
 
 
 def neighbours(results, refresh):
@@ -643,6 +593,417 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.""")
         print("\n  not tracked -- not record sequences, so never a b-file from a scan:")
         for aid, why in dense:
             print(f"    {aid}  {why}")
+    return candidates, dense
+
+
+# ---------------------------------------------------------------------------
+# CONTRIBUTIONS -- the live TODO
+#
+# Everything above describes the state of OEIS and of a scan. This turns it
+# into things a person can submit, and writes them to oeis/TODO.md. The file
+# is regenerated on every run with --results, so it is never edited by hand:
+# progress on an item is recorded in oeis/submissions.txt under the item's id,
+# and the next run files the item accordingly.
+# ---------------------------------------------------------------------------
+
+TODO_PATH = os.path.join(SNAPSHOTS, "TODO.md")
+NOTES_PATH = os.path.join(SNAPSHOTS, "NOTES.md")
+SUBMISSIONS = os.path.join(SNAPSHOTS, "submissions.txt")
+
+# First line of a generated TODO.md. The hash covers everything after it, so
+# a hand edit -- the one thing that would be lost on regeneration -- shows.
+STAMP = "<!-- generated by oeis_audit.py; sha256 {} -->"
+STAMP_RE = re.compile(r"<!-- generated by oeis_audit\.py; sha256 ([0-9a-f]{64}) -->")
+ITEM_ID_RE = re.compile(r"`((?:terms|bound|new|b-file|a-file|xref|scan|review):"
+                        r"[A-Za-z0-9:]+)`")
+PROPOSED = os.path.join(SNAPSHOTS, "proposed")
+
+# drafted: work exists but is not submitted -- the item stays in its group.
+# submitted: waiting on an editor.  The rest close the item.
+OPEN_STATUSES = ("drafted",)
+REVIEW_STATUSES = ("submitted",)
+CLOSED_STATUSES = ("approved", "declined", "skip")
+STATUSES = OPEN_STATUSES + REVIEW_STATUSES + CLOSED_STATUSES
+
+# Where a b-file for a sequence no scan can produce comes from. A member not
+# listed here with col=None needs real compute to extend.
+SOURCES = {
+    "A005669": "the \"Index via primecount.exe\" column of Andersen and Luhn's "
+               "table, https://www.pzktupel.de/RecordGaps/risinggap.php",
+    "A107578": "A005669(n) + 1, which holds at every term both publish",
+}
+
+GROUPS = (
+    ("terms", "New terms",
+     "Terms past everything OEIS has, from an exhaustive scan. Submit only "
+     "while check_oeis.py passes."),
+    ("bound", "Completeness bounds",
+     "The scan has passed every published term, so each entry can say where "
+     "its search stands. Round the bound down; never claim ground not covered."),
+    ("new", "New sequences", ""),
+    ("bfile", "b-files from published or scanned data", ""),
+    ("afile", "a-files: the bounding primes",
+     "A b-file is `n a(n)` only. An a-file is free-form, and the one place a "
+     "record's neighbouring primes can be published."),
+    ("xref", "Cross-references", ""),
+    ("scan", "Waiting on the scan",
+     "Nothing to submit yet; listed so the wait is visible."),
+    ("compute", "Needs compute beyond the scan", ""),
+    ("review", "Related sequences to review",
+     "Found by the neighbour crawl; see oeis/README.md for those already judged."),
+    ("low", "Low priority",
+     "DATA already holds every known term, so a b-file adds nothing until the "
+     "sequence grows."),
+)
+
+
+def item(group, id_, title, *detail):
+    return {"group": group, "id": id_, "title": title, "detail": list(detail)}
+
+
+def read_submissions():
+    """{item id: (status, date, note)} from oeis/submissions.txt."""
+    status = {}
+    if not os.path.exists(SUBMISSIONS):
+        return status
+    for n, line in enumerate(open(SUBMISSIONS), 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        f = line.split(None, 3)
+        if len(f) < 2 or f[1] not in STATUSES:
+            print(f"  ! {SUBMISSIONS}:{n}: expected '<id> <status> [date] "
+                  f"[note]' with status one of {', '.join(STATUSES)}")
+            continue
+        status[f[0]] = (f[1], f[2] if len(f) > 2 else "",
+                        f[3] if len(f) > 3 else "")
+    return status
+
+
+def bound_text(x):
+    """x rounded DOWN to two significant figures, in OEIS's 2.1*10^15 style.
+
+    Rounding up would claim ground the scan has not covered.
+    """
+    if x < 100:
+        return str(int(x))
+    e = len(str(int(x))) - 1
+    m = int(x) // 10 ** (e - 1)
+    whole, tenth = divmod(m, 10)
+    return f"{whole}*10^{e}" if tenth == 0 else f"{whole}.{tenth}*10^{e}"
+
+
+def afile_url(link):
+    m = re.search(r'href="(/A\d{6}/a\d{6}\.txt)"', link)
+    return f"https://oeis.org{m.group(1)}" if m else None
+
+
+def afile_coverage(url, fam_seqs, refresh):
+    """(terms found, terms published) for the member the a-file tabulates.
+
+    An a-file is free-form, but a table that is current contains the primes.
+    Counting which published terms appear in it is enough to see it is stale.
+    Which member it tabulates is not recorded anywhere -- Beveridge's gap
+    table lists upper primes, not A002386's lower ones -- so take the member
+    it matches best. Small terms are left out: 2, 3, 5 ... appear in any table.
+    """
+    path = os.path.join(CACHE, "afile", url.rsplit("/", 1)[1])
+    if not fetch(url, path, refresh):
+        return None
+    tokens = set(re.findall(r"\d+", open(path, errors="replace").read()))
+    best = None
+    for s in fam_seqs:
+        if s["gone"] or s["m"]["col"] not in (2, 6, 7):
+            continue
+        terms = [t for t in bfile_terms_list(s["aid"], refresh) if t > 1000]
+        if terms:
+            got = sum(1 for t in terms if str(t) in tokens)
+            if best is None or got > best[0]:
+                best = (got, len(terms))
+    return best
+
+
+def stamped(body):
+    return STAMP.format(hashlib.sha256(body.encode()).hexdigest()) + "\n" + body
+
+
+def overwrite_refusal(path):
+    """Why path must not be overwritten, or None if it is safe to.
+
+    Only a file this script wrote, and nobody has touched since, is safe:
+    anything else holds words that exist nowhere else.
+    """
+    if not os.path.exists(path):
+        return None
+    first, _, rest = open(path).read().partition("\n")
+    m = STAMP_RE.fullmatch(first.strip())
+    if not m:
+        return "it was not written by oeis_audit.py"
+    if hashlib.sha256(rest.encode()).hexdigest() != m.group(1):
+        return "it has been edited since it was generated"
+    return None
+
+
+def noted_ids():
+    """Item ids that oeis/NOTES.md has something to say about."""
+    if not os.path.exists(NOTES_PATH):
+        return set()
+    return set(ITEM_ID_RE.findall(open(NOTES_PATH).read()))
+
+
+def check_passes(results):
+    """Whether check_oeis.py passes on this run, and its last lines if not."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    r = subprocess.run([sys.executable, os.path.join(here, "check_oeis.py"),
+                        results], capture_output=True, text=True)
+    bad = [l for l in r.stdout.splitlines() if l.lstrip().startswith("!!")]
+    return r.returncode == 0, bad
+
+
+def contributions(families, results, candidates, refresh, check):
+    """Every contribution the current data supports, as items."""
+    items = []
+    run = os.path.basename(os.path.normpath(results))
+    cov, _ = read_frontier(results)
+
+    for fam, f in families.items():
+        info, rows = f["info"], f["rows"]
+
+        if "proposed" in info:
+            lonely_front = cov.get("lonely", 0)
+            items.append(item(
+                "new", f"new:{fam}",
+                f"New sequence: {info['records'].split(' -- ')[0]}",
+                f"draft: `{os.path.relpath(info['proposed'], 'oeis')}`",
+                f"{len(rows)} terms in `{run}/{fam}.txt`, complete below "
+                f"{bound_text(lonely_front)} (it filters the lonely records)"))
+            continue
+
+        aid, off = info["extent"]
+        pub = bfile_terms_list(aid, refresh)
+        reach = cov.get(fam, 0)
+        if pub:
+            extent, n_pub = pub[-1], len(pub) + off
+            primary = [s["aid"] for s in f["seqs"] if s["m"]["col"] == 2]
+            if reach > extent:
+                new = rows[n_pub:] if len(rows) > n_pub else []
+                if new:
+                    gate = ("check_oeis.py passes" if check[0] else
+                            "**BLOCKED: check_oeis.py fails** -- fix first")
+                    items.append(item(
+                        "terms", f"terms:{fam}",
+                        f"Extend {', '.join(primary)} past its {n_pub} "
+                        f"published terms ({len(new)} new)",
+                        *[f"{fam}({r[0]}) = {r[1]}  (gaps {r[3]}, {r[4]}; "
+                          f"{r[5]} < p < {r[6]})" for r in new[:6]],
+                        f"complete below {bound_text(reach)}; {gate}"))
+                # Every member listing the primes themselves states the same
+                # bound: the record prime, and its neighbours where published.
+                targets = sorted({s["aid"] for s in f["seqs"]
+                                  if s["m"]["col"] in (2, 6, 7)} | {aid})
+                items.append(item(
+                    "bound", f"bound:{fam}",
+                    f"Comment on {', '.join(targets)}: no further terms below "
+                    f"{bound_text(reach)}",
+                    f"last published term {extent:,}; the scan covers "
+                    f"{reach / extent:.1f}x past it"))
+            elif extent <= ULONG_MAX:
+                d = scan_days(max(reach, 1), extent)
+                when = ("unknown time" if d is None else
+                        f"~{d * 1440:.0f} min" if d * 24 < 1 else
+                        f"~{d * 24:.0f} h" if d < 2 else f"~{d:.0f} days")
+                items.append(item(
+                    "scan", f"scan:{fam}",
+                    f"{fam}: scan to {aid}'s last term {extent:,}",
+                    f"frontier {reach:,}; {when} at 8 workers. {len(rows)} of "
+                    f"{n_pub} published terms confirmed so far"))
+
+        deep = f["deepest"]
+        for s in f["seqs"]:
+            if s["gone"]:
+                continue
+            m, want = s["m"], deep + s["m"]["delta"]
+            ready = os.path.join(PROPOSED, f"b{s['aid'][1:]}.txt")
+            if s["terms"] < want:
+                detail = [f"{s['terms']} terms against {want} in its family"]
+                if os.path.exists(ready):
+                    detail.append(f"file ready: `proposed/{os.path.basename(ready)}`")
+                if m["col"] is not None:
+                    detail.append(f"source: sibling b-files, or `{run}/{fam}.txt` "
+                                  f"column {m['col']}")
+                    group = "bfile"
+                elif s["aid"] in SOURCES:
+                    detail.append(f"source: {SOURCES[s['aid']]}")
+                    group = "bfile"
+                else:
+                    detail.append("source: needs pi(p), the prime's index -- "
+                                  "e.g. primecount")
+                    group = "compute"
+                items.append(item(group, f"b-file:{s['aid']}",
+                                  f"b-file for {s['aid']} ({m['role'].split(' (')[0]})", *detail))
+            elif s["b"] is None:
+                items.append(item("low", f"b-file:{s['aid']}",
+                                  f"b-file for {s['aid']} ({m['role'].split(' (')[0]})",
+                                  f"DATA holds all {s['terms']} terms"))
+
+        with_af = [s for s in f["seqs"] if not s["gone"] and s["af"]]
+        if not with_af:
+            both = sum(1 for r in rows if r[5])
+            items.append(item(
+                "afile", f"a-file:{fam}",
+                f"a-file for the {fam} records: prime, both neighbours, both gaps",
+                f"none on any of {', '.join(s['aid'] for s in f['seqs'])}",
+                f"`{run}/{fam}.txt` has both neighbours for {both} of "
+                f"{len(rows)} records" if rows else
+                "no records in this run yet"))
+        seen = set()
+        for s in with_af:
+            url = afile_url(s["af"][0])
+            if url is None or url in seen:
+                continue
+            seen.add(url)
+            got = afile_coverage(url, f["seqs"], refresh)
+            if got and got[0] < got[1]:
+                items.append(item(
+                    "afile", f"a-file:{s['aid']}",
+                    f"Update the a-file on {s['aid']}",
+                    f"{plain(s['af'][0])}",
+                    f"holds {got[0]} of {got[1]} published terms"))
+
+    items += cross_reference_items(families)
+
+    for overlap, aid, rec, terms in candidates:
+        t = TRIAGED.get(aid)
+        if t and t["open"]:
+            items.append(item("review", f"review:{aid}",
+                              f"Decide whether to track {aid}", t["note"]))
+    unreviewed = [aid for _, aid, _, _ in candidates if aid not in TRIAGED]
+    if unreviewed:
+        items.append(item("review", "review:neighbours",
+                          f"Review {len(unreviewed)} related sequences nobody "
+                          f"has judged",
+                          ", ".join(unreviewed),
+                          "record each verdict in TRIAGED or NOT_TRACKED in "
+                          "oeis_audit.py"))
+    return items
+
+
+def cross_reference_items(families):
+    """Links that run one way only, and family members that never meet.
+
+    A087770 cites A023186 but A023186 does not cite it back, which is how it
+    stayed unnoticed. Within a family, a member that neither cites nor is
+    cited by the family's prime sequence can only be found by accident.
+    """
+    items, recs = [], {}
+    for f in families.values():
+        for s in f["seqs"]:
+            if not s["gone"]:
+                recs[s["aid"]] = s["rec"]
+    cites = {aid: cited(rec) for aid, rec in recs.items()}
+    for x in sorted(recs):
+        for y in sorted(recs):
+            if x != y and x in cites[y] and y not in cites[x]:
+                items.append(item("xref", f"xref:{x}:{y}",
+                                  f"Add {y} to {x}'s cross-references",
+                                  f"{y} already cites {x}"))
+    for fam, f in families.items():
+        primary = [s["aid"] for s in f["seqs"] if s["m"]["col"] == 2]
+        for p in primary:
+            for s in f["seqs"]:
+                a = s["aid"]
+                if a == p or a not in recs or p not in recs:
+                    continue
+                if a not in cites[p] and p not in cites[a]:
+                    items.append(item("xref", f"xref:{p}:{a}",
+                                      f"Cross-reference {p} and {a}",
+                                      f"both describe the {fam} records; "
+                                      f"neither cites the other"))
+    return items
+
+
+def render_todo(items, status, results, check):
+    """oeis/TODO.md, from the items and the recorded statuses."""
+    run = os.path.basename(os.path.normpath(results))
+    notes = noted_ids()
+    out = [
+        "# OEIS contributions",
+        "",
+        f"> **GENERATED FILE -- DO NOT EDIT.** `python3 oeis_audit.py --results "
+        f"{run}` rewrites it on every run, and refuses to if it has been "
+        f"edited. Record progress in [`submissions.txt`](submissions.txt); "
+        f"keep notes in [`NOTES.md`](NOTES.md), tagged with the item's id.",
+        "",
+        f"Generated {time.strftime('%Y-%m-%d')} from `{run}/`, the cached OEIS "
+        f"entries, and [`submissions.txt`](submissions.txt).",
+        "",
+        "- **check_oeis.py:** " + ("all checks pass" if check[0] else
+                                   "**FAILING** -- nothing below is safe to "
+                                   "submit until it passes"),
+        "- **Progress:** add `<id> <status> [date] [note]` to "
+        "`submissions.txt`, where status is one of "
+        + ", ".join(f"`{s}`" for s in STATUSES) + ".",
+        "",
+    ]
+    for line in check[1][:5]:
+        out.append(f"    {line.strip()}")
+    if check[1]:
+        out.append("")
+
+    ids = {it["id"] for it in items}
+    for key, title, blurb in GROUPS:
+        group = [it for it in items if it["group"] == key
+                 and status.get(it["id"], ("",))[0] not in
+                 REVIEW_STATUSES + CLOSED_STATUSES]
+        if not group:
+            continue
+        out += [f"## {title}", ""]
+        if blurb:
+            out += [blurb, ""]
+        for it in group:
+            st = status.get(it["id"])
+            mark = f" _({st[0]} {st[1]})_" if st else ""
+            out.append(f"- [ ] **{it['title']}**{mark}  ")
+            out.append(f"  `{it['id']}`")
+            for d in it["detail"]:
+                out.append(f"  - {d}")
+            if it["id"] in notes:
+                out.append(f"  - notes: [`NOTES.md`](NOTES.md), under "
+                           f"`{it['id']}`")
+        out.append("")
+
+    for label, which in (("In review", REVIEW_STATUSES),
+                         ("Closed", CLOSED_STATUSES)):
+        rows = [(i, st) for i, st in sorted(status.items()) if st[0] in which]
+        if rows:
+            out += [f"## {label}", ""]
+            for i, (st, date, note) in rows:
+                gone = "" if i in ids else " -- no longer generated"
+                out.append(f"- `{i}` {st} {date} {note}{gone}".rstrip())
+            out.append("")
+
+    stale = [i for i, st in sorted(status.items())
+             if i not in ids and st[0] in OPEN_STATUSES]
+    if stale:
+        out += ["## Recorded but no longer generated", "",
+                "The data no longer supports these; close them in "
+                "`submissions.txt` if they are done.", ""]
+        out += [f"- `{i}` {status[i][0]} {status[i][1]}" for i in stale]
+        out.append("")
+
+    out += [
+        "## Notes",
+        "",
+        "- Submissions go draft -> proposed -> editor review -> approval; "
+        "days to weeks.",
+        "- OEIS is CC BY-SA 4.0; the b-files in this directory are committed "
+        "with attribution.",
+        "- Terms are written `gap(n)`, `lonely(n)`, `aloof(n)`, "
+        "`equidistant(n)`, `pairwise(n)` -- never `a(n)`, since several "
+        "sequences are in play.",
+        "",
+    ]
+    return "\n".join(out)
 
 
 def read_frontier(results):
@@ -727,15 +1088,47 @@ def main():
                     help="refetch entries and b-files from OEIS")
     ap.add_argument("--results", metavar="DIR",
                     help="a scan directory (e.g. fresh); adds a column for what "
-                         "it could supply, and compares its frontier to each "
-                         "family's published extent")
+                         "it could supply, compares its frontier to each "
+                         "family's published extent, and regenerates "
+                         "oeis/TODO.md")
+    ap.add_argument("--no-write", action="store_true",
+                    help="with --results, print the contributions but leave "
+                         "oeis/TODO.md alone")
+    ap.add_argument("--force-write", action="store_true",
+                    help="overwrite oeis/TODO.md even if it was edited by hand "
+                         "-- whatever was edited is lost")
+    ap.add_argument("--no-check", action="store_true",
+                    help="skip running check_oeis.py (the TODO then says so)")
     args = ap.parse_args()
 
     families = survey(args.refresh, args.results)
-    todo(families)
-    neighbours(args.results, args.refresh)
-    if args.results:
-        frontier_report(families, args.results, args.refresh)
+    candidates, _ = neighbours(args.results, args.refresh)
+    if not args.results:
+        print("\n  add --results <dir> for the frontier comparison and the "
+              "live TODO\n")
+        return 0
+    frontier_report(families, args.results, args.refresh)
+
+    if args.no_check:
+        check = (False, ["check_oeis.py was not run (--no-check)"])
+    else:
+        check = check_passes(args.results)
+    items = contributions(families, args.results, candidates, args.refresh,
+                          check)
+    text = render_todo(items, read_submissions(), args.results, check)
+
+    heading("CONTRIBUTIONS")
+    print()
+    print(text.split("## Notes")[0].rstrip())
+    if not args.no_write:
+        why = overwrite_refusal(TODO_PATH)
+        if why and not args.force_write:
+            print(f"\n  !! NOT writing {os.path.relpath(TODO_PATH)}: {why}.\n"
+                  f"     Move anything worth keeping to NOTES.md or "
+                  f"submissions.txt,\n     then rerun with --force-write.")
+            return 1
+        open(TODO_PATH, "w").write(stamped(text))
+        print(f"\n  wrote {os.path.relpath(TODO_PATH)}")
     print()
     return 0
 
