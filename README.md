@@ -78,6 +78,12 @@ python3 check_oeis.py myrun            # is the SCAN right?
 python3 oeis_audit.py --results myrun  # is OEIS complete?
 ```
 
+With `--results`, `oeis_audit.py` also regenerates
+[`oeis/TODO.md`](oeis/TODO.md): every contribution the data supports right now
+-- new terms, completeness bounds, stale b-files and a-files, one-way
+cross-references -- with progress read from `oeis/submissions.txt`. The file
+is generated, so it is never edited by hand.
+
 `check_oeis.py` diffs every term below the run's frontier against the
 published b-files, position by position, and re-tests every record prime with
 a deterministic Miller-Rabin independent of the sieve. `oeis_audit.py` reports

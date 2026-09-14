@@ -1,0 +1,12 @@
+# Progress on the items in TODO.md, which oeis_audit.py generates.
+#
+#   <item id>  <status>  [date]  [note]
+#
+# status: drafted    work exists, not yet submitted (item stays in its group)
+#         submitted  waiting on an OEIS editor (item moves to "In review")
+#         approved | declined | skip   closes the item
+#
+# The id is the backticked name under each item in TODO.md.
+
+b-file:A096265  drafted  2026-09-14  proposed/b096265.txt, all 68 terms confirmed by the scan
+new:balanced    drafted  2026-09-14  proposed/balanced-lonely-primes.md
