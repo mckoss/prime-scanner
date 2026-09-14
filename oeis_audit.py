@@ -12,6 +12,14 @@ The report is a coverage table: one row per sequence, one column per place a
 term of it can live -- the DATA section, the b-file, an a-file, our committed
 snapshot under oeis/, and what a scan directory holds today.
 
+It then looks past the families. Every A-number a member cites in its
+cross-references or comments, and every entry OEIS search finds citing a
+member, is ranked by how many terms it shares with our record primes. Those
+that overlap are listed with a verdict from TRIAGED, or flagged as not yet
+reviewed; dense sets of primes, which could never become a b-file from a scan,
+are listed apart. Shared terms are what surfaced A087770, which only a
+cross-reference on A096265 mentions.
+
     python3 oeis_audit.py                   # audit, using the cached copies
     python3 oeis_audit.py --refresh         # refetch from OEIS first
     python3 oeis_audit.py --results fresh   # add that run's column and frontier
@@ -23,8 +31,10 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis", "audit")
+XREF_CACHE = os.path.join(CACHE, "xref")
 SNAPSHOTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis")
 
 # sieve.c stores every value in an unsigned long, so nothing above this
@@ -113,11 +123,101 @@ FAMILIES = {
 }
 
 
+# NEIGHBOURS: sequences outside the families that a family member cites, or
+# that cite one. A087770 -- a stale second definition of lonely primes -- sat
+# one cross-reference away from A096265 for this whole project, unnoticed,
+# because the families above were written down by hand and nothing looked
+# past them. The crawl looks; the dicts below record what a person concluded.
+
+# A neighbour is shown when its DATA shares at least this many terms with our
+# record primes. Terms at or below NEIGHBOUR_FLOOR are left out of the count,
+# since 2, 3, 7, 23, 89 ... open half the prime sequences in OEIS.
+NEIGHBOUR_OVERLAP = 3
+NEIGHBOUR_FLOOR = 1000
+
+# A record or first-occurrence sequence grows roughly geometrically, so each
+# term adds a roughly constant number of digits: the families here run 0.05 to
+# 0.5 digits per term, and the slowest first-occurrence table seen, A104138,
+# 0.016. A set of primes defined by a property ("primes followed by a long
+# gap") instead fills its b-file with thousands of terms that barely grow:
+# A211073 has 10000 to 1.1e12, 0.0013 digits per term. Nobody would upload a
+# b-file like that from a scan, so however much it overlaps our records such a
+# sequence is not a candidate. The cut sits between the two groups, and a
+# b-file of DENSE_MIN_TERMS or fewer is never called dense whatever its growth.
+DENSE_DIGITS_PER_TERM = 0.005
+DENSE_MIN_TERMS = 1000
+
+
+def verdict(note, open_=False):
+    """What a person concluded about one neighbour.
+
+    open_  it still needs action -- a stale entry this scan could extend, or
+           one not yet understood -- so the report keeps flagging it.
+    """
+    return {"note": note, "open": open_}
+
+
+TRIAGED = {
+    "A087770": verdict("pairwise lonely primes: BOTH gaps beat the previous "
+                       "term's. Stale at 29 terms to 9.16e12; our lonely(51) "
+                       "proves a(30) <= 26923643849953. Tracking being added",
+                       open_=True),
+    "A120384": verdict("record geometric mean of the two gaps. b-file 54 "
+                       "terms to 31587561361; not yet examined in depth",
+                       open_=True),
+    "A102723": verdict("least prime with every integer within n composite; "
+                       "its b-file ends at lonely(56), so lonely(57) extends "
+                       "it"),
+    "A023188": verdict("first occurrence of each nearest-prime distance, not "
+                       "a record; b-file stops at 145628792921569"),
+    "A120937": verdict("least prime with both gaps >= 2n: first occurrences, "
+                       "not records; 35 terms to 2198981"),
+    "A054342": verdict("first balanced prime at each distance, not a record; "
+                       "b-file stops at 28219476363451"),
+    "A046931": verdict("least prime whose neighbours are exactly 2n apart: "
+                       "first occurrences, not records; stops at 929156727137"),
+    "A000230": verdict("least prime starting a gap of exactly 2n: first "
+                       "occurrences, not records"),
+    "A001632": verdict("least prime ending a gap of exactly 2n: first "
+                       "occurrences, not records"),
+    "A100964": verdict("least prime starting a gap >= 2n: the gap records "
+                       "re-indexed by size, not a new sequence"),
+    "A051650": verdict("lonely NUMBERS: records over all integers, not primes"),
+    "A051652": verdict("over all integers, not primes"),
+    "A051728": verdict("over all integers, not primes"),
+    "A051729": verdict("over all integers, not primes"),
+    "A051730": verdict("distances for A051650, over all integers, not primes"),
+    "A111870": verdict("record merit gap/log p. A merit record is also a gap "
+                       "record, so it is a subset of A002386"),
+    "A111943": verdict("record gap/log^2 p. Such a record is also a gap "
+                       "record, so it is a subset of A002386"),
+}
+
+# Neighbours that are not candidates at all, and why. The density rule finds
+# the dense ones on its own; they are written down here so the reason survives
+# a cache that has not fetched their b-files yet.
+NOT_TRACKED = {
+    "A211073": "dense: every prime followed by a gap >= log^2(p)/2 -- "
+               "10000 b-file terms to 1.1e12",
+    "A079296": "dense: all primes, reordered by sqrt(q) - sqrt(p) -- "
+               "10000 b-file terms",
+    "A391411": "dense: first prime of each new pattern of two gaps -- "
+               "7500 b-file terms to 4.2e9",
+    "A182315": "a threshold set (gap > log^2 n), not a record; OEIS notes "
+               "its terms come from A002386",
+    "A124147": "a threshold set (p < sqrt(g) exp(sqrt(g))), not a record; "
+               "all but 5 and 13 are in A002386",
+}
+
+
 def fetch(url, path, refresh):
     if os.path.exists(path) and not refresh:
         return True
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", path])
+    r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", path],
+                       stderr=subprocess.DEVNULL)
+    # The crawl makes dozens of requests; space them out for OEIS's sake.
+    time.sleep(0.4)
     if r.returncode != 0:
         if os.path.exists(path):
             os.remove(path)
@@ -229,8 +329,79 @@ def bfile_terms_list(aid, refresh):
     path = os.path.join(CACHE, f"b{aid[1:]}.txt")
     if not fetch(f"https://oeis.org/{aid}/b{aid[1:]}.txt", path, refresh):
         return []
-    return [int(l.split()[1]) for l in open(path, errors="replace")
-            if l.strip() and l[0].isdigit()]
+    terms = []
+    for l in open(path, errors="replace"):
+        f = l.split()
+        if len(f) >= 2 and f[0].isdigit() and re.fullmatch(r"-?\d+", f[1]):
+            terms.append(int(f[1]))
+    return terms
+
+
+AREF = re.compile(r"\bA(\d{6})\b")
+# "A051697-A051702" and "A023186-A023188" name every sequence in between.
+AREF_RANGE = re.compile(r"\bA(\d{6})\s*-\s*A?(\d{6})\b")
+
+
+def cited(rec):
+    """A-numbers an entry names in its cross-references and comments."""
+    ids = set()
+    for key in ("xref", "comment"):
+        for line in rec.get(key) or []:
+            for a, b in AREF_RANGE.findall(line):
+                if 0 < int(b) - int(a) <= 20:
+                    ids.update(f"A{i:06d}" for i in range(int(a), int(b) + 1))
+            ids.update("A" + a for a in AREF.findall(line))
+    return ids
+
+
+def citing(aid, refresh):
+    """Every entry OEIS search finds mentioning aid, ten to a page.
+
+    This is the direction a hand-kept family misses: A087770 cites A023186,
+    but A023186 says nothing back.
+    """
+    found, start = [], 0
+    while start < 1000:
+        path = os.path.join(XREF_CACHE, f"in-{aid}-{start}.json")
+        url = f"https://oeis.org/search?q={aid}&fmt=json&start={start}"
+        if not fetch(url, path, refresh):
+            break
+        try:
+            page = json.load(open(path))
+        except Exception:
+            break
+        if isinstance(page, dict):
+            page = page.get("results")
+        if not page:
+            break
+        found.extend(page)
+        if len(page) < 10:
+            break
+        start += 10
+    return found
+
+
+def record_primes(results):
+    """Every prime our records name: the snapshots, plus a run's rows."""
+    primes = set()
+    for name in os.listdir(SNAPSHOTS):
+        if name.endswith(".txt"):
+            for l in open(os.path.join(SNAPSHOTS, name), errors="replace"):
+                f = l.split()
+                if len(f) == 2 and f[0].isdigit() and f[1].isdigit():
+                    primes.add(int(f[1]))
+    for fam in FAMILIES:
+        for r in load_rows(results, fam):
+            primes.update((r[1], r[5], r[6]))
+    return {p for p in primes if p > NEIGHBOUR_FLOOR}
+
+
+def density(terms):
+    """Digits added per b-file term, or None if the b-file is too short to say."""
+    if len(terms) <= DENSE_MIN_TERMS:
+        return None
+    top = max(abs(t) for t in terms)
+    return len(str(top)) / len(terms)
 
 
 def heading(text):
@@ -389,16 +560,92 @@ def todo(families):
                       f"{both} of its {len(f['rows'])} records  <-- BUILDABLE NOW")
 
 
-def frontier_report(families, results, refresh):
-    """Where this scan stands against each family's deepest published term."""
+def neighbours(results, refresh):
+    """Related sequences outside the families, and what is known about each."""
+    heading("NEIGHBOURS  --  related sequences outside the families")
+    print(f"""
+Every A-number a family member cites, and every entry that cites a member,
+kept when its DATA shares at least {NEIGHBOUR_OVERLAP} terms above {NEIGHBOUR_FLOOR} with our record
+primes. ! marks one nobody has reviewed, or one reviewed and still open.""")
+
+    members = {aid for info in FAMILIES.values() for aid in info["members"]}
+    recs, link = {}, {}
+    for aid in sorted(members):
+        rec = entry(aid, refresh)
+        if rec is None:
+            continue
+        for other in cited(rec):
+            link.setdefault(other, set()).add("out")
+        for other in citing(aid, refresh):
+            n = f"A{other['number']:06d}"
+            recs[n] = other
+            link.setdefault(n, set()).add("in")
+
+    ours = record_primes(results)
+    shown = []
+    for aid in sorted(set(link) - members):
+        # An outbound citation nobody else returned has to be fetched, but
+        # only when its overlap could matter -- which needs its DATA anyway.
+        rec = recs.get(aid) or entry(aid, refresh)
+        if rec is None:
+            continue
+        data = {int(x) for x in rec.get("data", "").split(",")
+                if re.fullmatch(r"\d+", x.strip())}
+        overlap = len(data & ours)
+        if overlap >= NEIGHBOUR_OVERLAP:
+            shown.append((overlap, aid, rec))
+    shown.sort(key=lambda s: (-s[0], s[1]))
+
+    cov = read_frontier(results)[0] if results else {}
+    front = min(cov.values()) if cov else None
+
+    candidates, dense = [], []
+    for overlap, aid, rec in shown:
+        terms = bfile_terms_list(aid, refresh)
+        d = density(terms)
+        why = NOT_TRACKED.get(aid)
+        if why is None and d is not None and d < DENSE_DIGITS_PER_TERM:
+            why = (f"dense: {len(terms)} b-file terms to {max(terms):.2g}, "
+                   f"{d:.4f} digits per term")
+        if why is not None:
+            dense.append((aid, why))
+            continue
+        candidates.append((overlap, aid, rec, terms))
+
+    print(f"\n  {'overlap':>7}  {'sequence':<9}{'link':<8}{'terms':>6}  "
+          f"{'last term':<22}name")
+    for overlap, aid, rec, terms in candidates:
+        t = TRIAGED.get(aid)
+        mark = "!" if t is None or t["open"] else " "
+        last = f"{terms[-1]:<22}" if terms else f"{'-':<22}"
+        cites = "+".join(sorted(link[aid], reverse=True))
+        name = rec["name"]
+        if len(name) > 60:
+            name = name[:59].rsplit(" ", 1)[0] + " ..."
+        print(f"{mark} {overlap:>7}  {aid:<9}{cites:<8}{len(terms):>6}  "
+              f"{last}{name}")
+        note = "not reviewed" if t is None else (
+            ("OPEN: " if t["open"] else "") + t["note"])
+        if front is not None and terms:
+            note += (" [last term below the run's frontier]"
+                     if terms[-1] < front else " [last term past the frontier]")
+        print(f"{'':>20}{note}")
+
+    if dense:
+        print("\n  not tracked -- not record sequences, so never a b-file from a scan:")
+        for aid, why in dense:
+            print(f"    {aid}  {why}")
+
+
+def read_frontier(results):
+    """({sequence: frontier}, highest) from a run's frontier.txt, or ({}, 0)."""
     fpath = os.path.join(results, "frontier.txt")
     if not os.path.exists(fpath):
-        print(f"\n  no {fpath}; skipping the frontier comparison")
-        return
+        return {}, 0
     text = open(fpath).read()
     head = text.split()
     cov = {}
-    scanned = [f for f in families if "extent" in families[f]["info"]]
+    scanned = [f for f in FAMILIES if "extent" in FAMILIES[f]]
     if head and head[0].isdigit():
         # Legacy single-number frontier.txt: it applies to every sequence that
         # has a records file; one with no file was never scanned at all.
@@ -406,11 +653,21 @@ def frontier_report(families, results, refresh):
         for fam in scanned:
             cov[fam] = front if os.path.exists(
                 os.path.join(results, f"{fam}.txt")) else 0
-    else:
-        for line in text.splitlines():
-            if not line.startswith("#") and len(line.split()) >= 2:
-                cov[line.split()[0]] = int(line.split()[1])
-        front = max(cov.values()) if cov else 0
+        return cov, front
+    for line in text.splitlines():
+        if not line.startswith("#") and len(line.split()) >= 2:
+            cov[line.split()[0]] = int(line.split()[1])
+    return cov, (max(cov.values()) if cov else 0)
+
+
+def frontier_report(families, results, refresh):
+    """Where this scan stands against each family's deepest published term."""
+    fpath = os.path.join(results, "frontier.txt")
+    if not os.path.exists(fpath):
+        print(f"\n  no {fpath}; skipping the frontier comparison")
+        return
+    cov, front = read_frontier(results)
+    scanned = [f for f in families if "extent" in families[f]["info"]]
 
     heading("FRONTIER vs PUBLISHED")
     if len(set(cov.values())) > 1:
@@ -464,6 +721,7 @@ def main():
 
     families = survey(args.refresh, args.results)
     todo(families)
+    neighbours(args.results, args.refresh)
     if args.results:
         frontier_report(families, args.results, args.refresh)
     print()
