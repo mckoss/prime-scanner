@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8"><title>OEIS submissions</title>
+<style>
+ body{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      max-width:64em;margin:2em auto;padding:0 1.5em;color:#222}
+ h1{font-size:20px;margin:0 0 .2em} h2{font-size:14px;margin:2em 0 .6em;
+      text-transform:uppercase;letter-spacing:.06em;color:#777}
+ .sub{color:#777;margin:0 0 1.5em}
+ table{border-collapse:collapse;width:100%}
+ td,th{text-align:left;padding:6px 8px;border-bottom:1px solid #eee;
+       vertical-align:top}
+ th{font-size:11px;text-transform:uppercase;color:#777;letter-spacing:.06em}
+ td.n{color:#999;width:2em;text-align:right}
+ a{color:#0969da} code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+ .what{color:#555;font-size:13px}
+ .bm{display:inline-block;padding:6px 14px;border:1px solid #0969da;
+     border-radius:6px;color:#0969da;text-decoration:none;font-weight:600}
+ .box{background:#f6f8fa;border:1px solid #e3e6ea;border-radius:6px;
+      padding:12px 16px;margin:1.2em 0}
+ .warn{color:#9a6700}
+</style>
+<h1>OEIS submissions</h1>
+<p class="sub">12 drafts &middot; generated 2026-09-16 from <code>fresh/</code>
+ &middot; check_oeis.py: <strong>pass</strong></p>
+
+<div class="box">
+  <p style="margin:0 0 .6em"><strong>1.</strong> Drag this to your bookmarks bar
+   (once), <strong>2.</strong> open a sequence below, <strong>3.</strong> click
+   the bookmarklet.</p>
+  <a class="bm" href="javascript:(function(){var s=document.createElement('script');s.src='http://localhost:8017/fill.js?'+Date.now();document.head.appendChild(s)})()">OEIS Fill</a>
+  <p style="margin:.8em 0 0;color:#777;font-size:12px">Needs this server
+   running: <code>make submit</code> (serves this directory on
+   localhost:8017). The bookmarklet loads everything fresh, so
+   regenerating the audit needs no re-drag.</p>
+</div>
+
+<h2>Drafts</h2>
+<table><tr><th>#</th><th>Sequence</th><th>Changes</th><th>Files</th>
+ <th>Status</th></tr>
+<tr><td class="n">1</td><td><a href="https://oeis.org/edit?seq=A000101">A000101</a></td><td class="what">Xref +A053695</td><td><code></code></td><td class="warn"></td></tr>
+<tr><td class="n">2</td><td><a href="https://oeis.org/edit?seq=A002386">A002386</a></td><td class="what">Xref +A053695, Xref +A087770, Xref +A107578</td><td><code></code></td><td class="warn"></td></tr>
+<tr><td class="n">3</td><td><a href="https://oeis.org/edit?seq=A005250">A005250</a></td><td class="what">a-file 85 rows (update)</td><td><code>a005250.txt</code></td><td class="warn"></td></tr>
+<tr><td class="n">4</td><td><a href="https://oeis.org/edit?seq=A005669">A005669</a></td><td class="what">b-file 85 terms, Xref +A107578</td><td><code>b005669.txt</code></td><td class="warn"></td></tr>
+<tr><td class="n">5</td><td><a href="https://oeis.org/edit?seq=A023186">A023186</a></td><td class="what">bound comment, a-file 55 rows, Xref +A087770, Xref +A096265</td><td><code>a023186.txt</code></td><td class="warn">submitted</td></tr>
+<tr><td class="n">6</td><td><a href="https://oeis.org/edit?seq=A031132">A031132</a></td><td class="what">Xref +A096265</td><td><code></code></td><td class="warn"></td></tr>
+<tr><td class="n">7</td><td><a href="https://oeis.org/edit?seq=A031133">A031133</a></td><td class="what">bound comment</td><td><code></code></td><td class="warn"></td></tr>
+<tr><td class="n">8</td><td><a href="https://oeis.org/edit?seq=A031134">A031134</a></td><td class="what">bound comment</td><td><code></code></td><td class="warn"></td></tr>
+<tr><td class="n">9</td><td><a href="https://oeis.org/edit?seq=A058867">A058867</a></td><td class="what">bound comment, a-file 30 rows</td><td><code>a058867.txt</code></td><td class="warn"></td></tr>
+<tr><td class="n">10</td><td><a href="https://oeis.org/edit?seq=A087770">A087770</a></td><td class="what">DATA +6 terms, bound comment, a-file 34 rows, Xref +A096265</td><td><code>a087770.txt</code></td><td class="warn"></td></tr>
+<tr><td class="n">11</td><td><a href="https://oeis.org/edit?seq=A096265">A096265</a></td><td class="what">bound comment, b-file 68 terms, a-file 67 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413</td><td><code>a096265.txt</code></td><td class="warn">drafted</td></tr>
+<tr><td class="n">12</td><td><a href="https://oeis.org/edit?seq=A107578">A107578</a></td><td class="what">b-file 85 terms</td><td><code>b107578.txt</code></td><td class="warn"></td></tr>
+</table>
+<h2>New sequences</h2><table><tr><td class="n">&mdash;</td><td><a href="https://oeis.org/edit">new</a></td><td class="what">balanced-lonely primes</td><td></td><td class="warn">drafted</td></tr></table><h2>blocked</h2><table><tr><td class="n">&mdash;</td><td><code>b-file:A122412</code></td><td class="what" colspan=3>52 terms against 67 in its family; source: needs pi(p), the prime's index -- e.g. primecount</td></tr><tr><td class="n">&mdash;</td><td><code>b-file:A122413</code></td><td class="what" colspan=3>52 terms against 67 in its family; source: needs pi(p), the prime's index -- e.g. primecount</td></tr></table><h2>pending</h2><table><tr><td class="n">&mdash;</td><td><code>b-file:A023187</code></td><td class="what" colspan=3>DATA holds all 56 terms</td></tr><tr><td class="n">&mdash;</td><td><code>b-file:A031132</code></td><td class="what" colspan=3>DATA holds all 67 terms</td></tr><tr><td class="n">&mdash;</td><td><code>b-file:A058867</code></td><td class="what" colspan=3>DATA holds all 30 terms</td></tr><tr><td class="n">&mdash;</td><td><code>b-file:A058868</code></td><td class="what" colspan=3>DATA holds all 30 terms</td></tr><tr><td class="n">&mdash;</td><td><code>b-file:A087770</code></td><td class="what" colspan=3>DATA holds all 29 terms</td></tr></table><h2>review</h2><table><tr><td class="n">&mdash;</td><td><code>review:A120384</code></td><td class="what" colspan=3>record geometric mean of the two gaps. b-file 54 terms to 31587561361; not yet examined in depth</td></tr><tr><td class="n">&mdash;</td><td><code>review:neighbours</code></td><td class="what" colspan=3>A167236, A002540, A134266, A205827, A060771, A350095, A350096, A073861, A053302, A103709, A214757, A330428, A335366, A335367, A209407, A268140, A058193, A104138, A123995, A123996, A075741, A084105, A138198, A309877, A075051, A224522, A241886, A243593</td></tr></table>
+<p style="color:#777;font-size:12px;margin-top:2em">Nothing here submits
+ anything. The panel fills fields and attaches files; you review the form and
+ click Save Changes. Saving makes a draft <code>editing</code> &mdash; it
+ reaches editors only when you set it to <code>proposed</code>.</p>

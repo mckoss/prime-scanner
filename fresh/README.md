@@ -25,7 +25,7 @@ original single-threaded scan.
 | `lonely.txt` | record distance to the *nearer* neighbour — [A023186](https://oeis.org/A023186) |
 | `aloof.txt` | record total span between *both* neighbours — [A096265](https://oeis.org/A096265) |
 | `equidistant.txt` | record distance among the *balanced* primes alone — [A058867](https://oeis.org/A058867) |
-| `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/TODO.md`](../oeis/TODO.md) |
+| `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/submit/edits.yaml`](../oeis/submit/edits.yaml) |
 | `pairwise.txt` | A087770's chain: gap below *and* gap above both beat the previous term's — [A087770](https://oeis.org/A087770) |
 | `frontier.txt` | each sequence's own frontier — see below |
 | `pending/<kind>.txt` | candidates held for a sequence that skipped its catch-up — see below; not terms |

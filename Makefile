@@ -19,7 +19,7 @@ LDLIBS := -lm
 BIN := sieve
 REF := reference/mod30
 
-.PHONY: all test test-slow test-widths bench reference clean
+.PHONY: all test test-slow test-widths test-submit bench reference clean audit submit
 
 all: $(BIN)
 
@@ -33,8 +33,17 @@ reference: $(REF)
 $(REF): reference/mod30.c reference/prime-check.h Makefile
 	$(CC) $(OPT) -std=c11 -Ireference $< -o $@
 
-test: $(BIN)
+test: $(BIN) test-submit
 	python3 test_sieve.py
+
+# Checks oeis/submit/ before any of it goes to OEIS: b-file spec compliance,
+# ASCII, attribution headers, agreement with the published b-files, and the
+# shapes the browser tooling relies on. The fill.js half needs node; without
+# it the Python half still runs.
+test-submit:
+	python3 test_submit.py
+	@command -v node >/dev/null && node test_fill.js \
+		|| echo "  (skipped test_fill.js: no node)"
 
 # The full suite, including the million/ten-million range checks.
 test-slow: $(BIN)
@@ -51,6 +60,17 @@ test-widths:
 
 bench: $(BIN) $(REF)
 	python3 bench.py
+
+# Regenerate oeis/submit/ -- the edit script, the b-files and a-files to
+# upload, and the browser tooling that fills the OEIS edit form.
+audit:
+	python3 oeis_audit.py --results fresh
+
+# Serve oeis/submit/ so the bookmarklet can load the panel and payload. Open
+# http://localhost:8017/ for the numbered worklist.
+submit: audit
+	@echo "  open http://localhost:8017/"
+	python3 -m http.server 8017 -d oeis/submit
 
 clean:
 	rm -f $(BIN) $(REF) sieve-w8 sieve-w16 sieve-w32 sieve-w64

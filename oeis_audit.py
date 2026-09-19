@@ -22,12 +22,15 @@ cross-reference on A096265 mentions.
 
     python3 oeis_audit.py                   # audit, using the cached copies
     python3 oeis_audit.py --refresh         # refetch from OEIS first
-    python3 oeis_audit.py --results fresh   # add that run, and rewrite oeis/TODO.md
+    python3 oeis_audit.py --results fresh   # add that run, and rewrite oeis/submit/
 
-With --results it ends by turning all of that into CONTRIBUTIONS -- new terms,
+With --results it ends by turning all of that into a SUBMISSION -- new terms,
 completeness bounds, stale b-files and a-files, one-way cross-references,
-sequences to review -- and writes them to oeis/TODO.md. That file is generated;
-progress on an item goes in oeis/submissions.txt under the item's id.
+sequences to review -- regrouped into one draft per sequence, the way OEIS
+takes them. oeis_submit.py writes that to oeis/submit/: the edit script, the
+b-files and a-files to upload, and the browser tooling that fills the edit
+form. Everything there is generated; progress on an item goes in
+oeis/submissions.txt under the item's id, and notes in oeis/NOTES.md.
 """
 
 import argparse
@@ -39,9 +42,14 @@ import subprocess
 import sys
 import time
 
+import oeis_submit
+from oeis_submit import op, signed
+
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis", "audit")
 XREF_CACHE = os.path.join(CACHE, "xref")
 SNAPSHOTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis")
+SUBMIT = os.path.join(SNAPSHOTS, "submit")
+INDEX_TABLE = os.path.join(SNAPSHOTS, "andersen-luhn-index.txt")
 
 # sieve.c stores every value in an unsigned long, so nothing above this
 # is reachable no matter how long the scan runs.
@@ -131,7 +139,7 @@ FAMILIES = {
         # Not in OEIS, so there are no members to lay out in a table. It is a
         # filter on the lonely records rather than a record sequence, which is
         # why a scan needs no threshold for it and cannot be behind on it.
-        "proposed": "oeis/proposed/balanced-lonely-primes.md",
+        "proposed": "oeis/submit/edits.yaml, under new_sequences",
         "related": ("A058867",
                     "records among balanced primes -- contains every "
                     "balanced-lonely term, and many that are not lonely "
@@ -237,6 +245,136 @@ def fetch(url, path, refresh):
             os.remove(path)
         return False
     return True
+
+
+# The Andersen-Luhn table is the only published source for pi(p) at the
+# maximal gaps, and A005669/A107578 are exactly that. It is parsed once and
+# committed rather than refetched on every run, so the data is versioned and
+# a change to it shows up in a diff instead of silently moving a b-file.
+ALU_URL = "https://www.pzktupel.de/RecordGaps/risinggap.php"
+
+# Rows of the table known to be wrong, with the value to use instead and why.
+# Each was checked by hand; the verification below still refuses to write on
+# any disagreement NOT listed here, so a new error cannot slip through as a
+# silent correction.
+ALU_CORRECTIONS = {
+    (51, "A005669"): (50070452577,
+                      "the table repeats rank 50's index (28106444830). "
+                      "A005669 publishes 50070452577, which is what "
+                      "pi(x) ~ x/ln x gives for A002386(51) = 1346294310749; "
+                      "28106444830 matches rank 50's prime instead."),
+}
+
+
+def _wrap(text, width):
+    out, cur = [], ""
+    for w in text.split():
+        if len(cur) + len(w) + 1 > width:
+            out.append(cur)
+            cur = "  " + w
+        else:
+            cur = f"{cur} {w}".strip()
+    out.append(cur)
+    return out
+
+
+def refresh_index():
+    """Refetch and reparse oeis/andersen-luhn-index.txt. Returns an exit code.
+
+    The table continues past the confirmed maximal gaps into unconfirmed ones,
+    where the fourth column means digits rather than an index -- taking those
+    would publish nonsense -- so parsing stops at that second header. Every
+    row that overlaps a published b-file is checked against it; a disagreement
+    is reported rather than written, because the table has had at least one
+    transcription error (rank 51 repeating rank 50's index).
+    """
+    import html as _html
+    path = os.path.join(CACHE, "risinggap.html")
+    if not fetch(ALU_URL, path, True):
+        print(f"  !! could not fetch {ALU_URL}")
+        return 1
+    raw = open(path, encoding="utf-8", errors="replace").read()
+    rows = []
+    for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", raw, re.S | re.I):
+        c = [_html.unescape(re.sub(r"<[^>]+>", "", x)).strip()
+             for x in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S | re.I)]
+        if len(c) < 5:
+            continue
+        if "Unconfirmed" in " ".join(c):
+            break
+        m = re.match(r"P\d+\s*=\s*([0-9]+)$", c[2])
+        if c[0].isdigit() and m and c[3].isdigit():
+            rows.append((int(c[0]), int(c[1]), int(m.group(1)), int(c[3])))
+    if not rows:
+        print("  !! parsed no confirmed rows -- the table's layout changed")
+        return 1
+
+    pub = {a: dict(enumerate(bfile_terms_list(a, False), 1))
+           for a in ("A002386", "A005250", "A005669")}
+    bad, fixed = [], []
+    for i, (n, gap, prime, idx) in enumerate(rows):
+        for col, (aid, got) in enumerate((("A002386", prime), ("A005250", gap),
+                                          ("A005669", idx)), start=1):
+            corr = ALU_CORRECTIONS.get((n, aid))
+            if corr:
+                use, why = corr
+                r = list(rows[i])
+                r[{1: 2, 2: 1, 3: 3}[col]] = use
+                rows[i] = tuple(r)
+                fixed.append(f"n={n} {aid}: using {use} instead of {got} -- "
+                             f"{why}")
+                got = use
+            if n in pub[aid] and pub[aid][n] != got:
+                bad.append(f"n={n} {aid}: table {got}, published {pub[aid][n]}")
+    for f_ in fixed:
+        print(f"  ~  corrected {f_.split(' -- ')[0]}")
+    if bad:
+        print(f"  !! {len(bad)} row(s) disagree with published b-files:")
+        for b in bad[:10]:
+            print(f"     {b}")
+        print("     Check by hand before trusting the table; pi(x) ~ x/ln x "
+              "settles which is right.\n     Nothing written.")
+        return 1
+
+    upd = re.search(r"Last updated:\s*([0-9]+ \w+ [0-9]{4})",
+                    re.sub(r"<[^>]+>", " ", raw))
+    w = max(len(str(r[2])) for r in rows)
+    wi = max(len(str(r[3])) for r in rows)
+    out = [
+        "# andersen-luhn-index.txt -- prime indices for the maximal prime gaps",
+        "#",
+        "#   n    rank of the maximal gap        (A000027)",
+        "#   gap  the gap size                   (A005250)",
+        "#   p    the prime at the lower end     (A002386)",
+        "#   idx  pi(p), the index of that prime (A005669)",
+        "#",
+        '# Parsed from Jens Kruse Andersen and Norman Luhn, "Prime Number Gap',
+        f"# Record Rising\", {ALU_URL}",
+        f"# Table last updated {upd.group(1) if upd else 'unknown'}; "
+        f"retrieved {time.strftime('%Y-%m-%d')}.",
+        "# Only the CONFIRMED block is parsed. The table continues past the",
+        "# last confirmed rank with unconfirmed gaps, where the fourth column",
+        "# means digits, not index.",
+        "#",
+        "# Every row agrees with the published b-files of A002386, A005250",
+        "# and A005669 where they overlap; `--refresh-index` refuses to write",
+        "# this file otherwise.",
+        "#",
+    ] + ([] if not fixed else
+         ["# KNOWN SOURCE ERRORS, corrected here:"]
+         + [f"#   {l}" for f_ in fixed
+            for l in _wrap(f_, 68)] + ["#"]) + [
+        f"# Retrieved and checked by {oeis_submit.ATTRIB['name']}, "
+        f"{oeis_submit.ATTRIB['source']}",
+        "#",
+        f"# {'n':>3}  {'gap':>5}  {'p':>{w}}  {'idx':>{wi}}",
+    ]
+    for n, gap, p_, idx in rows:
+        out.append(f"  {n:>3}  {gap:>5}  {p_:>{w}}  {idx:>{wi}}")
+    open(INDEX_TABLE, "w").write("\n".join(out) + "\n")
+    print(f"  wrote {os.path.relpath(INDEX_TABLE)}: {len(rows)} rows, all "
+          f"agreeing with the published b-files")
+    return 0
 
 
 def entry(aid, refresh):
@@ -600,23 +738,18 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.""")
 # CONTRIBUTIONS -- the live TODO
 #
 # Everything above describes the state of OEIS and of a scan. This turns it
-# into things a person can submit, and writes them to oeis/TODO.md. The file
-# is regenerated on every run with --results, so it is never edited by hand:
+# into things a person can submit. submission() below regroups them into one
+# draft per sequence and oeis_submit.py writes oeis/submit/. Everything there
+# is regenerated on every run with --results, so none of it is edited by hand:
 # progress on an item is recorded in oeis/submissions.txt under the item's id,
 # and the next run files the item accordingly.
 # ---------------------------------------------------------------------------
 
-TODO_PATH = os.path.join(SNAPSHOTS, "TODO.md")
 NOTES_PATH = os.path.join(SNAPSHOTS, "NOTES.md")
 SUBMISSIONS = os.path.join(SNAPSHOTS, "submissions.txt")
 
-# First line of a generated TODO.md. The hash covers everything after it, so
-# a hand edit -- the one thing that would be lost on regeneration -- shows.
-STAMP = "<!-- generated by oeis_audit.py; sha256 {} -->"
-STAMP_RE = re.compile(r"<!-- generated by oeis_audit\.py; sha256 ([0-9a-f]{64}) -->")
 ITEM_ID_RE = re.compile(r"`((?:terms|bound|new|b-file|a-file|xref|scan|review):"
                         r"[A-Za-z0-9:]+)`")
-PROPOSED = os.path.join(SNAPSHOTS, "proposed")
 
 # drafted: work exists but is not submitted -- the item stays in its group.
 # submitted: waiting on an editor.  The rest close the item.
@@ -633,28 +766,6 @@ SOURCES = {
     "A107578": "A005669(n) + 1, which holds at every term both publish",
 }
 
-GROUPS = (
-    ("terms", "New terms",
-     "Terms past everything OEIS has, from an exhaustive scan. Submit only "
-     "while check_oeis.py passes."),
-    ("bound", "Completeness bounds",
-     "The scan has passed every published term, so each entry can say where "
-     "its search stands. Round the bound down; never claim ground not covered."),
-    ("new", "New sequences", ""),
-    ("bfile", "b-files from published or scanned data", ""),
-    ("afile", "a-files: the bounding primes",
-     "A b-file is `n a(n)` only. An a-file is free-form, and the one place a "
-     "record's neighbouring primes can be published."),
-    ("xref", "Cross-references", ""),
-    ("scan", "Waiting on the scan",
-     "Nothing to submit yet; listed so the wait is visible."),
-    ("compute", "Needs compute beyond the scan", ""),
-    ("review", "Related sequences to review",
-     "Found by the neighbour crawl; see oeis/README.md for those already judged."),
-    ("low", "Low priority",
-     "DATA already holds every known term, so a b-file adds nothing until the "
-     "sequence grows."),
-)
 
 
 def item(group, id_, title, *detail):
@@ -723,27 +834,6 @@ def afile_coverage(url, fam_seqs, refresh):
     return best
 
 
-def stamped(body):
-    return STAMP.format(hashlib.sha256(body.encode()).hexdigest()) + "\n" + body
-
-
-def overwrite_refusal(path):
-    """Why path must not be overwritten, or None if it is safe to.
-
-    Only a file this script wrote, and nobody has touched since, is safe:
-    anything else holds words that exist nowhere else.
-    """
-    if not os.path.exists(path):
-        return None
-    first, _, rest = open(path).read().partition("\n")
-    m = STAMP_RE.fullmatch(first.strip())
-    if not m:
-        return "it was not written by oeis_audit.py"
-    if hashlib.sha256(rest.encode()).hexdigest() != m.group(1):
-        return "it has been edited since it was generated"
-    return None
-
-
 def noted_ids():
     """Item ids that oeis/NOTES.md has something to say about."""
     if not os.path.exists(NOTES_PATH):
@@ -774,7 +864,7 @@ def contributions(families, results, candidates, refresh, check):
             items.append(item(
                 "new", f"new:{fam}",
                 f"New sequence: {info['records'].split(' -- ')[0]}",
-                f"draft: `{os.path.relpath(info['proposed'], 'oeis')}`",
+                f"draft: `{info['proposed']}`",
                 f"{len(rows)} terms in `{run}/{fam}.txt`, complete below "
                 f"{bound_text(lonely_front)} (it filters the lonely records)"))
             continue
@@ -823,11 +913,8 @@ def contributions(families, results, candidates, refresh, check):
             if s["gone"]:
                 continue
             m, want = s["m"], deep + s["m"]["delta"]
-            ready = os.path.join(PROPOSED, f"b{s['aid'][1:]}.txt")
             if s["terms"] < want:
                 detail = [f"{s['terms']} terms against {want} in its family"]
-                if os.path.exists(ready):
-                    detail.append(f"file ready: `proposed/{os.path.basename(ready)}`")
                 if m["col"] is not None:
                     detail.append(f"source: sibling b-files, or `{run}/{fam}.txt` "
                                   f"column {m['col']}")
@@ -922,90 +1009,6 @@ def cross_reference_items(families):
     return items
 
 
-def render_todo(items, status, results, check):
-    """oeis/TODO.md, from the items and the recorded statuses."""
-    run = os.path.basename(os.path.normpath(results))
-    notes = noted_ids()
-    out = [
-        "# OEIS contributions",
-        "",
-        f"> **GENERATED FILE -- DO NOT EDIT.** `python3 oeis_audit.py --results "
-        f"{run}` rewrites it on every run, and refuses to if it has been "
-        f"edited. Record progress in [`submissions.txt`](submissions.txt); "
-        f"keep notes in [`NOTES.md`](NOTES.md), tagged with the item's id.",
-        "",
-        f"Generated {time.strftime('%Y-%m-%d')} from `{run}/`, the cached OEIS "
-        f"entries, and [`submissions.txt`](submissions.txt).",
-        "",
-        "- **check_oeis.py:** " + ("all checks pass" if check[0] else
-                                   "**FAILING** -- nothing below is safe to "
-                                   "submit until it passes"),
-        "- **Progress:** add `<id> <status> [date] [note]` to "
-        "`submissions.txt`, where status is one of "
-        + ", ".join(f"`{s}`" for s in STATUSES) + ".",
-        "",
-    ]
-    for line in check[1][:5]:
-        out.append(f"    {line.strip()}")
-    if check[1]:
-        out.append("")
-
-    ids = {it["id"] for it in items}
-    for key, title, blurb in GROUPS:
-        group = [it for it in items if it["group"] == key
-                 and status.get(it["id"], ("",))[0] not in
-                 REVIEW_STATUSES + CLOSED_STATUSES]
-        if not group:
-            continue
-        out += [f"## {title}", ""]
-        if blurb:
-            out += [blurb, ""]
-        for it in group:
-            st = status.get(it["id"])
-            mark = f" _({st[0]} {st[1]})_" if st else ""
-            out.append(f"- [ ] **{it['title']}**{mark}  ")
-            out.append(f"  `{it['id']}`")
-            for d in it["detail"]:
-                out.append(f"  - {d}")
-            if it["id"] in notes:
-                out.append(f"  - notes: [`NOTES.md`](NOTES.md), under "
-                           f"`{it['id']}`")
-        out.append("")
-
-    for label, which in (("In review", REVIEW_STATUSES),
-                         ("Closed", CLOSED_STATUSES)):
-        rows = [(i, st) for i, st in sorted(status.items()) if st[0] in which]
-        if rows:
-            out += [f"## {label}", ""]
-            for i, (st, date, note) in rows:
-                gone = "" if i in ids else " -- no longer generated"
-                out.append(f"- `{i}` {st} {date} {note}{gone}".rstrip())
-            out.append("")
-
-    stale = [i for i, st in sorted(status.items())
-             if i not in ids and st[0] in OPEN_STATUSES]
-    if stale:
-        out += ["## Recorded but no longer generated", "",
-                "The data no longer supports these; close them in "
-                "`submissions.txt` if they are done.", ""]
-        out += [f"- `{i}` {status[i][0]} {status[i][1]}" for i in stale]
-        out.append("")
-
-    out += [
-        "## Notes",
-        "",
-        "- Submissions go draft -> proposed -> editor review -> approval; "
-        "days to weeks.",
-        "- OEIS is CC BY-SA 4.0; the b-files in this directory are committed "
-        "with attribution.",
-        "- Terms are written `gap(n)`, `lonely(n)`, `aloof(n)`, "
-        "`equidistant(n)`, `pairwise(n)` -- never `a(n)`, since several "
-        "sequences are in play.",
-        "",
-    ]
-    return "\n".join(out)
-
-
 def read_frontier(results):
     """({sequence: frontier}, highest) from a run's frontier.txt, or ({}, 0)."""
     fpath = os.path.join(results, "frontier.txt")
@@ -1086,20 +1089,27 @@ def main():
              formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true",
                     help="refetch entries and b-files from OEIS")
+    ap.add_argument("--refresh-index", action="store_true",
+                    help="refetch and reparse oeis/andersen-luhn-index.txt, "
+                         "the committed copy of Andersen and Luhn's table; "
+                         "refuses to write if it disagrees with OEIS")
     ap.add_argument("--results", metavar="DIR",
                     help="a scan directory (e.g. fresh); adds a column for what "
                          "it could supply, compares its frontier to each "
                          "family's published extent, and regenerates "
-                         "oeis/TODO.md")
+                         "oeis/submit/")
     ap.add_argument("--no-write", action="store_true",
-                    help="with --results, print the contributions but leave "
-                         "oeis/TODO.md alone")
-    ap.add_argument("--force-write", action="store_true",
-                    help="overwrite oeis/TODO.md even if it was edited by hand "
-                         "-- whatever was edited is lost")
+                    help="with --results, print the drafts but leave "
+                         "oeis/submit/ alone")
     ap.add_argument("--no-check", action="store_true",
-                    help="skip running check_oeis.py (the TODO then says so)")
+                    help="skip running check_oeis.py (the script then says so, "
+                         "and nothing in it is safe to submit)")
     args = ap.parse_args()
+
+    if args.refresh_index:
+        heading("ANDERSEN-LUHN INDEX TABLE")
+        print()
+        return refresh_index()
 
     families = survey(args.refresh, args.results)
     candidates, _ = neighbours(args.results, args.refresh)
@@ -1115,23 +1125,431 @@ def main():
         check = check_passes(args.results)
     items = contributions(families, args.results, candidates, args.refresh,
                           check)
-    text = render_todo(items, read_submissions(), args.results, check)
+    drafts, new_seqs, other, files, cov, hi = submission(
+        items, families, args.results, args.refresh, check)
 
-    heading("CONTRIBUTIONS")
+    heading("SUBMISSION  --  one draft per sequence")
     print()
-    print(text.split("## Notes")[0].rstrip())
-    if not args.no_write:
-        why = overwrite_refusal(TODO_PATH)
-        if why and not args.force_write:
-            print(f"\n  !! NOT writing {os.path.relpath(TODO_PATH)}: {why}.\n"
-                  f"     Move anything worth keeping to NOTES.md or "
-                  f"submissions.txt,\n     then rerun with --force-write.")
-            return 1
-        open(TODO_PATH, "w").write(stamped(text))
-        print(f"\n  wrote {os.path.relpath(TODO_PATH)}")
+    for i, d in enumerate(drafts, 1):
+        mark = f"  [{d['status']}]" if d["status"] else ""
+        print(f"  {i:>2}. {d['aid']}  {d['what']}{mark}")
+        print(f"      {d['summary']}")
+    for n in new_seqs:
+        print(f"   -. new       {n['role']}"
+              + (f"  [{n['status']}]" if n["status"] else ""))
+    for key in ("blocked", "pending", "review"):
+        for r in other[key]:
+            print(f"   -. {key:<8} {r['id']}")
     print()
+
+    if args.no_write:
+        return 0
+    meta = {"date": time.strftime("%Y-%m-%d"),
+            "run": os.path.basename(os.path.normpath(args.results)),
+            "frontier": hi, "check": check[0],
+            "check_note": "" if check[0] else (check[1][0] if check[1] else "")}
+    man = oeis_submit.write_all(SUBMIT, drafts, new_seqs, other, meta, files)
+    print(f"  wrote {len(man)} files to {os.path.relpath(SUBMIT)}/")
+    print(f"  open  http://localhost:{oeis_submit.PORT}/  "
+          f"(make submit)\n")
+    if not check[0]:
+        print("  !! check_oeis.py FAILS -- nothing here is safe to submit.\n")
+        return 1
     return 0
 
+
+
+# ---------------------------------------------------------------------------
+# SUBMISSION -- the items, regrouped into one draft per sequence
+#
+# contributions() lists what can be contributed, keyed by kind. OEIS takes one
+# draft per SEQUENCE, so A096265's b-file, its bound comment and its two
+# cross-references are one submission, not four. The item ids already say what
+# each targets, so the regrouping reads them rather than threading a second
+# structure through contributions().
+# ---------------------------------------------------------------------------
+
+# Prior contributors named in a b-file link, kept when the link is rewritten.
+# Dropping them to write our own name over the whole range would take credit
+# for terms other people computed.
+PRIOR = {
+    "A096265": "terms 1..50 from Ken Takusagawa, terms 51..55 from "
+               "Hugo Pfoertner",
+    "A005669": "terms 1..82 as previously published",
+    "A107578": "terms 1..80 as previously published",
+}
+
+
+def member_of(families, aid):
+    for fam, f in families.items():
+        for s in f["seqs"]:
+            if s["aid"] == aid:
+                return fam, f, s
+    return None, None, None
+
+
+def generate_files(families, results, cov, index, check):
+    """Every b-file and a-file the audit can build, as {name: text}."""
+    files, built = {}, {}
+    checked = ("Independently confirmed by an exhaustive scan; "
+               "check_oeis.py passes." if check else None)
+
+    for fam, f in families.items():
+        rows, reach = f["rows"], cov.get(fam, 0)
+        if fam in oeis_submit.AFILE and rows:
+            spec = oeis_submit.AFILE[fam]
+            name = f"a{spec['aid'][1:]}.txt"
+            files[name] = oeis_submit.afile(fam, rows, reach, checked)
+            built[("a", fam)] = (name, sum(1 for r in rows if r[5]))
+
+    # A096265: terms 56..68 are the same records A031133/A031134 publish, so
+    # the b-file is short against its own family rather than against the scan.
+    aloof = families.get("aloof", {}).get("rows") or []
+    if aloof:
+        pairs = [(r[0], r[1]) for r in aloof]
+        files["b096265.txt"] = oeis_submit.bfile(
+            "A096265", pairs,
+            ["Terms 1..55 as previously published.",
+             "Terms 56..68 are the prime between A031133(k) and A031134(k),",
+             "whose b-files reach 67 terms (A096265 index 68).",
+             "Every term independently rederived by an exhaustive scan."],
+            cov.get("aloof", 0), checked)
+        built[("b", "A096265")] = ("b096265.txt", len(pairs))
+
+    # A005669 and A107578 are pi(p), which no scan here produces. The committed
+    # Andersen-Luhn copy is the only published source past OEIS's own terms.
+    if index:
+        ns = sorted(index)
+        lo = [(n, index[n][2]) for n in ns]
+        files["b005669.txt"] = oeis_submit.bfile(
+            "A005669", lo,
+            ["pi(p) for the prime at the lower end of the n-th maximal gap.",
+             "From the committed copy of Andersen and Luhn's table; see",
+             "oeis/andersen-luhn-index.txt, which records how it was checked",
+             "against the published b-files of A002386, A005250 and A005669."],
+            checked=None)
+        built[("b", "A005669")] = ("b005669.txt", len(lo))
+        up = [(n, index[n][2] + 1) for n in ns]
+        files["b107578.txt"] = oeis_submit.bfile(
+            "A107578", up,
+            ["pi(q) for the prime at the upper end of the n-th maximal gap.",
+             "A107578(n) = A005669(n) + 1, which holds at all 80 terms both",
+             "sequences publish today."],
+            checked=None)
+        built[("b", "A107578")] = ("b107578.txt", len(up))
+
+        # Beveridge's a005250.txt, in his layout and keeping his credits --
+        # it is his file, and this only brings it up to 85 rows.
+        w = max(len(str(index[n][1] + index[n][0])) for n in ns)
+        head = ["Table from Alex Beveridge, Apr 18 2007.", "",
+                "Updated by Jens Kruse Andersen, Oct 19 2010.", "",
+                "Corrected OEIS list title by John W. Nicholson, Sep 11, 2011.",
+                "", f"Updated by {oeis_submit.ATTRIB['name']}, "
+                f"{time.strftime('%b %d %Y')}, to 85 rows, from Andersen and",
+                "Luhn's table at https://www.pzktupel.de/RecordGaps/"
+                "risinggap.php", "",
+                "Maximal prime gaps table with gap number, upper prime, gap, "
+                "prime count of upper prime.", "", "",
+                "  # = A000027", "  p = upper prime A000101",
+                "gap = difference between p and previous prime A005250",
+                "  G = index of upper prime A107578", "",
+                "A000027 A000101 A005250 A107578", "# p gap G"]
+        body = [f"{n} {index[n][1] + index[n][0]} {index[n][0]} "
+                f"{index[n][2] + 1}" for n in ns]
+        files["a005250.txt"] = "\n".join(head + body) + "\n\nNotes:\n\n" \
+            "To get lower prime subtract G from p.\n" \
+            "To get prime count of lower prime subtract 1 from the last " \
+            "column.\n"
+        built[("a", "gap")] = ("a005250.txt", len(ns))
+    return files, built
+
+
+def submission(items, families, results, refresh, check):
+    """({aid: draft}, new_sequences, other) -- the drafts, and what is not one."""
+    cov, hi = read_frontier(results)
+    index = oeis_submit.index_table(INDEX_TABLE)
+    files, built = generate_files(families, results, cov, index, check[0])
+    status = read_submissions()
+    notes = noted_ids()
+    drafts, new_seqs = {}, []
+    other = {"blocked": [], "pending": [], "review": []}
+
+    def draft(aid, role):
+        role = role.split(" (")[0]
+        d = drafts.get(aid)
+        if d is None:
+            d = drafts[aid] = {
+                "aid": aid, "role": role, "url": oeis_submit.EDIT_URL.format(aid),
+                "items": [], "edits": [], "what": [], "summary": "",
+                "to_editors": "", "upload": None, "status": None,
+                "notes": False, "blocked_on": []}
+        return d
+
+    for it in items:
+        gid, iid = it["group"], it["id"]
+        st = status.get(iid)
+        if st and st[0] in REVIEW_STATUSES + CLOSED_STATUSES:
+            continue
+        kind = iid.split(":")[0]
+
+        if gid in ("compute", "low"):
+            other["blocked" if gid == "compute" else "pending"].append(
+                {"id": iid, "reason": "; ".join(it["detail"]) or it["title"]})
+            continue
+        if gid == "review":
+            other["review"].append({"id": iid, "reason": it["detail"][0]
+                                    if it["detail"] else it["title"]})
+            continue
+        if gid == "scan":
+            other["pending"].append({"id": iid, "reason": it["detail"][0]})
+            continue
+
+        if kind == "new":
+            new_seqs.append(new_sequence(iid, families, cov, status, notes))
+            continue
+
+        fam = iid.split(":", 1)[1]
+        if kind == "terms":
+            f = families[fam]
+            aid = f["info"]["extent"][0]
+            primary = [s["aid"] for s in f["seqs"] if s["m"]["col"] == 2]
+            aid = primary[0] if primary else aid
+            pub = bfile_terms_list(aid, refresh)
+            n_pub = len(pub) + f["info"]["extent"][1]
+            new = f["rows"][n_pub:]
+            _, _, s = member_of(families, aid)
+            d = draft(aid, s["m"]["role"] if s else fam)
+            d["items"].append(iid)
+            d["what"].append(f"DATA +{len(new)} terms")
+            d["edits"].append(op(
+                "Data", "append", after_n=n_pub, after_n_term=pub[-1],
+                terms=[[r[1], f"gaps {r[3]}, {r[4]}; {r[5]} < p < {r[6]}"]
+                       for r in new]))
+            d["edits"].append(op("Ext", "add", text=(
+                f"a({n_pub + 1})-a({n_pub + len(new)}) from "
+                f"{oeis_submit.ATTRIB['signature']}")))
+            d["summary"] = (
+                f"Extend from {n_pub} to {n_pub + len(new)} terms from an "
+                f"exhaustive scan from 0, complete below "
+                f"{bound_text(cov.get(fam, 0))}.")
+            d["to_editors"] = (
+                f"Each new term is a record of the {fam} kind, rederived from "
+                f"zero rather than searched for: the scan is exhaustive to "
+                f"{cov.get(fam, 0)} and reproduces every published term "
+                f"below that bound. The bounding primes for each record are in "
+                f"the attached a-file, so a term can be checked without "
+                f"rerunning a scan.")
+
+        elif kind == "bound":
+            bt = bound_text(cov.get(fam, 0))
+            targets = re.findall(r"A\d{6}", it["title"])
+            for aid in targets:
+                _, _, s = member_of(families, aid)
+                d = draft(aid, s["m"]["role"] if s else fam)
+                d["items"].append(iid)
+                d["what"].append("bound comment")
+                d["edits"].append(op("Comment", "add", text=signed(
+                    f"There is no further term below {bt}: an exhaustive scan "
+                    f"from 0 to {cov.get(fam, 0)} finds none.")))
+                if not d["summary"]:
+                    d["summary"] = (f"Add a search-bound comment: no further "
+                                    f"term below {bt}.")
+
+        elif kind == "b-file":
+            aid = fam
+            key = ("b", aid)
+            if key not in built:
+                other["blocked"].append(
+                    {"id": iid, "reason": "; ".join(it["detail"])})
+                continue
+            name, n = built[key]
+            famname, _, s = member_of(families, aid)
+            d = draft(aid, s["m"]["role"] if s else aid)
+            d["items"].append(iid)
+            d["what"].append(f"b-file {n} terms")
+            d["upload"] = {"kind": "b-file", "path": f"oeis/submit/{name}",
+                           "rows": n, "from": "generated by oeis_audit.py",
+                           "desc": ""}
+            credit = PRIOR.get(aid)
+            d["edits"].append(op(
+                "Link", "replace_bfile_link", needle=name,
+                text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/{name}">'
+                     f'Table of n, a(n) for n = 1..{n}</a>'
+                     + (f", {credit}." if credit else ".")))
+            if not d["summary"]:
+                d["summary"] = f"Extend the b-file to {n} terms."
+
+        elif kind == "a-file":
+            # `a-file:<family>` is one we would add; `a-file:<A-number>` is an
+            # update to a file that already exists. Either way the file lives
+            # under ONE sequence -- Beveridge's a005250.txt is linked from both
+            # A005250 and A107578, but there is only one of it -- so both items
+            # land on the draft for the sequence that holds it.
+            key = ("a", fam if fam in oeis_submit.AFILE else "gap")
+            if key not in built:
+                other["pending"].append(
+                    {"id": iid, "reason": "; ".join(it["detail"])})
+                continue
+            name, n = built[key]
+            aid = "A" + name[1:7]
+            famname, _, s = member_of(families, aid)
+            d = draft(aid, s["m"]["role"] if s else aid)
+            d["items"].append(iid)
+            if d["upload"] and d["upload"]["path"].endswith(name):
+                continue
+            d["what"].append(f"a-file {n} rows")
+            d["upload"] = {"kind": "a-file", "path": f"oeis/submit/{name}",
+                           "rows": n, "from": "generated by oeis_audit.py",
+                           "desc": ""}
+            if fam in oeis_submit.AFILE:
+                d["edits"].append(op(
+                    "Link", "add",
+                    text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/{name}">'
+                         f'Table of the first {n} records with both bounding '
+                         f'primes and both gaps</a>'))
+                d["summary"] = d["summary"] or (
+                    f"Add an a-file giving each record's bounding primes and "
+                    f"both gaps ({n} rows).")
+            else:
+                # Beveridge's file, linked from A005250 and A107578 already.
+                # Uploading a longer one changes the data, not the link.
+                d["what"][-1] = f"a-file {n} rows (update)"
+                d["summary"] = d["summary"] or (
+                    f"Update the existing a-file to {n} rows; its link text "
+                    f"is unchanged.")
+
+        elif kind == "xref":
+            x, y = iid.split(":")[1], iid.split(":")[2]
+            _, _, sx = member_of(families, x)
+            _, _, sy = member_of(families, y)
+            d = draft(x, sx["m"]["role"] if sx else x)
+            d["items"].append(iid)
+            note = sy["m"]["role"].split(" (")[0] if sy else ""
+            for e in d["edits"]:
+                if e["field"] == "Xref":
+                    e["add"][y] = note
+                    break
+            else:
+                d["edits"].append(op("Xref", "add", add={y: note}))
+            d["what"].append(f"Xref +{y}")
+            if not d["summary"]:
+                d["summary"] = "Add the reverse cross-reference."
+
+    for aid, d in drafts.items():
+        # Draft state lives behind an OEIS login, so nothing in oeis/audit/
+        # knows a sequence is mid-review -- the cached entry is the PUBLISHED
+        # revision. A `draft:<A-number>` line in submissions.txt says so by
+        # hand, and stops the script offering edits that would stack on top of
+        # someone else's open review.
+        open_draft = status.get(f"draft:{aid}")
+        if open_draft:
+            d["blocked_on"].append(f"open OEIS draft ({open_draft[2]})"
+                                   if open_draft[2] else "open OEIS draft")
+            d["status"] = open_draft[0]
+        d["what"] = ", ".join(dict.fromkeys(d["what"]))
+        d["notes"] = any(i in notes for i in d["items"])
+        for i in d["items"]:
+            if status.get(i):
+                d["status"] = status[i][0]
+        if len(d["items"]) > 1:
+            d["summary"] = summarise(d)
+    return ([drafts[a] for a in sorted(drafts)], new_seqs, other,
+            files, cov, hi)
+
+
+def summarise(d):
+    """One line covering a draft that carries several items."""
+    bits = []
+    for e in d["edits"]:
+        if e["field"] == "Data":
+            bits.append(f"extend DATA by {len(e['terms'])} terms")
+        elif e["field"] == "Comment":
+            bits.append("add a search-bound comment")
+        elif e["field"] == "Xref":
+            bits.append("add cross-references to "
+                        + ", ".join(sorted(e["add"])))
+        elif e["field"] == "Link" and e["action"] == "replace_bfile_link":
+            bits.append("extend the b-file")
+        elif e["field"] == "Link":
+            bits.append("add an a-file with the bounding primes")
+    if not bits:
+        return d["summary"]
+    return (bits[0][0].upper() + bits[0][1:] + ("; " if len(bits) > 1 else "")
+            + "; ".join(bits[1:]) + ".")
+
+
+def new_sequence(iid, families, cov, status, notes):
+    """A sequence OEIS does not have yet: the whole entry, not a diff.
+
+    Everything here is new, so "only changed fields" is every field. A new
+    entry's %A covers authorship of the whole submission, which is why its
+    comments carry no individual signature.
+    """
+    fam = iid.split(":", 1)[1]
+    f = families[fam]
+    rows, bound = f["rows"], cov.get("lonely", 0)
+    bt = bound_text(bound)
+    st = status.get(iid)
+    return {
+        "id": iid, "role": f["info"]["records"].split(" -- ")[0],
+        "url": oeis_submit.NEW_URL,
+        "status": st[0] if st else None, "notes": iid in notes,
+        "summary": (
+            "New sequence: the intersection of A023186 (lonely primes) with "
+            "A006562 (balanced primes) -- record-setting isolated primes "
+            f"exactly equidistant from both neighbors. {len(rows)} terms, "
+            f"complete below {bt}."),
+        "to_editors": (
+            "Suggested by Michel Marcus in review of a comment on A023186: "
+            "submit the intersection as its own sequence rather than as a "
+            "comment there. Not currently in OEIS. Every term is checked "
+            "against an exhaustive scan from zero -- p - pp, np - p, equality "
+            "of the two gaps, and each of pp, p, np prime by deterministic "
+            "Miller-Rabin. The scan itself reproduces every published term of "
+            "A023186 and A058867 below the bound, position by position, and "
+            "confirms all terms here appear in A058867, as they must."),
+        "entry": {
+            "name": ("Balanced lonely primes: terms of A023186 that are also "
+                     "balanced primes (A006562), i.e. record-setting isolated "
+                     "primes exactly equidistant from their two nearest prime "
+                     "neighbors."),
+            "offset": "1,1",
+            "data": [r[1] for r in rows],
+            "keywords": "nonn,more",
+            "author": oeis_submit.ATTRIB["signature"],
+            "comments": [
+                "A prime p qualifies if it sets a new record for the distance "
+                "to its nearest neighboring prime (A023186) and is the average "
+                "of the previous and following prime (A006562), so the gaps on "
+                "both sides are equal.",
+                "A023186(1) = 2 is excluded: it has no lower neighbor, so it "
+                "is not a balanced prime.",
+                "Not to be confused with A058867, which is a supersequence of "
+                "this one. A058867 takes its record within the balanced primes "
+                "alone, so a balanced prime enters it by beating every earlier "
+                "balanced prime; a term here must beat every earlier prime, "
+                "balanced or not. A058867(4) = 16787 shows the difference: its "
+                "gaps are (24, 24), but A023186 had already reached 24 at the "
+                "prime 16033, whose gaps are (26, 24), so 16787 sets no record "
+                "over all primes. This sequence is the terms of A058867 that "
+                "are in A023186.",
+                f"There are no further terms below {bt}. An exhaustive scan "
+                f"from zero rederived every term of A023186 and of A058867 "
+                f"below that bound and found no others, so the sequence is "
+                f"complete there."],
+            "example": "\n".join(
+                f"{r[1]} has neighbors ({r[5]}, {r[6]}), both at distance "
+                f"{r[3]}." for r in rows),
+            "xrefs": {
+                "A006562": "balanced primes",
+                "A023186": "lonely primes, of which this is a subsequence",
+                "A023187": "the distances",
+                "A054342": "first balanced prime at each distance",
+                "A058867": "supersequence; record within the balanced primes",
+                "A096265": "aloof primes"},
+        },
+        "no_bfile": f"{len(rows)} terms fit in DATA",
+    }
 
 if __name__ == "__main__":
     sys.exit(main())
