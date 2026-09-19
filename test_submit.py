@@ -148,6 +148,48 @@ for i, l in enumerate(lines, 1):
         check("," not in m.group(1),
               f"edits.yaml:{i}: unquoted scalar with a comma: {l.strip()[:60]}")
 
+# Generated files date the DATA, not the run: a wall-clock date would rewrite
+# every file on every run and would misdate the terms to anyone reading them
+# on OEIS. Every date in a generated header must be one of the two provenance
+# dates -- when the scan last advanced, or when the table was retrieved.
+as_of = re.search(r"^data_as_of: (\d{4}-\d{2}-\d{2})", y, re.M)
+check(as_of, "edits.yaml: no data_as_of")
+if as_of:
+    idx = os.path.join(HERE, "oeis", "andersen-luhn-index.txt")
+    retrieved = re.search(r"retrieved (\d{4}-\d{2}-\d{2})",
+                          open(idx).read()) if os.path.exists(idx) else None
+    allowed = {as_of.group(1)} | ({retrieved.group(1)} if retrieved else set())
+    for name in sorted(os.listdir(SUBMIT)):
+        if not re.fullmatch(r"[ab]\d{6}\.txt", name):
+            continue
+        text = read(name).decode()
+        for d in set(re.findall(r"\d{4}-\d{2}-\d{2}", text)):
+            check(d in allowed,
+                  f"{name}: dated {d}, which is neither the scan date "
+                  f"{as_of.group(1)} nor a table retrieval date")
+
+# Each a-file states the bound its own family reached. The pairwise scan
+# trails the others, so a shared "searched all below" would be a false claim.
+bounds = {}
+for name in sorted(os.listdir(SUBMIT)):
+    if not re.fullmatch(r"a\d{6}\.txt", name) or name in INHERITED:
+        continue
+    m = re.search(r"Searched all below ([\d,]+)", read(name).decode())
+    check(m, f"{name}: header states no searched bound")
+    if m:
+        bounds[name] = int(m.group(1).replace(",", ""))
+fr = os.path.join(HERE, "fresh", "frontier.txt")
+if os.path.exists(fr) and bounds:
+    per = {}
+    for l in open(fr):
+        f = l.split()
+        if len(f) == 2 and f[1].isdigit():
+            per[f[0]] = int(f[1])
+    if "pairwise" in per and "a087770.txt" in bounds:
+        check(bounds["a087770.txt"] == per["pairwise"],
+              f"a087770.txt claims {bounds['a087770.txt']}, but the pairwise "
+              f"frontier is {per['pairwise']}")
+
 check(re.search(r"^check_oeis: pass$", y, re.M),
       "edits.yaml: check_oeis is not passing")
 check(re.search(r"^  signature: \"~~~~\"", y, re.M),

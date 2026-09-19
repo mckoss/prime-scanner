@@ -2,7 +2,7 @@
 # One entry per OEIS draft. Only fields that CHANGE appear.
 # Record progress in oeis/submissions.txt, keyed by `items`.
 
-generated:  2026-09-16
+data_as_of: 2026-09-15          # the date the scan last advanced, not the run date
 run:        fresh
 frontier:   2174619685091850
 check_oeis: pass

@@ -1144,7 +1144,7 @@ def main():
 
     if args.no_write:
         return 0
-    meta = {"date": time.strftime("%Y-%m-%d"),
+    meta = {"date": data_date(args.results),
             "run": os.path.basename(os.path.normpath(args.results)),
             "frontier": hi, "check": check[0],
             "check_note": "" if check[0] else (check[1][0] if check[1] else "")}
@@ -1188,9 +1188,48 @@ def member_of(families, aid):
     return None, None, None
 
 
+def data_date(results):
+    """The date the scan last advanced, as `<run>/frontier.txt` records it.
+
+    Generated files date the DATA, not the run. Using today's date would
+    misdate a b-file to whoever reads it on OEIS -- the terms are as old as
+    the scan -- and would rewrite every file on every run for no reason.
+
+    The committed date is preferred over the mtime, which a checkout resets;
+    when the scan has advanced since that commit, the mtime is the truth.
+    """
+    path = os.path.join(results, "frontier.txt")
+    if not os.path.exists(path):
+        return time.strftime("%Y-%m-%d")
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        clean = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", path],
+                               cwd=here).returncode == 0
+        if clean:
+            r = subprocess.run(
+                ["git", "log", "-1", "--format=%ad", "--date=short", "--",
+                 path], cwd=here, capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                return r.stdout.strip()
+    except Exception:
+        pass
+    return time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(path)))
+
+
+def index_date(path):
+    """When the committed Andersen-Luhn copy was retrieved, from its header."""
+    if os.path.exists(path):
+        m = re.search(r"retrieved (\d{4}-\d{2}-\d{2})", open(path).read())
+        if m:
+            return m.group(1)
+    return time.strftime("%Y-%m-%d")
+
+
 def generate_files(families, results, cov, index, check):
     """Every b-file and a-file the audit can build, as {name: text}."""
     files, built = {}, {}
+    scan = oeis_submit.scan_byline(data_date(results))
+    table = oeis_submit.table_byline(index_date(INDEX_TABLE))
     checked = ("Independently confirmed by an exhaustive scan; "
                "check_oeis.py passes." if check else None)
 
@@ -1199,7 +1238,7 @@ def generate_files(families, results, cov, index, check):
         if fam in oeis_submit.AFILE and rows:
             spec = oeis_submit.AFILE[fam]
             name = f"a{spec['aid'][1:]}.txt"
-            files[name] = oeis_submit.afile(fam, rows, reach, checked)
+            files[name] = oeis_submit.afile(fam, rows, scan, reach, checked)
             built[("a", fam)] = (name, sum(1 for r in rows if r[5]))
 
     # A096265: terms 56..68 are the same records A031133/A031134 publish, so
@@ -1213,7 +1252,7 @@ def generate_files(families, results, cov, index, check):
              "Terms 56..68 are the prime between A031133(k) and A031134(k),",
              "whose b-files reach 67 terms (A096265 index 68).",
              "Every term independently rederived by an exhaustive scan."],
-            cov.get("aloof", 0), checked)
+            scan, cov.get("aloof", 0), checked)
         built[("b", "A096265")] = ("b096265.txt", len(pairs))
 
     # A005669 and A107578 are pi(p), which no scan here produces. The committed
@@ -1227,7 +1266,7 @@ def generate_files(families, results, cov, index, check):
              "From the committed copy of Andersen and Luhn's table; see",
              "oeis/andersen-luhn-index.txt, which records how it was checked",
              "against the published b-files of A002386, A005250 and A005669."],
-            checked=None)
+            table)
         built[("b", "A005669")] = ("b005669.txt", len(lo))
         up = [(n, index[n][2] + 1) for n in ns]
         files["b107578.txt"] = oeis_submit.bfile(
@@ -1235,7 +1274,7 @@ def generate_files(families, results, cov, index, check):
             ["pi(q) for the prime at the upper end of the n-th maximal gap.",
              "A107578(n) = A005669(n) + 1, which holds at all 80 terms both",
              "sequences publish today."],
-            checked=None)
+            table)
         built[("b", "A107578")] = ("b107578.txt", len(up))
 
         # Beveridge's a005250.txt, in his layout and keeping his credits --
@@ -1245,7 +1284,7 @@ def generate_files(families, results, cov, index, check):
                 "Updated by Jens Kruse Andersen, Oct 19 2010.", "",
                 "Corrected OEIS list title by John W. Nicholson, Sep 11, 2011.",
                 "", f"Updated by {oeis_submit.ATTRIB['name']}, "
-                f"{time.strftime('%b %d %Y')}, to 85 rows, from Andersen and",
+                f"{index_date(INDEX_TABLE)}, to 85 rows, from Andersen and",
                 "Luhn's table at https://www.pzktupel.de/RecordGaps/"
                 "risinggap.php", "",
                 "Maximal prime gaps table with gap number, upper prime, gap, "

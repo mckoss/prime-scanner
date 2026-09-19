@@ -4,7 +4,7 @@
 # A107578(n) = A005669(n) + 1, which holds at all 80 terms both
 # sequences publish today.
 #
-# Mike Koss, 2026-09-16.
+# Mike Koss. From Andersen and Luhn's table, retrieved 2026-09-16.
 # Source: https://github.com/mckoss/prime-scanner
 # OEIS data CC BY-SA 4.0
 1 2

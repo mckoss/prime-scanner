@@ -4,7 +4,7 @@ Updated by Jens Kruse Andersen, Oct 19 2010.
 
 Corrected OEIS list title by John W. Nicholson, Sep 11, 2011.
 
-Updated by Mike Koss, Sep 16 2026, to 85 rows, from Andersen and
+Updated by Mike Koss, 2026-09-16, to 85 rows, from Andersen and
 Luhn's table at https://www.pzktupel.de/RecordGaps/risinggap.php
 
 Maximal prime gaps table with gap number, upper prime, gap, prime count of upper prime.

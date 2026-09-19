@@ -88,14 +88,22 @@ def header(lines):
     return "".join(f"# {l}\n".replace("# \n", "#\n") for l in lines)
 
 
-def attribution_lines(bound=None, checked=None):
-    out = []
+def attribution_lines(byline, bound=None, checked=None):
+    """The credit and provenance block every generated file carries.
+
+    `byline` dates the DATA, not the run: a file regenerated today from a scan
+    that last advanced last week should say last week, or it misdates itself to
+    whoever reads it on OEIS -- and re-running the generator would rewrite every
+    file for no reason.
+
+    `bound` is the family's own frontier, never the deepest in the run. The
+    pairwise scan trails the others by a factor of three, so "searched all
+    below" the run maximum would be a false claim on an A087770 file.
+    """
+    out = [byline]
     if bound:
-        out.append(f"{ATTRIB['name']}, {time.strftime('%Y-%m-%d')}. Exhaustive "
-                   f"scan from 0 to {bound:,};")
-        out.append("no further record below that bound.")
-    else:
-        out.append(f"{ATTRIB['name']}, {time.strftime('%Y-%m-%d')}.")
+        out.append(f"Searched all below {bound:,}: every record up to that")
+        out.append("bound is present, and there is no further one below it.")
     if checked:
         out.append(checked)
     out.append(f"Source: {ATTRIB['source']}")
@@ -103,7 +111,16 @@ def attribution_lines(bound=None, checked=None):
     return out
 
 
-def bfile(aid, pairs, note, bound=None, checked=None):
+def scan_byline(date):
+    return f"{ATTRIB['name']}. Data as of {date}, when the scan last advanced."
+
+
+def table_byline(date):
+    return (f"{ATTRIB['name']}. From Andersen and Luhn's table, "
+            f"retrieved {date}.")
+
+
+def bfile(aid, pairs, note, byline, bound=None, checked=None):
     """`n a(n)`, with a comment header naming where the terms came from.
 
     The b-file spec allows comment lines before the data. Published b-files
@@ -112,7 +129,7 @@ def bfile(aid, pairs, note, bound=None, checked=None):
     """
     out = [f"{aid}, {len(pairs)} terms.", ""]
     out += note if isinstance(note, list) else [note]
-    out += [""] + attribution_lines(bound, checked)
+    out += [""] + attribution_lines(byline, bound, checked)
     body = "".join(f"{n} {v}\n" for n, v in pairs)
     return header(out) + body
 
@@ -168,7 +185,7 @@ AFILE = {
 }
 
 
-def afile(fam, rows, bound, checked):
+def afile(fam, rows, byline, bound, checked):
     spec = AFILE[fam]
     cols = spec["cols"]
     # A record with no lower neighbour (p = 2) cannot state its span or its
@@ -176,7 +193,7 @@ def afile(fam, rows, bound, checked):
     rows = [r for r in rows if r[5]]
     key = [f"{c[0]:<5}{c[1]}" + (f" ({c[2]})" if c[2] else "") for c in cols]
     head = [f"a{spec['aid'][1:]}.txt -- {spec['title']}", ""] + key + [""]
-    head += attribution_lines(bound, checked) + [""]
+    head += attribution_lines(byline, bound, checked) + [""]
     body = [[str(c[3](r)) for c in cols] for r in rows]
     w = [max(len(c[0]), max((len(b[i]) for b in body), default=0))
          for i, c in enumerate(cols)]
@@ -245,7 +262,8 @@ def render_yaml(drafts, new_seqs, other, meta):
          "# One entry per OEIS draft. Only fields that CHANGE appear.",
          "# Record progress in oeis/submissions.txt, keyed by `items`.",
          "",
-         f"generated:  {meta['date']}",
+         f"data_as_of: {meta['date']}"
+         "          # the date the scan last advanced, not the run date",
          f"run:        {meta['run']}",
          f"frontier:   {meta['frontier']}",
          f"check_oeis: {'pass' if meta['check'] else 'NOT PASSING'}"
