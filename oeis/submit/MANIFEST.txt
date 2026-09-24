@@ -1,15 +1,15 @@
 # sha256 (first 16) of every generated file in this directory.
 # oeis_audit.py rewrites them all; edits here are lost.
 c457a5dc3cae4f38  a005250.txt
-a5357d2a86a7c5b2  a023186.txt
-3e1b80812c06afe6  a058867.txt
-0f1bd0bc3cb3829c  a087770.txt
-cd9712cf162381e4  a096265.txt
+d4783bc14f085997  a023186.txt
+79f9d7cf86fa57cf  a058867.txt
+eeb2390d5a61ebc2  a087770.txt
+3e8629b3454be62e  a096265.txt
 019b6f8d78a2e979  b005669.txt
-b6e9a44c9557e92d  b096265.txt
+9a4715594ed7e0b0  b096265.txt
 05525eb4b9a19b23  b107578.txt
-57862cf9fd73d2a2  edits.yaml
+821c0dc05dea1a4a  edits.yaml
 030290f591cc80ec  fill.js
-1954aad5d114fdb3  index.html
+190b14bddd85425f  index.html
 5007f32c3c8b3adb  panel.html
-eeb21d9e334c1aa8  payload.js
+d4c792c5514d633d  payload.js
