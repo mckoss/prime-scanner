@@ -28,6 +28,7 @@ original single-threaded scan.
 | `balanced.txt` | the subset of `lonely.txt` whose two gaps are equal — not yet in OEIS, see [`../oeis/submit/edits.yaml`](../oeis/submit/edits.yaml) |
 | `pairwise.txt` | A087770's chain: gap below *and* gap above both beat the previous term's — [A087770](https://oeis.org/A087770) |
 | `frontier.txt` | each sequence's own frontier — see below |
+| `audit.txt` | the last `make audit` report: how OEIS compares with this run |
 | `pending/<kind>.txt` | candidates held for a sequence that skipped its catch-up — see below; not terms |
 
 Each results line is
