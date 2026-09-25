@@ -1069,18 +1069,25 @@ def frontier_report(families, results, refresh):
         # A kind still catching up is measured against its own bound, not the
         # run's frontier, which it has not reached yet.
         reach = cov.get(fam, front)
-        if reach > extent:
-            new = ours - n_pub
-            left = (f"PAST it -- {new} term(s) beyond publication  <-- SUBMITTABLE"
-                    if new > 0 else "past it, but no term beyond publication yet")
+        # OEIS does not say how far anyone searched, only where the known
+        # terms end, so the verdict counts terms. Reach only estimates how
+        # long until the scan gets to the last published one.
+        new = ours - n_pub
+        if new > 0:
+            left = f"{new} term(s) beyond OEIS  <-- SUBMITTABLE"
+        elif new == 0:
+            left = f"all {n_pub} published terms, none new yet"
+        elif reach > extent:
+            left = f"!! {-new} published term(s) missing from this run"
         elif extent > ULONG_MAX:
-            left = f"unreachable -- past our 2^64 ceiling, {ULONG_MAX:.3e}"
+            left = (f"{-new} term(s) short -- unreachable, past our 2^64 "
+                    f"ceiling, {ULONG_MAX:.3e}")
         elif reach == 0:
             left = f"not scanned yet -- catch-up will cover [0, {front:.4e})"
         else:
             d = scan_days(reach, extent)
             when = f", ~{d:.1f} days at the measured rate" if d is not None else ""
-            left = f"{extent / reach:.1f}x to go{when}"
+            left = f"{-new} term(s) short -- {extent / reach:.1f}x to go{when}"
         print(f"  {fam:<12}{ours:>5}   {extent:<14.4e}{n_pub:>6}  {aid:<9} {left}")
 
 
