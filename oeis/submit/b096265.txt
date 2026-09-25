@@ -6,7 +6,7 @@
 # Every term independently rederived by an exhaustive scan.
 #
 # Mike Koss. Data as of 2026-09-24, when the scan last advanced.
-# Searched all below 2,775,385,481,641,202: every record up to that
+# Searched all below 3,689,973,560,872,464: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
