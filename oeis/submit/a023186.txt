@@ -6,8 +6,8 @@
 # pp   previous prime
 # np   next prime
 #
-# Mike Koss. Data as of 2026-09-24, when the scan last advanced.
-# Searched all below 3,689,973,560,872,464: every record up to that
+# Mike Koss. Data as of 2026-09-25, when the scan last advanced.
+# Searched all below 5,613,838,913,435,200: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -70,3 +70,5 @@
   55   475963705368391  452   475963705367939   475963705368871
   56   941114429467073  480   941114429466593   941114429467567
   57  2662972908869401  508  2662972908868891  2662972908869909
+  58  4685407635944059  510  4685407635943549  4685407635944569
+  59  4911417538051463  520  4911417538050943  4911417538052029
