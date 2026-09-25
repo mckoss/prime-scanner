@@ -62,9 +62,11 @@ bench: $(BIN) $(REF)
 	python3 bench.py
 
 # Regenerate oeis/submit/ -- the edit script, the b-files and a-files to
-# upload, and the browser tooling that fills the OEIS edit form.
+# upload, and the browser tooling that fills the OEIS edit form. The report
+# also lands in oeis/audit/report.txt (gitignored, overwritten each run).
 audit:
-	python3 oeis_audit.py --results fresh
+	mkdir -p oeis/audit
+	set -o pipefail; python3 -u oeis_audit.py --results fresh | tee oeis/audit/report.txt
 
 # Serve oeis/submit/ so the bookmarklet can load the panel and payload. Open
 # http://localhost:8017/ for the numbered worklist.
