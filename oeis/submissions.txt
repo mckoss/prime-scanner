@@ -13,6 +13,6 @@
 # without a line here the script would happily offer edits that stack on top
 # of a review already in progress.
 
-draft:A023186   submitted  2026-09-08  rev 59, proposed; balanced-primes comment. Awaiting a reply to Michael S. Branicky re A054342, and Michel Marcus is waiting on the new sequence
+comment:A023186:balanced  skip  2026-09-20  Abandoned balanced-primes comment; removed by Sean A. Irvine in rev 60, then the entry was approved in rev 61. No open draft remains; the separate balanced-lonely sequence is still drafted.
 b-file:A096265  drafted    2026-09-14  generated to submit/b096265.txt; all 68 terms confirmed by the scan
 new:balanced    drafted    2026-09-14  generated to submit/edits.yaml under new_sequences

@@ -9,6 +9,25 @@ on that draft.
 `edits.yaml` holds only what gets **submitted**. Anything that is for us
 rather than for an OEIS editor belongs here.
 
+## Extension attachments
+
+When extending a sequence, submit both the standard b-file of indexed terms
+and an a-file documenting the adjacent primes and gaps. The richer a-file
+supplements the b-file; it does not replace it.
+
+Preserve existing supplementary files and their formats. Upload a new table
+under a distinct available filename and add a descriptive link with attribution.
+Do not replace an existing a-file with a different format without agreement
+from the editors.
+
+Checked September 25, 2026: `oeis_audit.py` caches original a-files in
+`oeis/audit/afile/`. The cached `a005250.txt` and `a107578.txt` are identical
+75-row tables. The generated A005250 extension preserves all 75 rows, the
+four-column layout and contributor credits, and extends the table to 85 rows.
+It therefore preserves the existing format. Before submitting, correct the
+inherited note "To get lower prime subtract G from p": subtract `gap`, not
+`G` (the prime index).
+
 Everything below was `TODO.md` up to 2026-09-14, when the list became
 generated. It is kept whole: its status tables and checkboxes are a record of
 that date, and the live state is in `submit/edits.yaml` and
@@ -104,7 +123,7 @@ every merge.
       will ask, and the entry should answer before they do
 - [x] add `A058867` and `A054342` to the cross-references
 - [ ] submit; say nothing about whether the sequence is infinite
-- [ ] offer to reduce the A023186 comment to `Cf.` the new A-number
+- [ ] add a cross-reference from A023186 if the new sequence is accepted
 
 Suggested by Michel Marcus in review. Not currently in OEIS.
 
@@ -124,15 +143,17 @@ neighbour, and A006562 begins 5, 53, 157. The generated a-files drop any
 record with `prev == 0` for the same reason — a span or a lower gap it cannot
 state.
 
-### It is blocked on the A023186 draft
+### The A023186 comment was abandoned
 
-The comment this would replace is live on OEIS: A023186 is at rev 59, status
-`proposed`, since 2026-09-08. Two threads are open in it — Michael S. Branicky
-asked about A054342 (answer: first balanced prime at each distance, not a
-record, and already in the `Cf.` list), and Michel Marcus is waiting on this
-sequence before settling the comment. Recorded as `draft:A023186` in
-[`submissions.txt`](submissions.txt), which is how the generator knows; draft
-state is behind a login and the audit cannot see it.
+Sean A. Irvine removed the balanced-primes comment on September 20, 2026
+(revision 60), then approved the entry (revision 61). The comment is abandoned
+and no open A023186 draft remains. Verified against the
+[OEIS revision history](https://oeis.org/history?seq=A023186) on September 25.
+
+Recorded as `comment:A023186:balanced` with status `skip` in
+[`submissions.txt`](submissions.txt). The former `draft:A023186` blocker has
+been removed. This closes the comment proposal, not the separate
+balanced-lonely sequence suggested by Michel Marcus, which remains drafted.
 
 ### It is not A058867, and the difference is subtle
 

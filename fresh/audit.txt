@@ -178,7 +178,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 FRONTIER vs PUBLISHED
 =====================
 
-  fresh/frontier.txt = 5,613,838,913,435,200  (5.6138e+15)
+  fresh/frontier.txt = 5,716,751,743,587,790  (5.7168e+15)
 
   family       ours   published to   terms  via       what is left
   gap            64   1.0141e+20        85  A002386   21 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
@@ -198,14 +198,14 @@ SUBMISSION  --  one draft per sequence
       Update the existing a-file to 85 rows; its link text is unchanged.
    4. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file; add cross-references to A107578.
-   5. A023186  DATA +3 terms, bound comment, a-file 58 rows, Xref +A087770, Xref +A096265  [submitted]
+   5. A023186  DATA +3 terms, bound comment, a-file 58 rows, Xref +A087770, Xref +A096265
       Extend DATA by 3 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A087770, A096265.
    6. A031132  Xref +A096265
       Add the reverse cross-reference.
    7. A031133  bound comment
-      Add a search-bound comment: no further term below 5.6*10^15.
+      Add a search-bound comment: no further term below 5.7*10^15.
    8. A031134  bound comment
-      Add a search-bound comment: no further term below 5.6*10^15.
+      Add a search-bound comment: no further term below 5.7*10^15.
    9. A058867  DATA +4 terms, bound comment, a-file 34 rows
       Extend DATA by 4 terms; add a search-bound comment; add an a-file with the bounding primes.
   10. A087770  DATA +10 terms, bound comment, a-file 38 rows, Xref +A096265

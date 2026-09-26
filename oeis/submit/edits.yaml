@@ -4,7 +4,7 @@
 
 data_as_of: 2026-09-25          # the date the scan last advanced, not the run date
 run:        fresh
-frontier:   5613838913435200
+frontier:   5716751743587790
 check_oeis: pass
 
 attribution:
@@ -83,16 +83,13 @@ drafts:
   role:  the lonely prime
   url:   "https://oeis.org/edit?seq=A023186"
   items: ["terms:lonely", "bound:lonely", "a-file:lonely", "xref:A023186:A087770", "xref:A023186:A096265"]
-  status: submitted
-  blocked_on:
-  - "open OEIS draft (rev 59, proposed; balanced-primes comment. Awaiting a reply to Michael S. Branicky re A054342, and Michel Marcus is waiting on the new sequence)"
   notes: true
   summary: >-
     Extend DATA by 3 terms; add a search-bound comment; add an a-file with the
     bounding primes; add cross-references to A087770, A096265.
   to_editors: >-
     Each new term is a record of the lonely kind, rederived from zero rather
-    than searched for: the scan is exhaustive to 5613838913435200 and
+    than searched for: the scan is exhaustive to 5716751743587790 and
     reproduces every published term below that bound. The bounding primes for
     each record are in the attached a-file, so a term can be checked without
     rerunning a scan.
@@ -116,8 +113,8 @@ drafts:
   - field:  Comment            # %C
     action: add
     text: >-
-      There is no further term below 5.6*10^15: an exhaustive scan from 0 to
-      5613838913435200 finds none. - ~~~~
+      There is no further term below 5.7*10^15: an exhaustive scan from 0 to
+      5716751743587790 finds none. - ~~~~
   - field:  Link            # %H
     action: add
     text: >-
@@ -147,13 +144,13 @@ drafts:
   items: ["bound:aloof"]
   notes: true
   summary: >-
-    Add a search-bound comment: no further term below 5.6*10^15.
+    Add a search-bound comment: no further term below 5.7*10^15.
   edits:
   - field:  Comment            # %C
     action: add
     text: >-
-      There is no further term below 5.6*10^15: an exhaustive scan from 0 to
-      5613838913435200 finds none. - ~~~~
+      There is no further term below 5.7*10^15: an exhaustive scan from 0 to
+      5716751743587790 finds none. - ~~~~
 
 - aid:   A031134
   role:  the upper neighbour
@@ -161,13 +158,13 @@ drafts:
   items: ["bound:aloof"]
   notes: true
   summary: >-
-    Add a search-bound comment: no further term below 5.6*10^15.
+    Add a search-bound comment: no further term below 5.7*10^15.
   edits:
   - field:  Comment            # %C
     action: add
     text: >-
-      There is no further term below 5.6*10^15: an exhaustive scan from 0 to
-      5613838913435200 finds none. - ~~~~
+      There is no further term below 5.7*10^15: an exhaustive scan from 0 to
+      5716751743587790 finds none. - ~~~~
 
 - aid:   A058867
   role:  the balanced prime
@@ -179,7 +176,7 @@ drafts:
     bounding primes.
   to_editors: >-
     Each new term is a record of the equidistant kind, rederived from zero
-    rather than searched for: the scan is exhaustive to 5613838913435200 and
+    rather than searched for: the scan is exhaustive to 5716751743587790 and
     reproduces every published term below that bound. The bounding primes for
     each record are in the attached a-file, so a term can be checked without
     rerunning a scan.
@@ -204,8 +201,8 @@ drafts:
   - field:  Comment            # %C
     action: add
     text: >-
-      There is no further term below 5.6*10^15: an exhaustive scan from 0 to
-      5613838913435200 finds none. - ~~~~
+      There is no further term below 5.7*10^15: an exhaustive scan from 0 to
+      5716751743587790 finds none. - ~~~~
   - field:  Link            # %H
     action: add
     text: >-
@@ -222,7 +219,7 @@ drafts:
     the bounding primes; add cross-references to A096265.
   to_editors: >-
     Each new term is a record of the pairwise kind, rederived from zero rather
-    than searched for: the scan is exhaustive to 5613838913435200 and
+    than searched for: the scan is exhaustive to 5716751743587790 and
     reproduces every published term below that bound. The bounding primes for
     each record are in the attached a-file, so a term can be checked without
     rerunning a scan.
@@ -253,8 +250,8 @@ drafts:
   - field:  Comment            # %C
     action: add
     text: >-
-      There is no further term below 5.6*10^15: an exhaustive scan from 0 to
-      5613838913435200 finds none. - ~~~~
+      There is no further term below 5.7*10^15: an exhaustive scan from 0 to
+      5716751743587790 finds none. - ~~~~
   - field:  Link            # %H
     action: add
     text: >-
@@ -284,8 +281,8 @@ drafts:
   - field:  Comment            # %C
     action: add
     text: >-
-      There is no further term below 5.6*10^15: an exhaustive scan from 0 to
-      5613838913435200 finds none. - ~~~~
+      There is no further term below 5.7*10^15: an exhaustive scan from 0 to
+      5716751743587790 finds none. - ~~~~
   - field:  Link            # %H
     action: replace_bfile_link
     text: >-
@@ -334,7 +331,7 @@ new_sequences:
   summary: >-
     New sequence: the intersection of A023186 (lonely primes) with A006562
     (balanced primes) -- record-setting isolated primes exactly equidistant
-    from both neighbors. 6 terms, complete below 5.6*10^15.
+    from both neighbors. 6 terms, complete below 5.7*10^15.
   to_editors: >-
     Suggested by Michel Marcus in review of a comment on A023186: submit the
     intersection as its own sequence rather than as a comment there. Not
@@ -369,7 +366,7 @@ new_sequences:
       the prime 16033, whose gaps are (26, 24), so 16787 sets no record over all
       primes. This sequence is the terms of A058867 that are in A023186.
     - >-
-      There are no further terms below 5.6*10^15. An exhaustive scan from zero
+      There are no further terms below 5.7*10^15. An exhaustive scan from zero
       rederived every term of A023186 and of A058867 below that bound and found
       no others, so the sequence is complete there.
     example: |-
