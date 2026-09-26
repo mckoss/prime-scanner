@@ -144,6 +144,18 @@ can be missed. Results merge only below the contiguous frontier, since merging
 across an unfinished shard could promote a smaller value when the real record
 sits in the hole.
 
+**Gaps across boundaries.** Each worker, including the first in a new round,
+starts up to 100,000 integers before its assigned range (less for small
+shards). This overlap reconstructs the three-prime window, so a gap crossing
+a worker or round boundary is caught by the following worker or round. The
+merge keeps these discoveries even when their centre prime is below the new
+round's start, and removes duplicates. This relies on the overlap containing
+enough preceding primes; the code does not dynamically check that condition.
+An interrupted worker instead restores its last two primes from its checkpoint.
+At the final endpoint, a gap whose upper prime lies beyond the endpoint is
+still unresolved: the reported frontier can reach that endpoint before the
+crossing gap is recorded. Continuing the scan resolves it.
+
 **The ceiling** is 2^64 ≈ 1.84e19, a deliberate choice of word size, because
 128-bit division would slow every scan. Time binds long before that: from
 today's frontier, 1e16 is about 16 days away on 8 cores and gap(65) at 4.38e16
