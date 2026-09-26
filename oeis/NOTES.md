@@ -24,9 +24,9 @@ Checked September 25, 2026: `oeis_audit.py` caches original a-files in
 `oeis/audit/afile/`. The cached `a005250.txt` and `a107578.txt` are identical
 75-row tables. The generated A005250 extension preserves all 75 rows, the
 four-column layout and contributor credits, and extends the table to 85 rows.
-It therefore preserves the existing format. Before submitting, correct the
-inherited note "To get lower prime subtract G from p": subtract `gap`, not
-`G` (the prime index).
+It therefore preserves the existing format. Corrected the inherited note
+"To get lower prime subtract G from p" in the generator and proposed upload:
+subtract `gap`, not `G` (the prime index). The cached original is unchanged.
 
 Everything below was `TODO.md` up to 2026-09-14, when the list became
 generated. It is kept whole: its status tables and checkboxes are a record of

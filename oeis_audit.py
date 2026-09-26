@@ -1303,7 +1303,7 @@ def generate_files(families, results, cov, index, check):
         body = [f"{n} {index[n][1] + index[n][0]} {index[n][0]} "
                 f"{index[n][2] + 1}" for n in ns]
         files["a005250.txt"] = "\n".join(head + body) + "\n\nNotes:\n\n" \
-            "To get lower prime subtract G from p.\n" \
+            "To get lower prime subtract gap from p.\n" \
             "To get prime count of lower prime subtract 1 from the last " \
             "column.\n"
         built[("a", "gap")] = ("a005250.txt", len(ns))

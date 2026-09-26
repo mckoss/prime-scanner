@@ -105,5 +105,5 @@ A000027 A000101 A005250 A107578
 
 Notes:
 
-To get lower prime subtract G from p.
+To get lower prime subtract gap from p.
 To get prime count of lower prime subtract 1 from the last column.
