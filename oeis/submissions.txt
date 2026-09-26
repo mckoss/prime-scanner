@@ -16,3 +16,6 @@
 comment:A023186:balanced  skip  2026-09-20  Abandoned balanced-primes comment; removed by Sean A. Irvine in rev 60, then the entry was approved in rev 61. No open draft remains; the separate balanced-lonely sequence is still drafted.
 b-file:A096265  drafted    2026-09-14  generated to submit/b096265.txt; all 68 terms confirmed by the scan
 new:balanced    drafted    2026-09-14  generated to submit/edits.yaml under new_sequences
+
+a-file:A005250  submitted  2026-09-26  OEIS rev 277 proposed; 85-row extension uploaded as /A005250/a005250_1.txt, original retained. Data/note diff included in discussion.
+draft:A005250   submitted  2026-09-26  rev 277, proposed; supplementary-table extension. A107578 was not edited.

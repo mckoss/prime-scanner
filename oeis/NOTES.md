@@ -9,6 +9,17 @@ on that draft.
 `edits.yaml` holds only what gets **submitted**. Anything that is for us
 rather than for an OEIS editor belongs here.
 
+## A005250 submitted for review
+
+`a-file:A005250` was submitted as revision 277 (OEIS date September 26,
+2026; September 25 Pacific). The upload became `a005250_1.txt`; the original
+`a005250.txt` and its link remain intact. The new link credits Alex Beveridge
+and Mike Koss and identifies the range 1..85. The discussion includes the
+added data rows and corrected-note diff for reviewers. The b-file and
+A107578 were not changed.
+
+[Review and discussion](https://oeis.org/draft/A005250).
+
 ## Extension attachments
 
 When extending a sequence, submit both the standard b-file of indexed terms
