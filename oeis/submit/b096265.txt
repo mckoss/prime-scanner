@@ -5,8 +5,8 @@
 # whose b-files reach 67 terms (A096265 index 68).
 # Every term independently rederived by an exhaustive scan.
 #
-# Mike Koss. Data as of 2026-09-26, when the scan last advanced.
-# Searched all below 8,350,862,685,317,899: every record up to that
+# Mike Koss. Data as of 2026-09-27, when the scan last advanced.
+# Searched all below 9,450,932,778,716,922: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
