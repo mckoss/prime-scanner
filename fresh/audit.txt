@@ -178,14 +178,40 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 FRONTIER vs PUBLISHED
 =====================
 
-  fresh/frontier.txt = 5,716,751,743,587,790  (5.7168e+15)
+  fresh/frontier.txt = 8,350,862,685,317,899  (8.3509e+15)
 
   family       ours   published to   terms  via       what is left
   gap            64   1.0141e+20        85  A002386   21 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
-  lonely         59   9.4111e+14        56  A023186   3 term(s) beyond OEIS  <-- SUBMITTABLE
+  lonely         59   9.4111e+14        56  A023186   3 term(s) beyond A023186  <-- SUBMITTABLE
   aloof          68   1.6932e+15        68  A031134   all 68 published terms, none new yet
-  equidistant    34   1.8789e+14        30  A058867   4 term(s) beyond OEIS  <-- SUBMITTABLE
-  pairwise       39   9.1564e+12        29  A087770   10 term(s) beyond OEIS  <-- SUBMITTABLE
+  equidistant    34   1.8789e+14        30  A058867   4 term(s) beyond A058867  <-- SUBMITTABLE; 1 already tabulated in A052187
+  pairwise       39   9.1564e+12        29  A087770   10 term(s) beyond A087770  <-- SUBMITTABLE
+
+PUBLISHED SOURCES -- prior values and future checkpoints
+========================================================
+
+  Committed source tables: oeis/sources/README.md
+  A052187: 72 first-occurrence triples; 31 match scanned equidistant records.
+    a(31) = A052187(72) + 426; the prime triple was already tabulated in A052187 (table credited to Jerry M. Lagrou and earlier contributors), and is independently confirmed by this scan.
+  Source: https://oeis.org/A052187/b052187.txt
+  Missing from A058867 is not the same as previously unpublished.
+  A052187 is not a complete equidistant-record list; its unmatched
+  first occurrences cannot extend the scan's completeness bound.
+
+  Aloof checkpoints beyond 8,350,862,685,317,899, beating span 1152:
+  Source: https://sweet.ua.pt/tos/gaps/t0.txt.gz
+  From Oliveira e Silva's first-occurrence gap table; adjacent
+  primes and all intervening odd integers checked by deterministic
+  Miller-Rabin. These are witnesses, NOT confirmed next records.
+    p=25016149672698647  gaps=(1098, 60)  span=1158  source gap=1098  other: B. Nyman
+      25016149672697549 < p < 25016149672698707
+    p=28269785077312447  gaps=(1038, 142)  span=1180  source gap=1038  other: B. Nyman
+      28269785077311409 < p < 28269785077312589
+    p=29835422457878441  gaps=(160, 1106)  span=1266  source gap=1106  other: B. Nyman
+      29835422457878281 < p < 29835422457879547
+  At least one new aloof record occurs by 25,016,149,672,698,647;
+  an earlier stronger record may supersede any of these witnesses.
+  No scan terms, frontiers, or submission DATA come from these checkpoints.
 
 SUBMISSION  --  one draft per sequence
 ======================================
@@ -194,7 +220,7 @@ SUBMISSION  --  one draft per sequence
       Add the reverse cross-reference.
    2. A002386  Xref +A053695, Xref +A087770, Xref +A107578
       Add cross-references to A053695, A087770, A107578.
-   3. A005250  a-file 85 rows (update)
+   3. A005250  a-file 85 rows (update)  [submitted]
       Update the existing a-file to 85 rows; its link text is unchanged.
    4. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file; add cross-references to A107578.
@@ -203,11 +229,11 @@ SUBMISSION  --  one draft per sequence
    6. A031132  Xref +A096265
       Add the reverse cross-reference.
    7. A031133  bound comment
-      Add a search-bound comment: no further term below 5.7*10^15.
+      Add a search-bound comment: no further term below 8.3*10^15.
    8. A031134  bound comment
-      Add a search-bound comment: no further term below 5.7*10^15.
+      Add a search-bound comment: no further term below 8.3*10^15.
    9. A058867  DATA +4 terms, bound comment, a-file 34 rows
-      Extend DATA by 4 terms; add a search-bound comment; add an a-file with the bounding primes.
+      Extend DATA by 4 terms; credit the prior A052187 table; add a search-bound comment; add an a-file with the bounding primes.
   10. A087770  DATA +10 terms, bound comment, a-file 38 rows, Xref +A096265
       Extend DATA by 10 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A096265.
   11. A096265  bound comment, b-file 68 terms, a-file 67 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]

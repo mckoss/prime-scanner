@@ -25,6 +25,15 @@ So `lonely.txt`, `audit/b023186.txt` and `submit/a023186.txt` are three
 different things about A023186: what it publishes, what we last fetched, and
 what we propose to add.
 
+## Additional published sources
+
+The audit now reads [committed source tables](sources/README.md) as well as
+same-entry OEIS lists. A052187 already tabulates the prime triple behind
+equidistant(31); the A058867 extension preserves that attribution. The full
+Oliveira e Silva first-occurrence gap table supplies locally verified future
+aloof checkpoints, reported separately from scanned records and submission
+DATA. These comparisons run offline and do not advance any frontier.
+
 ## Progress
 
 Snapshot of 2026-09-14, at the committed frontier of

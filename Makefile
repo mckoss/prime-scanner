@@ -34,6 +34,7 @@ $(REF): reference/mod30.c reference/prime-check.h Makefile
 	$(CC) $(OPT) -std=c11 -Ireference $< -o $@
 
 test: $(BIN) test-submit
+	python3 test_audit.py
 	python3 test_sieve.py
 
 # Checks oeis/submit/ before any of it goes to OEIS: b-file spec compliance,
