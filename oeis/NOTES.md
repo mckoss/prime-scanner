@@ -9,6 +9,30 @@ on that draft.
 `edits.yaml` holds only what gets **submitted**. Anything that is for us
 rather than for an OEIS editor belongs here.
 
+## Previously published triples and future aloof checkpoints
+
+Items: `terms:equidistant`, `a-file:equidistant`, `bound:aloof`
+
+Checked September 26, 2026. [Committed source tables](sources/README.md)
+now supply an explicit audit comparison outside the same-entry OEIS lists.
+A052187(72) + 426 = 2422627449334097 = equidistant(31), already tabulated
+by Jerry M. Lagrou and earlier contributors. The generated A058867 draft
+credits this source; four terms still extend A058867, but they are not four
+previously unpublished prime triples. We found no source for terms 32..34
+in this search; that is not a claim of universal novelty.
+
+The first-occurrence gap table accompanying Oliveira e Silva's work yields
+verified aloof witnesses at 25016149672698647 (span 1158),
+28269785077312447 (1180), and 29835422457878441 (1266), from gaps credited
+to B. Nyman. They beat our current span 1152; their global record status
+awaits exhaustive coverage. The audit recomputes the eligible checkpoints
+as the frontier and record span advance. Do not submit them as scan terms.
+
+The existing neighbor crawl compares the central primes in DATA and only
+follows direct family links. A052187 uses lower endpoints and is linked
+through A054342, so that heuristic missed it. The new source comparison
+explicitly transforms endpoints and checks complete triples.
+
 ## A005250 submitted for review
 
 `a-file:A005250` was submitted as revision 277 (OEIS date September 26,

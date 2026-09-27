@@ -1,0 +1,782 @@
+# (c) 2012-2016, Tomás Oliveira e Silva
+#
+# See disclaimer in page
+#   http://sweet.ua.pt/tos/hobbies.html
+#
+# Do not bookmark this page, because its URI may change
+# in the future. Instead, bookmark its parent page:
+#   http://sweet.ua.pt/tos/gaps.html
+#
+# Test interval ---------- [2,4d18]
+# Double test interval --- [2,4d17]
+#
+# P(g) is the least prime number such that P(g)+g is
+#      the smallest prime number larger than P(g)
+# N(g) is the number of times the gap g occurred
+#      between consecutive primes
+# An * marks a record-holder; g is a record-holder if
+#      P(g') > P(g) for all (even) g' > g, i.e., if all
+#      prime gaps are smaller than g for all primes
+#      smaller than P(g); P(g) is a record-holder if
+#      P(g') < P(g) for all (even) g' < g
+#
+# List of finders (excluding other finders, not related to this project):
+#
+#   70+0    tos  Tomás Oliveira e Silva
+#   52+0    zig  Siegfried "Zig" Herzog
+#    9+0     sp  Silvio Pardi
+#    2+0    jmr  João Manuel Rodrigues
+#    2+0     ck  Christian Kern
+#    1+0     cb  Carlos Bastos
+#    1+0    ajt  António Teixeira
+#    1+0     ap  Armando Pinho
+#    1+0   ncsa  John Fettig & Nahil Sobh
+#
+# Last update made on April 7, 2012
+
+   g                 P(g)              N(g) finder
+----  -------------------  ---------------- --------------------------------------
+   1*                   2*                1 other: J. Glaisher
+   2*                   3* 3023463123235320 other: J. Glaisher
+   4*                   7* 3023463133219217 other: J. Glaisher
+   6*                  23* 5733405713585553 other: J. Glaisher
+   8*                  89* 2715399246855304 other: J. Glaisher
+  10                  139* 3571916708301335 other: J. Glaisher
+  12                  199* 5003532155726301 other: J. Glaisher
+  14*                 113  2894325079173151 other: J. Glaisher
+  16                 1831* 2303238235735489 other: J. Glaisher
+  18*                 523  4419123103405493 other: J. Glaisher
+  20*                 887  2701397495951283 other: J. Glaisher
+  22*                1129  2280007803258608 other: J. Glaisher
+  24                 1669  3798370634652066 other: J. Glaisher
+  26                 2477* 1950697424671473 other: J. Glaisher
+  28                 2971* 2138164950845763 other: J. Glaisher
+  30                 4297* 4327259953172798 other: J. Glaisher
+  32                 5591* 1503000902518835 other: J. Glaisher
+  34*                1327  1593495896452731 other: J. Glaisher
+  36*                9551* 2814108938062616 other: J. Glaisher
+  38                30593* 1416781315299601 other: J. Glaisher
+  40                19333  1735952776259227 other: J. Glaisher
+  42                16141  2867609730943676 other: J. Glaisher
+  44*               15683  1256290615117606 other: J. Glaisher
+  46                81463* 1141585192258676 other: J. Glaisher
+  48                28229  2086118580095447 other: J. Glaisher
+  50                31907  1294833641152605 other: J. Glaisher
+  52*               19609  1025895101644228 other: J. Glaisher
+  54                35617  1799899278770916 other: J. Glaisher
+  56                82073* 1013696178114498 other: J. Glaisher
+  58                44293   876242581191652 other: J. Glaisher
+  60                43331  2044420396548414 other: J. Glaisher
+  62                34061   722444155224693 other: J. Glaisher
+  64                89689*  716096160760152 other: J. Glaisher
+  66               162143* 1463306770957698 other: J. Glaisher
+  68               134513   655095562621066 other: J. Glaisher
+  70               173359*  962217154127146 other: J. Glaisher
+  72*               31397  1099652547644920 other: J. Glaisher
+  74               404597*  554948729079617 other: J. Glaisher
+  76               212701   535479302712956 other: J. Glaisher
+  78               188029  1068200568362328 other: J. Glaisher
+  80               542603*  604632607964032 other: J. Glaisher
+  82               265621   449605130623230 other: J. Glaisher
+  84               461717   995606363014228 other: J. Glaisher
+  86*              155921   395070130829016 other: J. Glaisher
+  88               544279*  419466960132739 other: J. Glaisher
+  90               404851   933139327634120 other: J. Glaisher
+  92               927869*  342709900446400 other: J. Glaisher
+  94              1100977*  324520283547679 other: J. Glaisher
+  96*              360653   606522281596122 other: J. Glaisher
+  98               604073   343201144675913 other: J. Glaisher
+ 100               396733   370746210140783 other: J. Glaisher
+ 102              1444309*  547854014846519 other: J. Glaisher
+ 104              1388483   266960216696766 other: J. Glaisher
+ 106              1098847   241975312995332 other: J. Glaisher
+ 108              2238823*  451448709294416 other: J. Glaisher
+ 110              1468277   305366838071480 other: J. Glaisher
+ 112*              370261   244142443249360 other: J. Glaisher
+ 114*              492113   402744962697677 other: J. Glaisher
+ 116              5845193*  185951978536463 other: A. Western
+ 118*             1349533   182752386500354 other: J. Glaisher
+ 120              1895359   436491734774167 other: J. Glaisher
+ 122              3117299   153713960696579 other: A. Western
+ 124              6752623*  156966586638833 other: A. Western
+ 126              1671781   333740707522222 other: J. Glaisher
+ 128              3851459   129944943262323 other: A. Western
+ 130              5518687   183628874458887 other: A. Western
+ 132*             1357201   259040963697091 other: J. Glaisher
+ 134              6958667*  114355008593663 other: A. Western
+ 136              6371401   112757265855005 other: A. Western
+ 138              3826019   216400326332723 other: A. Western
+ 140              7621259*  150964309166834 other: A. Western
+ 142             10343761*   93089789363379 other: D. H. Lehmer
+ 144             11981443*  173286991831471 other: D. H. Lehmer
+ 146              6034247    81512442813392 other: A. Western
+ 148*             2010733    85260381226496 other: J. Glaisher
+ 150             13626257*  199709892313088 other: D. H. Lehmer
+ 152              8421251    72063754764039 other: A. Western
+ 154*             4652353    90118212723846 other: A. Western
+ 156             17983717*  137074360739301 other: D. H. Lehmer
+ 158             49269581*   60953026615992 other: F. Gruenberger and G. Armerding
+ 160             33803689    76368247476119 other: D. H. Lehmer
+ 162             39175217   107664265567986 other: F. Gruenberger and G. Armerding
+ 164             20285099    53947330162926 other: D. H. Lehmer
+ 166             83751121*   50042135294560 other: F. Gruenberger and G. Armerding
+ 168             37305713   113486627552599 other: F. Gruenberger and G. Armerding
+ 170             27915737    61325975933910 other: D. H. Lehmer
+ 172             38394127    42573582895801 other: F. Gruenberger and G. Armerding
+ 174             52721113    82423684181695 other: F. Gruenberger and G. Armerding
+ 176             38089277    41353014581867 other: F. Gruenberger and G. Armerding
+ 178             39389989    37734588277621 other: F. Gruenberger and G. Armerding
+ 180*            17051707    90852619561996 other: D. H. Lehmer
+ 182             36271601    40128314217157 other: D. H. Lehmer
+ 184             79167733    32783349811731 other: F. Gruenberger and G. Armerding
+ 186            147684137*   59652777505354 other: L. Lander and T. Parkin
+ 188            134065829    27209743720740 other: L. Lander and T. Parkin
+ 190            142414669    38166104127128 other: L. Lander and T. Parkin
+ 192            123454691    49104160323708 other: L. Lander and T. Parkin
+ 194            166726367*   23729371467298 other: L. Lander and T. Parkin
+ 196             70396393    26984101498763 other: F. Gruenberger and G. Armerding
+ 198             46006769    47611551060426 other: F. Gruenberger and G. Armerding
+ 200            378043979*   26410124134031 other: L. Lander and T. Parkin
+ 202            107534587    19750642849259 other: L. Lander and T. Parkin
+ 204            112098817    39107519396453 other: L. Lander and T. Parkin
+ 206            232423823    17309108395295 other: L. Lander and T. Parkin
+ 208            192983851    18735628162606 other: L. Lander and T. Parkin
+ 210*            20831323    49003870934991 other: D. H. Lehmer
+ 212            215949407    14022880358455 other: L. Lander and T. Parkin
+ 214            253878403    13846632924910 other: L. Lander and T. Parkin
+ 216            202551667    25992240094515 other: L. Lander and T. Parkin
+ 218            327966101    12443510719585 other: L. Lander and T. Parkin
+ 220*            47326693    17731207589274 other: F. Gruenberger and G. Armerding
+ 222*           122164747    22860296841910 other: L. Lander and T. Parkin
+ 224            409866323*   12973010770100 other: L. Lander and T. Parkin
+ 226            519653371*   10142632434782 other: L. Lander and T. Parkin
+ 228            895858039*   20501814982678 other: L. Lander and T. Parkin
+ 230            607010093    12429601815685 other: L. Lander and T. Parkin
+ 232            525436489     9125378968848 other: L. Lander and T. Parkin
+ 234*           189695659    17842733003807 other: L. Lander and T. Parkin
+ 236            216668603     7810818752712 other: L. Lander and T. Parkin
+ 238            673919143     9620843864261 other: L. Lander and T. Parkin
+ 240            391995431    18453707805075 other: L. Lander and T. Parkin
+ 242            367876529     7130189070067 other: L. Lander and T. Parkin
+ 244            693103639     6397093673275 other: L. Lander and T. Parkin
+ 246            555142061    12266641241199 other: L. Lander and T. Parkin
+ 248*           191912783     5871317518998 other: L. Lander and T. Parkin
+ 250*           387096133     7317306054562 other: L. Lander and T. Parkin
+ 252            630045137    12084866274988 other: L. Lander and T. Parkin
+ 254           1202442089*    4851779079015 other: L. Lander and T. Parkin
+ 256           1872851947*    4553385085577 other: L. Lander and T. Parkin
+ 258           1316355323     9037207698141 other: L. Lander and T. Parkin
+ 260            944192807     5977803452244 other: L. Lander and T. Parkin
+ 262           1649328997     4000773243784 other: L. Lander and T. Parkin
+ 264           2357881993*    8309929860750 other: L. Lander and T. Parkin
+ 266           1438779821     4384507406217 other: L. Lander and T. Parkin
+ 268           1579306789     3513721248264 other: L. Lander and T. Parkin
+ 270           1391048047     8398676635178 other: L. Lander and T. Parkin
+ 272           1851255191     2987132950029 other: L. Lander and T. Parkin
+ 274           1282463269     2981711533971 other: L. Lander and T. Parkin
+ 276            649580171     5690249593730 other: L. Lander and T. Parkin
+ 278           4260928601*    2531189527292 other: L. Lander and T. Parkin
+ 280           1855047163     4024235861025 other: L. Lander and T. Parkin
+ 282*           436273009     4648140682433 other: L. Lander and T. Parkin
+ 284           1667186459     2233904573620 other: L. Lander and T. Parkin
+ 286           2842739311     2526875850120 other: L. Lander and T. Parkin
+ 288*          1294268491     4001933938353 other: L. Lander and T. Parkin
+ 290           1948819133     2579888811019 other: L. Lander and T. Parkin
+ 292*          1453168141     1845926222877 other: L. Lander and T. Parkin
+ 294           5692630189*    4052928828913 other: L. Lander and T. Parkin
+ 296           5260030511     1618303167202 other: L. Lander and T. Parkin
+ 298           8650524583*    1557808913896 other: L. Lander and T. Parkin
+ 300           4758958741     3826083078992 other: L. Lander and T. Parkin
+ 302           6675573497     1332250927844 other: L. Lander and T. Parkin
+ 304           2433630109     1370359722153 other: L. Lander and T. Parkin
+ 306           3917587237     2637456323228 other: L. Lander and T. Parkin
+ 308           5490459101     1525080658332 other: L. Lander and T. Parkin
+ 310           4024713661     1560029656464 other: L. Lander and T. Parkin
+ 312           6570018347     2242538378935 other: L. Lander and T. Parkin
+ 314           8948418749*     977061305230 other: L. Lander and T. Parkin
+ 316          12109172293*     969535740858 other: R. Brent
+ 318           4372999721     1850114684536 other: L. Lander and T. Parkin
+ 320*          2300942549     1103633509075 other: L. Lander and T. Parkin
+ 322           7961074441     1032788953941 other: L. Lander and T. Parkin
+ 324          10958687879     1532082029451 other: L. Lander and T. Parkin
+ 326           5837935373      736608406819 other: L. Lander and T. Parkin
+ 328          13086861181*     737447140536 other: R. Brent
+ 330           6291356009     1940700148873 other: L. Lander and T. Parkin
+ 332           5893180121      608260969783 other: L. Lander and T. Parkin
+ 334          30827138509*     594215782974 other: R. Brent
+ 336*          3842610773     1318853696582 other: L. Lander and T. Parkin
+ 338          22076314313      562080664769 other: R. Brent
+ 340           8605261447      707727394600 other: L. Lander and T. Parkin
+ 342          12010745569      974250712565 other: R. Brent
+ 344          19724087267      458898846998 other: R. Brent
+ 346          11291401837      421145298644 other: R. Brent
+ 348          17002876643      851868980504 other: R. Brent
+ 350          16808773277      599444482299 other: R. Brent
+ 352          30750892801      407690509723 other: R. Brent
+ 354*          4302407359      699031071461 other: L. Lander and T. Parkin
+ 356          24355072517      321782063594 other: R. Brent
+ 358          16792321339      327270203892 other: R. Brent
+ 360          20068818197      785776393837 other: R. Brent
+ 362          35877724601*     271090980871 other: R. Brent
+ 364          25425617317      343783225367 other: R. Brent
+ 366          20108776097      507204579252 other: R. Brent
+ 368          51430518413*     250306672071 other: R. Brent
+ 370          59942358571*     311441430436 other: R. Brent
+ 372          20404137779      440107911497 other: R. Brent
+ 374          23064761663      243379247558 other: R. Brent
+ 376          16161669787      199262186724 other: R. Brent
+ 378          38116957819      441481825493 other: R. Brent
+ 380          23323808741      236650934078 other: R. Brent
+ 382*         10726904659      164570865065 other: L. Lander and T. Parkin
+ 384*         20678048297      310498083984 other: R. Brent
+ 386          35238645587      147092650853 other: R. Brent
+ 388         156798792223*     148252848564 other: R. Brent
+ 390          53241805651      387783423490 other: R. Brent
+ 392         117215204531      143687983787 other: R. Brent
+ 394*         22367084959      121606814544 other: R. Brent
+ 396          50806025873      249191499055 other: R. Brent
+ 398          40267027589      104008492927 other: R. Brent
+ 400          47203303159      139516829742 other: R. Brent
+ 402          44293346177      193760089126 other: R. Brent
+ 404         144999022043       91518482136 other: R. Brent
+ 406          49306638307      107497872283 other: R. Brent
+ 408         134664608389      177189002026 other: R. Brent
+ 410          98276144093      105168542814 other: R. Brent
+ 412         124221464119       76592236026 other: R. Brent
+ 414          49914935177      148768103901 other: R. Brent
+ 416         121972158437       72286505961 other: R. Brent
+ 418         129300694603       77414983465 other: R. Brent
+ 420          82490815123      187816075183 other: R. Brent
+ 422         280974865361*      53444264942 other: R. Brent
+ 424         264495345259       53644258992 other: R. Brent
+ 426         180265084403      101215026324 other: R. Brent
+ 428         219950168411       47735216833 other: R. Brent
+ 430         250964194171       62559436980 other: R. Brent
+ 432          87241770619       85933841697 other: R. Brent
+ 434         127084569923       51289011832 other: R. Brent
+ 436         367459059871*      39371810210 other: R. Brent
+ 438         101328529441       76046248503 other: R. Brent
+ 440         141846299801       50428281695 other: R. Brent
+ 442         417470554687*      39691697715 other: R. Brent
+ 444          36172730063       64639105881 other: R. Brent
+ 446         190418076203       29468683423 other: R. Brent
+ 448         402872474743       35303160669 other: R. Brent
+ 450          63816175447       71730295035 other: R. Brent
+ 452         466855187471*      25201562830 other: R. Brent
+ 454         202530831163       24846683496 other: R. Brent
+ 456*         25056082087       48773304522 other: R. Brent
+ 458         304040251469       22023020691 other: R. Brent
+ 460         131956235563       29560946024 other: R. Brent
+ 462         400729567081       51338037301 other: R. Brent
+ 464*         42652618343       18922838165 other: R. Brent
+ 466         565855695631*      17175845204 other: R. Brent
+ 468*        127976334671       36309735497 other: R. Brent
+ 470         681753256133*      21053900785 other: R. Brent
+ 472         865244709607*      15006201690 other: R. Brent
+ 474*        182226896239       28883497323 other: R. Brent
+ 476         725978934347       16941096014 other: R. Brent
+ 478         367766547571       13295127071 other: R. Brent
+ 480         482423533897       32106668613 other: R. Brent
+ 482        1051602787181*      10867009498 other: R. Brent
+ 484         767644374817       12430792087 other: R. Brent
+ 486*        241160624143       20624890830 other: R. Brent
+ 488        1275363152099*       9943756207 other: R. Brent
+ 490*        297501075799       15065761103 other: R. Brent
+ 492         910361180689       17775819320 other: R. Brent
+ 494         804541404419        9794772309 other: R. Brent
+ 496         880318998907        8160753820 other: R. Brent
+ 498         428315806823       15465339870 other: R. Brent
+ 500*        303371455241        9490713172 other: R. Brent
+ 502        1258535916601        6886373178 other: R. Brent
+ 504         747431049203       15552738060 other: R. Brent
+ 506        1339347750707*       6895079207 other: R. Brent
+ 508        1841086484491*       6006665489 other: R. Brent
+ 510        2209016910131*      15406648768 other: R. Brent
+ 512        1999066711391        4939872279 other: R. Brent
+ 514*        304599508537        5005539931 other: R. Brent
+ 516*        416608695821        9564400770 other: R. Brent
+ 518        2296497058133*       5339220548 other: R. Brent
+ 520        2336167262449*       6254193891 other: R. Brent
+ 522        1214820695701        8064600495 other: R. Brent
+ 524        2256065636039        3708319533 other: R. Brent
+ 526        1620505682371        3669197503 other: R. Brent
+ 528        1529741785139        7628483571 other: R. Brent
+ 530        2205492372371        4230344870 other: R. Brent
+ 532*        461690510011        3870113577 other: R. Brent
+ 534*        614487453523        5810675267 other: R. Brent
+ 536        5371284217763*       2756402947 other: J. Young and A. Potler
+ 538        2122536905311        2699307834 other: R. Brent
+ 540*        738832927927        6598237214 other: R. Brent
+ 542        2707053887651        2321175389 other: R. Brent
+ 544        2652427555639        2424968949 other: R. Brent
+ 546        2164206784721        5445734447 other: R. Brent
+ 548        3380058341279        1956665520 other: R. Brent
+ 550        2496646209271        2752306772 other: R. Brent
+ 552        2210401546601        3627671539 other: R. Brent
+ 554        3621153039299        1709633721 other: R. Brent
+ 556        4338624362173        1584066731 other: R. Brent
+ 558        5263973982823        3192026041 other: J. Young and A. Potler
+ 560        4260199366373        2278853230 other: R. Brent
+ 562        2081209441279        1359469065 other: R. Brent
+ 564        1480064231153        2651650595 other: R. Brent
+ 566        4897642179197        1196939890 other: J. Young and A. Potler
+ 568        6010330572331*       1241921988 other: J. Young and A. Potler
+ 570        4442109925217        3135199260 other: R. Brent
+ 572        5441175346967        1211670990 other: J. Young and A. Potler
+ 574        3108794067079        1224317350 other: R. Brent
+ 576        8817792098461*       1843796346 other: J. Young and A. Potler
+ 578        7552870120721         934063892 other: J. Young and A. Potler
+ 580        9383081340541*       1186349518 other: J. Young and A. Potler
+ 582*       1346294310749        1597677311 other: R. Brent
+ 584        6993007248239         775782603 other: J. Young and A. Potler
+ 586        6364466316577         737964420 other: J. Young and A. Potler
+ 588*       1408695493609        1660705221 other: R. Brent
+ 590       20761252261751*        855291809 other: J. Young and A. Potler
+ 592        3410069454097         631246173 other: R. Brent
+ 594        5499789519863        1292124954 other: J. Young and A. Potler
+ 596       10487995154603         545212086 other: J. Young and A. Potler
+ 598        5614481773561         614347546 other: J. Young and A. Potler
+ 600        4872634110067        1318126014 other: J. Young and A. Potler
+ 602*       1968188556461         555910772 other: R. Brent
+ 604        5439564948583         457199193 other: J. Young and A. Potler
+ 606       12112937821403         854855203 other: J. Young and A. Potler
+ 608       20767330530329*        415381791 other: J. Young and A. Potler
+ 610        9105981382177         532420767 other: J. Young and A. Potler
+ 612       13397310636587         760490059 other: J. Young and A. Potler
+ 614       17418754709747         344344523 other: J. Young and A. Potler
+ 616        8095224517651         430510099 other: J. Young and A. Potler
+ 618        4165633395149         627742107 other: R. Brent
+ 620        9344093035661         401257749 other: J. Young and A. Potler
+ 622       13059969946711         278491489 other: J. Young and A. Potler
+ 624       24923033918059*        579181477 other: J. Young and A. Potler
+ 626       33605480400197*        251491760 other: J. Young and A. Potler
+ 628       34140047613391*        246168450 other: J. Young and A. Potler
+ 630       12644461143649         710727094 other: J. Young and A. Potler
+ 632       45678685880759*        204058725 other: J. Young and A. Potler
+ 634       17659394869309         198345587 other: J. Young and A. Potler
+ 636        9483480841753         382842007 other: J. Young and A. Potler
+ 638       17499522060011         202584378 other: J. Young and A. Potler
+ 640       22099408494481         229602329 other: J. Young and A. Potler
+ 642       14141685364577         323745497 other: J. Young and A. Potler
+ 644       41433781612373         192845945 other: J. Young and A. Potler
+ 646       51027160468351*        165674393 other: J. Young and A. Potler
+ 648        9787731507761         278201927 other: J. Young and A. Potler
+ 650        5120731250207         183610272 other: J. Young and A. Potler
+ 652*       2614941710599         128039424 other: R. Brent
+ 654       54916086007427*        238703754 other: J. Young and A. Potler
+ 656       65862966031241*        112555523 other: J. Young and A. Potler
+ 658       39883132551139         137052455 other: J. Young and A. Potler
+ 660       10653514291843         295173820 other: J. Young and A. Potler
+ 662       11082394066097          91145072 other: J. Young and A. Potler
+ 664       38745678640849          92232236 other: J. Young and A. Potler
+ 666       18691113008663         174701002 other: J. Young and A. Potler
+ 668       28340177964929          80493682 other: J. Young and A. Potler
+ 670       47137733785861         107448341 other: J. Young and A. Potler
+ 672       26456514142099         172249789 other: J. Young and A. Potler
+ 674*       7177162611713          68185660 other: J. Young and A. Potler
+ 676       78610833115261*         70450747 other: T. Nicely
+ 678       37970994487033         126369128 other: J. Young and A. Potler
+ 680       82385435331119*         82294438 other: T. Nicely
+ 682       41459443375351          64276224 other: J. Young and A. Potler
+ 684       30236507704253         112636520 other: J. Young and A. Potler
+ 686       74014757794301          59508570 other: T. Nicely
+ 688      110526670235599*         50451772 other: T. Nicely
+ 690       15712145060693         124575920 other: J. Young and A. Potler
+ 692       43603583701331          40594757 other: J. Young and A. Potler
+ 694       62088893223739          41247759 other: J. Young and A. Potler
+ 696       23333096984797          79034891 other: J. Young and A. Potler
+ 698       33785727371453          36185597 other: J. Young and A. Potler
+ 700       14998144209049          55549826 other: J. Young and A. Potler
+ 702       19786638118631          69308378 other: J. Young and A. Potler
+ 704       97731545943599          34469706 other: T. Nicely
+ 706       35625755878981          28966963 other: J. Young and A. Potler
+ 708      143679495784681*         57539977 other: T. Nicely
+ 710      138965383978937          35600889 other: T. Nicely
+ 712      106749746034601          25589311 other: T. Nicely
+ 714       49639993268989          60824111 other: J. Young and A. Potler
+ 716*      13829048559701          22083597 other: J. Young and A. Potler
+ 718       82342388119111          21809895 other: T. Nicely
+ 720      111113196467011          53455657 other: T. Nicely
+ 722      218356872845927*         19515182 other: T. Nicely
+ 724       59692452738913          18270176 other: J. Young and A. Potler
+ 726      156100489308167          38185387 other: T. Nicely
+ 728       57723522921803          20741984 other: J. Young and A. Potler
+ 730       24179270588173          21209751 other: J. Young and A. Potler
+ 732      140085225001801          29081788 other: T. Nicely
+ 734      154312610974979          13434430 other: T. Nicely
+ 736      161443383249583          13986884 other: T. Nicely
+ 738      143282994823909          26058427 other: T. Nicely
+ 740       57360609786539          15766189 other: J. Young and A. Potler
+ 742      189442329715069          13987656 other: T. Nicely
+ 744       42610475373269          22028134 other: J. Young and A. Potler
+ 746      184219698008123          10157231 other: T. Nicely
+ 748      172373989611793          11868236 other: T. Nicely
+ 750      145508250945419          24183231 other: T. Nicely
+ 752      255294593822687*          8689551 other: T. Nicely
+ 754      219831875554399           9234862 other: T. Nicely
+ 756       70099348325843          18315821 other: J. Young and A. Potler
+ 758       47581758352253           7303071 other: J. Young and A. Potler
+ 760       98103148488133           9599952 other: T. Nicely
+ 762      144895907074481          13017158 other: T. Nicely
+ 764      323811481625339*          6390742 other: T. Nicely
+ 766*      19581334192423           5776465 other: J. Young and A. Potler
+ 768      423683030575549*         11554885 other: T. Nicely
+ 770      214198375528463           9420465 other: T. Nicely
+ 772      186129514280467           5108531 other: T. Nicely
+ 774      469789142849483*          9765682 other: T. Nicely
+ 776      187865909338091           4488509 other: T. Nicely
+ 778*      42842283925351           4604329 other: J. Young and A. Potler
+ 780      471911699384963*         11879915 other: T. Nicely
+ 782      726507223559111*          4079586 other: T. Nicely
+ 784      497687231721157           4411171 other: T. Nicely
+ 786      554544106989673           6895325 other: T. Nicely
+ 788       96949415903999           3285837 other: T. Nicely
+ 790      678106044936511           4302504 other: T. Nicely
+ 792      244668132223727           6476403 other: T. Nicely
+ 794      673252372176533           2791637 other: T. Nicely
+ 796     1271309838631957*          2696106 other: T. Nicely
+ 798      309715100117419           6438868 other: T. Nicely
+ 800      486258341004083           3057020 other: T. Nicely
+ 802      913982990753641           2247344 other: T. Nicely
+ 804*      90874329411493           4326475 other: T. Nicely
+ 806*     171231342420521           2253065 other: T. Nicely
+ 808      546609721879171           2020629 other: T. Nicely
+ 810      518557948410967           4873699 other: T. Nicely
+ 812     1710270958551941*          2020034 other: B. Nyman
+ 814      827873854500949           1906523 other: T. Nicely
+ 816      632213931500513           3284549 other: T. Nicely
+ 818      860149012919321           1422385 other: T. Nicely
+ 820      497067290087413           1960931 other: T. Nicely
+ 822      799615339016671           2625863 other: T. Nicely
+ 824     1330854031506047           1260281 other: T. Nicely
+ 826      407835172832953           1450812 other: T. Nicely
+ 828      807201813046091           2396971 other: T. Nicely
+ 830      507747400047473           1431186 other: T. Nicely
+ 832      243212983783999           1117382 other: T. Nicely
+ 834      743844653663833           1962112 other: T. Nicely
+ 836      880772773476623           1067012 other: T. Nicely
+ 838     1384201395984013            921670 other: T. Nicely
+ 840      670250273356109           2595793 other: T. Nicely
+ 842     1142191569235289            721730 other: T. Nicely
+ 844      782685877447783            739829 other: T. Nicely
+ 846     1045130023589621           1397596 other: T. Nicely
+ 848     2537070652896083*           654044 other: B. Nyman
+ 850     2441387599467679            902884 other: B. Nyman
+ 852     1432204101894959           1193833 other: T. Nicely
+ 854     1361832741886937            690105 other: T. Nicely
+ 856     1392892713537313            543803 other: T. Nicely
+ 858     1464551007952943           1223536 other: T. Nicely
+ 860      844893392671019            622780 other: T. Nicely
+ 862      425746080787897            463588 other: T. Nicely
+ 864     2298355839009413            854445 other: B. Nyman
+ 866     2759317684446707*           395367 other: B. Nyman
+ 868     1420178764273021            496113 other: T. Nicely
+ 870     1598729274799313           1002240 other: B. Nyman
+ 872      455780714877767            334026 other: T. Nicely
+ 874     1466977528790023            368691 other: T. Nicely
+ 876     1125406185245561            629154 other: T. Nicely
+ 878     2705074880971613            293743 other: B. Nyman
+ 880      277900416100927            421202 other: T. Nicely
+ 882     3371055452381147*           624522 other: B. Nyman
+ 884     1385684246418833            287898 other: T. Nicely
+ 886     4127074165753081*           232615 other: B. Nyman
+ 888     2389167248757889            462290 other: B. Nyman
+ 890     3346735005760637            282017 other: B. Nyman
+ 892     2606748800671237            202253 other: B. Nyman
+ 894     2508853349189969            392055 other: B. Nyman
+ 896     3720181237979117            216295 other: B. Nyman
+ 898     4198168149492463*           181022 other: B. Nyman
+ 900     2069461000669981            437568 other: B. Nyman
+ 902     1555616198548067            167385 other: T. Nicely
+ 904     3182353047511543            156101 other: B. Nyman
+ 906*     218209405436543            282828 other: T. Nicely
+ 908     2126985673135679            132349 other: B. Nyman
+ 910     1744027311944761            224164 other: B. Nyman
+ 912     2819939997576017            244755 other: B. Nyman
+ 914     3780822371661509            114819 other: B. Nyman
+ 916*    1189459969825483            107483 other: T. Nicely
+ 918     2406868929767921            219813 other: B. Nyman
+ 920     4020057623095403            133848 other: B. Nyman
+ 922     4286129201882221*            92888 other: B. Nyman
+ 924*    1686994940955803            228575 other: B. Nyman
+ 926     6381944136489827*            79361 other: B. Nyman
+ 928    10244316228469423*            80245 other: B. Nyman
+ 930     3877048405466683            199362 other: B. Nyman
+ 932    10676480515967939*            66115 other: B. Nyman
+ 934     8775815387922523             64926 other: B. Nyman
+ 936     2053649128145117            136756 other: B. Nyman
+ 938     3945256745730569             70564 other: B. Nyman
+ 940     9438544090485889             76500 other: B. Nyman
+ 942    10369943471405191            104524 other: B. Nyman
+ 944     4698198022874969             50503 other: B. Nyman
+ 946     8445899254653313             54799 other: B. Nyman
+ 948     5806170698601659             92668 other: B. Nyman
+ 950     5000793739812263             59334 other: B. Nyman
+ 952     3441724070563411             52478 other: B. Nyman
+ 954     8909512917643439             77453 other: B. Nyman
+ 956     7664508840731297             37159 other: B. Nyman
+ 958     6074186033971933             35603 other: B. Nyman
+ 960     5146835719824811             87889 other: B. Nyman
+ 962     9492966874626647             33965 other: B. Nyman
+ 964     5241451254010087             30021 other: B. Nyman
+ 966     5158509484643071             69749 other: B. Nyman
+ 968    19124990244992669*            28771 other: B. Nyman
+ 970    10048813989052669             33606 other: B. Nyman
+ 972     4452510040366189             46487 other: B. Nyman
+ 974    10773850897499933             22455 other: B. Nyman
+ 976    14954841632404033             21536 other: B. Nyman
+ 978    12040807275386881             41939 other: B. Nyman
+ 980    19403684901755939*            30297 other: B. Nyman
+ 982    18730085806290949             18900 other: B. Nyman
+ 984    11666708491143997             35780 other: B. Nyman
+ 986    34847474118974633*            17315 other: B. Nyman
+ 988    11678629605932719             19091 other: B. Nyman
+ 990     2764496039544377             42815 other: B. Nyman
+ 992     4941033906441539             13522 other: B. Nyman
+ 994     3614455901007619             16080 other: B. Nyman
+ 996    14693181579822451             24706 other: B. Nyman
+ 998    11813551133888459             11792 other: B. Nyman
+1000    22439962446379651             15129 other: B. Nyman
+1002    14595374896200821             21369 other: B. Nyman
+1004     7548471163197917             10224 other: B. Nyman
+1006    37343192296558573*             9874 other: B. Nyman
+1008     5356763933625179             22255 other: B. Nyman
+1010    21743496643443551             11222 other: B. Nyman
+1012    22972837749135871              9859 other: B. Nyman
+1014    13206732046682519             16529 other: B. Nyman
+1016    25488154987300883              7372 other: B. Nyman
+1018    37967240836435909*             7000 other: B. Nyman
+1020    24873160697653789             18911 other: B. Nyman
+1022    10501301105720969              7306 other: B. Nyman
+1024    22790428875364879              5851 other: B. Nyman
+1026    14337646064564951             11605 other: B. Nyman
+1028    16608210365179331              5276 other: B. Nyman
+1030    21028354658071549              6971 other: B. Nyman
+1032    19449190302424919              9590 other: B. Nyman
+1034    11453766801670289              5141 other: B. Nyman
+1036    36077433695182153              5175 other: B. Nyman
+1038    28269785077311409              8094 other: B. Nyman
+1040    46246848392875127*             5591 other: B. Nyman
+1042    33215047653774409              3800 other: B. Nyman
+1044     7123663452896833              7232 other: B. Nyman
+1046    25702173876611591              3271 other: B. Nyman
+1048    88089672331629091*             3348 other: B. Nyman
+1050    13893290219203981              9531 other: B. Nyman
+1052    89219242873419107*             2635 tos
+1054    26014156620917407              2844 other: B. Nyman
+1056    11765987635602143              5377 other: B. Nyman
+1058    28642379760272723              2392 other: B. Nyman
+1060    15114558265244791              3090 other: B. Nyman
+1062    15500910867678727              4169 other: B. Nyman
+1064    43614652195746623              2482 other: B. Nyman
+1066    98436147540371287*             2019 tos
+1068    23900175352205171              3689 other: B. Nyman
+1070    83122134991935569              2203 tos
+1072    40433690575714297              1767 other: B. Nyman
+1074    33288359939765017              3136 other: B. Nyman
+1076    20931714475256591              1445 other: B. Nyman
+1078    72638824545480979              1939 tos
+1080    50393998281635599              3487 cb
+1082    65850655232778077              1173 tos
+1084    41762363147589283              1155 other: B. Nyman
+1086    91279735474288321              2272 jmr
+1088    86140861070845751              1092 tos
+1090    68402499016330903              1391 tos
+1092    78120687162386527              2617 other: B. Nyman
+1094   139033656446725643*              893 tos
+1096    85302586561540801               866 tos
+1098    25016149672697549              1710 other: B. Nyman
+1100    21475286713974413              1166 other: B. Nyman
+1102    39793570504639117               754 other: B. Nyman
+1104   100782668521266887              1416 other: B. Nyman
+1106    29835422457878441               779 other: B. Nyman
+1108    43986327184963729               638 other: B. Nyman
+1110    98478363965750941              1601 tos
+1112   114325788973753817               576 tos
+1114   198887512806988729*              505 zig
+1116   183670944093871963              1089 zig
+1118    78661510510855829               489 zig
+1120    19182559946240569               768 other: B. Nyman
+1122    31068473876462989               964 other: B. Nyman
+1124   203153416523088323*              430 tos
+1126   102747074635818793               359 other: B. Nyman
+1128    57701567767397551               719 ap
+1130   128626712407417247               469 tos
+1132*    1693182318746371               328 other: B. Nyman
+1134    59847994456941689               762 tos
+1136   180522639380365181               310 zig
+1138   157238558611311811               262 zig
+1140    79017505670475503               724 zig
+1142    94806694814591819               240 tos
+1144   236552906662007587*              297 tos
+1146    60592199607166471               460 other: J. Fry
+1148   120851132995428191               272 tos
+1150   293464161465135373*              260 tos
+1152   125996288873077487               368 tos
+1154   172875009928864583               155 zig
+1156    78944802602538877               178 zig
+1158    74224828152967109               345 tos
+1160    58904398834827743               234 tos
+1162   154590409516822759               176 zig
+1164   216345819354183383               292 tos
+1166    61499427052410467               145 other: J. Fry
+1168   213246910999548949               152 tos
+1170   125160515463958367               328 tos
+1172   400240934741322419*              105 other: D. Knuth
+1174    67777708053772723               123 tos
+1176   200984626360730041               236 tos
+1178   371964537401929403               107 tos
+1180   181042197317796421               119 zig
+1182   172766268126495557               182 zig
+1184*   43841547845541059                74 other: B. Nyman
+1186   404444692323376357*               77 other: D. Knuth
+1188   349406882169475043               150 tos
+1190    83673835565278157               121 tos
+1192   703390724952490921*               56 zig
+1194   272671045607764619               137 zig
+1196   204757944249503741                52 tos
+1198*   55350776431903243                61 tos
+1200   399081457010391689               150 tos
+1202   819615344996114321*               34 zig
+1204   443136926113560739                58 tos
+1206   475086744253214827                89 tos
+1208  1331711247969025019*               33 zig
+1210   467250693994588501                53 tos
+1212   460909189461777919                68 tos
+1214   505283911484360249                31 ncsa
+1216   577900021137712561                37 tos
+1218   140935513411946599                80 tos
+1220*   80873624627234849                45 tos
+1222   771097525313900857                32 zig
+1224*  203986478517455989                46 tos
+1226  1169292497427924131                23 zig
+1228   843649638178223431                31 zig
+1230   892327717188081079                66 zig
+1232   637183034848138127                36 zig
+1234   423956456398811659                20 other: D. Knuth
+1236   999195046759853777                30 tos
+1238   991215618225244991                11 zig
+1240  1059422001388912327                26 zig
+1242   675147036415334159                40 zig
+1244   854284995847812563                21 zig
+1246   612702185805985321                22 zig
+1248*  218034721194214273                37 tos
+1250   733214931813155339                16 zig
+1252  1032032088646806901                19 zig
+1254   416961298104009067                31 other: D. Knuth
+1256   571726134106027067                13 tos
+1258   335806927576651033                13 tos
+1260   542411771944351871                29 zig
+1262  1087112900219554391                10 zig
+1264  1798556720194308703*                6 ck
+1266   727082020527468413                17 zig
+1268   977147715704817539                 6 zig
+1270   882943713911424097                11 zig
+1272*  305405826521087869                17 tos
+1274  1430953616048277509                 7 tos
+1276   445249915053000907                 7 tos
+1278  1011286887276072703                17 zig
+1280  1024528376045432807                 8 zig
+1282  1421604699797863297                 6 tos
+1284   697543681633814903                11 zig
+1286  1450329672253364801                 3 jmr
+1288  1134477539738474479                 3 zig
+1290  2980707563031238363*                4 ajt
+1292   494653394305448051                 5 tos
+1294  1868326184764055803                 6 zig
+1296  1799235198379903447                 8 ck
+1298  1739018026817067239                 6 tos
+1300  1141041866384833123                 7 zig
+1302  1731080876394228577                 9 tos
+1304  1188134379382395323                 4 tos
+1306  3278018069102480227*                1 sp
+1308   749565457554371299                 9 zig
+1310  1918586799657617591                 4 tos
+1312  1396487719253403577                 2 zig
+1314  1214119646547613277                 7 tos
+1316  2187394669865744117                 1 zig
+1318  2216270859803142601                 2 zig
+1320   605046330029026447                 5 zig
+1322  1106028436187467937                 3 zig
+1324  2937020849713856977                 3 tos
+1326  2075069444143279153                 4 tos
+1328*  352521223451364323                 4 tos
+1330  2918478076849134103                 1 tos
+1332  3103251464536797599                 2 sp
+1334  2722012569747681653                 2 sp
+1336  2221899288238768093                 3 zig
+1338  2927648057268473633                 1 tos
+1340  1954317467127310787                 1 tos
+1342  1578169106141187727                 3 tos
+1344   753917635380895597                 4 zig
+1346                    ?*                0
+1348  3754930427730628273                 1 tos
+1350  1180351752204137089                 1 tos
+1354  2805562883448462853                 1 sp
+1356*  401429925999153707                 1 other: D. Knuth
+1358   523255220614645319                 1 zig
+1360  1153277647303540597                 2 zig
+1362  3937457950646269397                 1 tos
+1364  1051140888051230423                 3 zig
+1370*  418032645936712127                 1 other: D. Knuth
+1374  2812814235281609869                 1 sp
+1380  1031501833130243273                 1 zig
+1386  3449340080274651527                 2 sp
+1388  2975205524123301149                 1 tos
+1390  3492657661005161107                 1 sp
+1392  1480032037939634731                 1 tos
+1398  2424708729726767749                 1 tos
+1400  3431657795858378003                 1 sp
+1410  2635281932481539903                 1 zig
+1416  3750992529339978877                 1 tos
+1418  3725235533504101511                 1 tos
+1442*  804212830686677669                 1 zig
+1454  3219107182492871783                 1 sp
+1476* 1425172824437699411                 1 tos
+----  -------------------  ---------------- --------------------------------------
+1346                    ?                 0
+1352                    ?                 0
+1366                    ?                 0
+1368                    ?                 0
+1372                    ?                 0
+1376                    ?                 0
+1378                    ?                 0
+1382                    ?                 0
+1384                    ?                 0
+1394                    ?                 0
+1396                    ?                 0
+1402                    ?                 0
+1404                    ?                 0
+1406                    ?                 0
+1408                    ?                 0
+1412                    ?                 0
+1414                    ?                 0
+1420                    ?                 0
+1422                    ?                 0
+1424                    ?                 0
+1426                    ?                 0
+1428                    ?                 0
+1430                    ?                 0
+1432                    ?                 0
+1434                    ?                 0
+1436                    ?                 0
+1438                    ?                 0
+1440                    ?                 0
+1444                    ?                 0
+1446                    ?                 0
+1448                    ?                 0
+1450                    ?                 0
+1452                    ?                 0
+1456                    ?                 0
+1458                    ?                 0
+1460                    ?                 0
+1462                    ?                 0
+1464                    ?                 0
+1466                    ?                 0
+1468                    ?                 0
+1470                    ?                 0
+1472                    ?                 0
+1474                    ?                 0
+----  -------------------  ---------------- --------------------------------------
+
+# EOF

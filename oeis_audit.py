@@ -43,6 +43,7 @@ import sys
 import time
 
 import oeis_submit
+import oeis_sources
 from oeis_submit import op, signed
 
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oeis", "audit")
@@ -883,7 +884,7 @@ def contributions(families, results, candidates, refresh, check):
                     items.append(item(
                         "terms", f"terms:{fam}",
                         f"Extend {', '.join(primary)} past its {n_pub} "
-                        f"published terms ({len(new)} new)",
+                        f"published terms ({len(new)} additions)",
                         *[f"{fam}({r[0]}) = {r[1]}  (gaps {r[3]}, {r[4]}; "
                           f"{r[5]} < p < {r[6]})" for r in new[:6]],
                         f"complete below {bound_text(reach)}; {gate}"))
@@ -1074,7 +1075,12 @@ def frontier_report(families, results, refresh):
         # long until the scan gets to the last published one.
         new = ours - n_pub
         if new > 0:
-            left = f"{new} term(s) beyond OEIS  <-- SUBMITTABLE"
+            left = f"{new} term(s) beyond {aid}  <-- SUBMITTABLE"
+            if fam == "equidistant":
+                known = sum(n > n_pub for n in
+                            oeis_sources.balanced_matches(f["rows"]))
+                if known:
+                    left += f"; {known} already tabulated in A052187"
         elif new == 0:
             left = f"all {n_pub} published terms, none new yet"
         elif reach > extent:
@@ -1089,6 +1095,46 @@ def frontier_report(families, results, refresh):
             when = f", ~{d:.1f} days at the measured rate" if d is not None else ""
             left = f"{-new} term(s) short -- {extent / reach:.1f}x to go{when}"
         print(f"  {fam:<12}{ours:>5}   {extent:<14.4e}{n_pub:>6}  {aid:<9} {left}")
+
+
+def published_sources_report(families, results):
+    """Known triples and future witnesses omitted by same-entry comparisons."""
+    heading("PUBLISHED SOURCES -- prior values and future checkpoints")
+    print("\n  Committed source tables: oeis/sources/README.md")
+    rows = families.get("equidistant", {}).get("rows", [])
+    matches = oeis_sources.balanced_matches(rows)
+    print(f"  A052187: {len(oeis_sources.balanced_triples())} first-occurrence "
+          f"triples; {len(matches)} match scanned equidistant records.")
+    pub = bfile_terms_list("A058867", False)
+    for n, source in matches.items():
+        if n > len(pub):
+            print("    " + oeis_sources.balanced_credit(n, source))
+    print("  Source: " + oeis_sources.BALANCED_URL)
+    print("  Missing from A058867 is not the same as previously unpublished.")
+    print("  A052187 is not a complete equidistant-record list; its unmatched")
+    print("  first occurrences cannot extend the scan's completeness bound.")
+
+    rows = families.get("aloof", {}).get("rows", [])
+    cov, _ = read_frontier(results)
+    if not rows or not cov.get("aloof"):
+        return
+    threshold = rows[-1][2]
+    print(f"\n  Aloof checkpoints beyond {cov['aloof']:,}, beating span {threshold}:")
+    print("  Source: " + oeis_sources.GAPS_URL)
+    print("  From Oliveira e Silva's first-occurrence gap table; adjacent")
+    print("  primes and all intervening odd integers checked by deterministic")
+    print("  Miller-Rabin. These are witnesses, NOT confirmed next records.")
+    hits = oeis_sources.aloof_checkpoints(cov["aloof"], threshold)
+    if not hits:
+        print("    No qualifying future endpoints in this source snapshot.")
+    for h in hits:
+        print(f"    p={h['prime']}  gaps=({h['below']}, {h['above']})  "
+              f"span={h['span']}  source gap={h['source_gap']}  {h['finder']}")
+        print(f"      {h['lower']} < p < {h['upper']}")
+    if hits:
+        print(f"  At least one new aloof record occurs by {hits[0]['prime']:,};")
+        print("  an earlier stronger record may supersede any of these witnesses.")
+    print("  No scan terms, frontiers, or submission DATA come from these checkpoints.")
 
 
 def main():
@@ -1125,6 +1171,7 @@ def main():
               "live TODO\n")
         return 0
     frontier_report(families, args.results, args.refresh)
+    published_sources_report(families, args.results)
 
     if args.no_check:
         check = (False, ["check_oeis.py was not run (--no-check)"])
@@ -1246,6 +1293,13 @@ def generate_files(families, results, cov, index, check):
             spec = oeis_submit.AFILE[fam]
             name = f"a{spec['aid'][1:]}.txt"
             files[name] = oeis_submit.afile(fam, rows, scan, reach, checked)
+            if fam == "equidistant":
+                credits = [f"a({n}) = A052187({source[0]}) + {source[2]}."
+                           for n, source in oeis_sources.balanced_matches(rows).items()]
+                files[name] += oeis_submit.header([
+                    "Prior published triples: " + oeis_sources.BALANCED_URL,
+                    "Table credited to Jerry M. Lagrou and earlier contributors;",
+                    "these triples were independently rederived by this scan."] + credits)
             built[("a", fam)] = (name, sum(1 for r in rows if r[5]))
 
     # A096265: terms 56..68 are the same records A031133/A031134 publish, so
@@ -1371,9 +1425,23 @@ def submission(items, families, results, refresh, check):
                 "Data", "append", after_n=n_pub, after_n_term=pub[-1],
                 terms=[[r[1], f"gaps {r[3]}, {r[4]}; {r[5]} < p < {r[6]}"]
                        for r in new]))
-            d["edits"].append(op("Ext", "add", text=(
-                f"a({n_pub + 1})-a({n_pub + len(new)}) from "
-                f"{oeis_submit.ATTRIB['signature']}")))
+            prior = (oeis_sources.balanced_matches(new)
+                     if fam == "equidistant" else {})
+            if prior:
+                for row in new:
+                    n = row[0]
+                    text = (oeis_sources.balanced_credit(n, prior[n]) + " "
+                            + oeis_submit.ATTRIB["signature"] if n in prior else
+                            f"a({n}) from {oeis_submit.ATTRIB['signature']}")
+                    d["edits"].append(op("Ext", "add", text=text))
+                d["edits"].append(op("Link", "add", text=(
+                    'Jerry M. Lagrou and earlier contributors, '
+                    '<a href="/A052187/b052187.txt">First-occurrence balanced '
+                    'prime triples (lower endpoints)</a>.')))
+            else:
+                d["edits"].append(op("Ext", "add", text=(
+                    f"a({n_pub + 1})-a({n_pub + len(new)}) from "
+                    f"{oeis_submit.ATTRIB['signature']}")))
             d["summary"] = (
                 f"Extend from {n_pub} to {n_pub + len(new)} terms from an "
                 f"exhaustive scan from 0, complete below "
@@ -1385,6 +1453,10 @@ def submission(items, families, results, refresh, check):
                 f"below that bound. The bounding primes for each record are in "
                 f"the attached a-file, so a term can be checked without "
                 f"rerunning a scan.")
+            if prior:
+                d["to_editors"] += " " + " ".join(
+                    oeis_sources.balanced_credit(n, source)
+                    for n, source in prior.items())
 
         elif kind == "bound":
             bt = bound_text(cov.get(fam, 0))
@@ -1517,7 +1589,10 @@ def summarise(d):
         elif e["field"] == "Link" and e["action"] == "replace_bfile_link":
             bits.append("extend the b-file")
         elif e["field"] == "Link":
-            bits.append("add an a-file with the bounding primes")
+            if "/A052187/" in e.get("text", ""):
+                bits.append("credit the prior A052187 table")
+            else:
+                bits.append("add an a-file with the bounding primes")
     if not bits:
         return d["summary"]
     return (bits[0][0].upper() + bits[0][1:] + ("; " if len(bits) > 1 else "")

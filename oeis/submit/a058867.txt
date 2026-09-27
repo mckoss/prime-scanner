@@ -6,8 +6,8 @@
 # pp   previous prime
 # np   next prime
 #
-# Mike Koss. Data as of 2026-09-25, when the scan last advanced.
-# Searched all below 5,716,751,743,587,790: every record up to that
+# Mike Koss. Data as of 2026-09-26, when the scan last advanced.
+# Searched all below 8,350,862,685,317,899: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -48,3 +48,37 @@
   32  2848704456458411  438  2848704456457973  2848704456458849
   33  3955678819752329  468  3955678819751861  3955678819752797
   34  4685407635944059  510  4685407635943549  4685407635944569
+# Prior published triples: https://oeis.org/A052187/b052187.txt
+# Table credited to Jerry M. Lagrou and earlier contributors;
+# these triples were independently rederived by this scan.
+# a(1) = A052187(1) + 2.
+# a(2) = A052187(2) + 6.
+# a(3) = A052187(3) + 12.
+# a(4) = A052187(5) + 24.
+# a(5) = A052187(6) + 30.
+# a(6) = A052187(8) + 42.
+# a(7) = A052187(9) + 48.
+# a(8) = A052187(11) + 60.
+# a(9) = A052187(12) + 66.
+# a(10) = A052187(13) + 72.
+# a(11) = A052187(15) + 84.
+# a(12) = A052187(16) + 90.
+# a(13) = A052187(17) + 96.
+# a(14) = A052187(25) + 144.
+# a(15) = A052187(26) + 150.
+# a(16) = A052187(27) + 156.
+# a(17) = A052187(29) + 168.
+# a(18) = A052187(32) + 186.
+# a(19) = A052187(34) + 198.
+# a(20) = A052187(35) + 204.
+# a(21) = A052187(36) + 210.
+# a(22) = A052187(39) + 228.
+# a(23) = A052187(41) + 240.
+# a(24) = A052187(44) + 258.
+# a(25) = A052187(47) + 276.
+# a(26) = A052187(51) + 300.
+# a(27) = A052187(52) + 306.
+# a(28) = A052187(59) + 348.
+# a(29) = A052187(66) + 390.
+# a(30) = A052187(71) + 420.
+# a(31) = A052187(72) + 426.
