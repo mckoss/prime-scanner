@@ -6,8 +6,8 @@
 # pp   previous prime (A031133)
 # np   next prime (A031134)
 #
-# Mike Koss. Data as of 2026-09-27, when the scan last advanced.
-# Searched all below 9,450,932,778,716,922: every record up to that
+# Mike Koss. Data as of 2026-09-28, when the scan last advanced.
+# Searched all below 11,347,845,268,040,609: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
