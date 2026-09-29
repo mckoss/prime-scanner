@@ -19,7 +19,7 @@ LDLIBS := -lm
 BIN := sieve
 REF := reference/mod30
 
-.PHONY: all test test-slow test-widths test-submit bench reference clean audit submit pgaps graph
+.PHONY: all test test-slow test-widths test-submit bench reference clean audit oeis-readme submit pgaps graph
 
 all: $(BIN)
 
@@ -50,6 +50,7 @@ $(REF): reference/mod30.c reference/prime-check.h Makefile
 
 test: $(BIN) test-submit
 	python3 test_audit.py
+	python3 test_oeis_readme.py
 	python3 test_sieve.py
 
 # Checks oeis/submit/ before any of it goes to OEIS: b-file spec compliance,
@@ -82,6 +83,12 @@ bench: $(BIN) $(REF)
 # is kept beside the run it audits, in fresh/audit.txt.
 audit:
 	set -o pipefail; python3 -u oeis_audit.py --results fresh | tee fresh/audit.txt
+	python3 oeis_readme.py
+
+# Refresh just the scan-dependent parts of oeis/README.md from local files.
+# This verifies the records against the committed OEIS snapshots first.
+oeis-readme:
+	python3 oeis_readme.py
 
 # Serve oeis/submit/ so the bookmarklet can load the panel and payload. Open
 # http://localhost:8017/ for the numbered worklist.
