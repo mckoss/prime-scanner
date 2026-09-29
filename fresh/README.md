@@ -84,9 +84,9 @@ sequence**:
 # Each sequence's frontier: scanned contiguously from zero to
 # here. Equal in a settled run; a sequence added later sits
 # behind until the scan catches it up.
-gap 567491950838369
-lonely 567491950838369
-aloof 567491950838369
+gap 567,491,950,838,369
+lonely 567,491,950,838,369
+aloof 567,491,950,838,369
 equidistant 0
 ```
 

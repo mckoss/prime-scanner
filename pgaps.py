@@ -161,8 +161,8 @@ def read_frontiers(out):
 
     text = open(path).read()
     head = text.split()
-    if head and head[0].isdigit():                  # legacy: one number
-        legacy = int(head[0])
+    if head and head[0].replace(",", "").isdigit():  # legacy: one number
+        legacy = int(head[0].replace(",", ""))
         for k in KINDS:
             if os.path.exists(os.path.join(out, f"{k}.txt")):
                 fronts[k] = legacy
@@ -173,7 +173,7 @@ def read_frontiers(out):
             continue
         f = line.split()
         if len(f) >= 2 and f[0] in fronts:
-            fronts[f[0]] = int(f[1])
+            fronts[f[0]] = int(f[1].replace(",", ""))
     return fronts
 
 
@@ -214,7 +214,7 @@ def write_frontiers(out, fronts):
                 "# here. Equal in a settled run; a sequence added later sits\n"
                 "# behind until the scan catches it up.\n")
         for k in KINDS:
-            f.write(f"{k} {fronts.get(k, 0)}\n")
+            f.write(f"{k} {fronts.get(k, 0):,}\n")
 
 
 def est_seconds(lo, hi, jobs):

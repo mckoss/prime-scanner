@@ -641,6 +641,32 @@ def test_legacy_frontier_is_read_per_sequence():
 
 
 @test
+def test_frontier_accepts_plain_and_grouped_numbers():
+    pgaps = load_pgaps()
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "frontier.txt")
+        expected = {kind: 1234567 for kind in pgaps.KINDS}
+        for number in ("1234567", "1,234,567"):
+            with open(path, "w") as f:
+                for kind in pgaps.KINDS:
+                    f.write(f"{kind} {number}\n")
+            if pgaps.read_frontiers(d) != expected:
+                raise SieveError(f"could not read {number} in frontier.txt")
+
+        pgaps.write_frontiers(d, expected)
+        if "gap 1,234,567\n" not in open(path).read():
+            raise SieveError("frontier.txt was not written with separators")
+        if pgaps.read_frontiers(d) != expected:
+            raise SieveError("could not read a newly written frontier.txt")
+
+        open(os.path.join(d, "gap.txt"), "w").write("# records\n")
+        with open(path, "w") as f:
+            f.write("1,234,567\n")
+        if pgaps.read_frontiers(d)["gap"] != 1234567:
+            raise SieveError("could not read a grouped legacy frontier")
+
+
+@test
 def test_catch_up_rolls_each_sequence_in_at_its_own_frontier():
     """Rounds stop at the next frontier, so a sequence rolls in on a boundary"""
     pgaps = load_pgaps()

@@ -710,11 +710,12 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.""")
         candidates.append((overlap, aid, rec, terms))
 
     print(f"\n  {'overlap':>7}  {'sequence':<9}{'link':<8}{'terms':>6}  "
-          f"{'last term':<22}name")
+          f"{'last term':<27}name")
     for overlap, aid, rec, terms in candidates:
         t = TRIAGED.get(aid)
         mark = "!" if t is None or t["open"] else " "
-        last = f"{terms[-1]:<22}" if terms else f"{'-':<22}"
+        last = f"{terms[-1]:,}" if terms else "-"
+        last = f"{last:<27}"
         cites = "+".join(sorted(link[aid], reverse=True))
         name = rec["name"]
         if len(name) > 60:
@@ -1019,17 +1020,17 @@ def read_frontier(results):
     head = text.split()
     cov = {}
     scanned = [f for f in FAMILIES if "extent" in FAMILIES[f]]
-    if head and head[0].isdigit():
+    if head and head[0].replace(",", "").isdigit():
         # Legacy single-number frontier.txt: it applies to every sequence that
         # has a records file; one with no file was never scanned at all.
-        front = int(head[0])
+        front = int(head[0].replace(",", ""))
         for fam in scanned:
             cov[fam] = front if os.path.exists(
                 os.path.join(results, f"{fam}.txt")) else 0
         return cov, front
     for line in text.splitlines():
         if not line.startswith("#") and len(line.split()) >= 2:
-            cov[line.split()[0]] = int(line.split()[1])
+            cov[line.split()[0]] = int(line.split()[1].replace(",", ""))
     # A family with no line was added after the run last wrote this file, so
     # it has not been scanned at all -- not scanned to the run's frontier.
     for fam in scanned:
@@ -1128,9 +1129,9 @@ def published_sources_report(families, results):
     if not hits:
         print("    No qualifying future endpoints in this source snapshot.")
     for h in hits:
-        print(f"    p={h['prime']}  gaps=({h['below']}, {h['above']})  "
-              f"span={h['span']}  source gap={h['source_gap']}  {h['finder']}")
-        print(f"      {h['lower']} < p < {h['upper']}")
+        print(f"    p={h['prime']:,}  gaps=({h['below']:,}, {h['above']:,})  "
+              f"span={h['span']:,}  source gap={h['source_gap']:,}  {h['finder']}")
+        print(f"      {h['lower']:,} < p < {h['upper']:,}")
     if hits:
         print(f"  At least one new aloof record occurs by {hits[0]['prime']:,};")
         print("  an earlier stronger record may supersede any of these witnesses.")

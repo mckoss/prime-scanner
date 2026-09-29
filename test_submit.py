@@ -183,8 +183,8 @@ if os.path.exists(fr) and bounds:
     per = {}
     for l in open(fr):
         f = l.split()
-        if len(f) == 2 and f[1].isdigit():
-            per[f[0]] = int(f[1])
+        if len(f) == 2 and f[1].replace(",", "").isdigit():
+            per[f[0]] = int(f[1].replace(",", ""))
     if "pairwise" in per and "a087770.txt" in bounds:
         check(bounds["a087770.txt"] == per["pairwise"],
               f"a087770.txt claims {bounds['a087770.txt']}, but the pairwise "

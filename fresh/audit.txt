@@ -40,10 +40,10 @@ lonely -- lonely primes -- record min(gap below, gap above)
 aloof -- aloof primes -- record nextprime(p) - prevprime(p)
 ----------------------------------------------------------------------------------------
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-! A096265      35      55       -     55      69  the aloof prime
-  A031133      34      67       -     67      68  the lower neighbour
-  A031134      34      67       -     67      68  the upper neighbour
-! A031132      67       -       -     67      68  the span between them
+! A096265      35      55       -     55      70  the aloof prime
+  A031133      34      67       -     67      69  the lower neighbour
+  A031134      34      67       -     67      69  the upper neighbour
+! A031132      67       -       -     67      69  the span between them
 ! A122412      38      52       -      -       -  index of the lower prime (needs pi(p))
 ! A122413      38      52       -      -       -  index of the upper prime (needs pi(p))
 ----------------------------------------------------------------------------------------
@@ -82,90 +82,90 @@ Every A-number a family member cites, and every entry that cites a member,
 kept when its DATA shares at least 3 terms above 1000 with our record
 primes. ! marks one nobody has reviewed, or one reviewed and still open.
 
-  overlap  sequence link     terms  last term             name
-       28  A111870  out+in      39  20733746510561442863  Prime p with prime gap q - p of n-th record merit, where q ...
+  overlap  sequence link     terms  last term                  name
+       28  A111870  out+in      39  20,733,746,510,561,442,863 Prime p with prime gap q - p of n-th record merit, where q ...
                     record merit gap/log p. A merit record is also a gap record, so it is a subset of A002386 [last term past the frontier]
-!      24  A167236  in          87  18571673432051831671  Larger prime power associated with gaps in A121492.
+!      24  A167236  in          87  18,571,673,432,051,831,671 Larger prime power associated with gaps in A121492.
                     not reviewed [last term past the frontier]
-!      23  A002540  in          87  18571673432051830099  Increasing gaps between prime-powers.
+!      23  A002540  in          87  18,571,673,432,051,830,099 Increasing gaps between prime-powers.
                     not reviewed [last term past the frontier]
-!      22  A134266  out         47  191912783             Primes associated with the prime gaps listed in A085237.
+!      22  A134266  out         47  191,912,783                Primes associated with the prime gaps listed in A085237.
                     not reviewed [last term below the run's frontier]
-!      22  A205827  out+in      38  1425172824437699411   Primes prime(k) corresponding to the records in the ...
+!      22  A205827  out+in      38  1,425,172,824,437,699,411  Primes prime(k) corresponding to the records in the ...
                     not reviewed [last term past the frontier]
-!      21  A060771  in          30  25056082543           Upper ends of record prime gaps under consideration of the ...
+!      21  A060771  in          30  25,056,082,543             Upper ends of record prime gaps under consideration of the ...
                     not reviewed [last term below the run's frontier]
-!      18  A120384  in          54  31587561361           Isolated primes: geometric mean of distances of a prime to ...
+!      18  A120384  in          54  31,587,561,361             Isolated primes: geometric mean of distances of a prime to ...
                     OPEN: record geometric mean of the two gaps. b-file 54 terms to 31587561361; not yet examined in depth [last term below the run's frontier]
-!      17  A350095  in          32  2614941710599         a(n) is the smaller of 2 consecutive primes bounding an ...
+!      17  A350095  in          32  2,614,941,710,599          a(n) is the smaller of 2 consecutive primes bounding an ...
                     not reviewed [last term below the run's frontier]
-!      17  A350096  in          32  2614941711251         a(n) is the larger of 2 consecutive primes bounding an ...
+!      17  A350096  in          32  2,614,941,711,251          a(n) is the larger of 2 consecutive primes bounding an ...
                     not reviewed [last term below the run's frontier]
-!      15  A073861  in          18  804212830686677669    Smaller of pair of successive n-digit primes with maximal ...
+!      15  A073861  in          18  804,212,830,686,677,669    Smaller of pair of successive n-digit primes with maximal ...
                     not reviewed [last term past the frontier]
-!      13  A053302  in          16  1693182318746371      Largest n-digit prime at the start of a record in the ...
+!      13  A053302  in          16  1,693,182,318,746,371      Largest n-digit prime at the start of a record in the ...
                     not reviewed [last term below the run's frontier]
-       13  A054342  out+in      53  28219476363451        First occurrence of distances of equidistant lonely ...
+       13  A054342  out+in      53  28,219,476,363,451         First occurrence of distances of equidistant lonely ...
                     first balanced prime at each distance, not a record; b-file stops at 28219476363451 [last term below the run's frontier]
-       12  A023188  out+in     191  145628792921569       Lonely (or isolated) primes: least prime of distance n ...
+       12  A023188  out+in     191  145,628,792,921,569        Lonely (or isolated) primes: least prime of distance n ...
                     first occurrence of each nearest-prime distance, not a record; b-file stops at 145628792921569 [last term below the run's frontier]
-       12  A046931  out+in     312  929156727137          Prime islands: for n >= 2, a(n) = least prime whose ...
+       12  A046931  out+in     312  929,156,727,137            Prime islands: for n >= 2, a(n) = least prime whose ...
                     least prime whose neighbours are exactly 2n apart: first occurrences, not records; stops at 929156727137 [last term below the run's frontier]
-       12  A120937  out+in      35  2198981               Least prime such that the distance to the two adjacent ...
+       12  A120937  out+in      35  2,198,981                  Least prime such that the distance to the two adjacent ...
                     least prime with both gaps >= 2n: first occurrences, not records; 35 terms to 2198981 [last term below the run's frontier]
-       11  A000230  out+in     722  804212830686677669    a(0)=2; for n>=1, a(n) = smallest prime p such that there ...
+       11  A000230  out+in     722  804,212,830,686,677,669    a(0)=2; for n>=1, a(n) = smallest prime p such that there ...
                     least prime starting a gap of exactly 2n: first occurrences, not records [last term past the frontier]
-       10  A051728  out+in      38  2010807               Smallest number at distance 2n from nearest prime.
+       10  A051728  out+in      38  2,010,807                  Smallest number at distance 2n from nearest prime.
                     over all integers, not primes [last term below the run's frontier]
-!      10  A103709  in          53  0                     Smallest prime p such that both p +/- 2n are primes ...
+!      10  A103709  in          53  0                          Smallest prime p such that both p +/- 2n are primes ...
                     not reviewed [last term below the run's frontier]
-       10  A111943  out+in      12  1693182318746371      Prime p with prime gap q - p of n-th record ...
+       10  A111943  out+in      12  1,693,182,318,746,371      Prime p with prime gap q - p of n-th record ...
                     record gap/log^2 p. Such a record is also a gap record, so it is a subset of A002386 [last term below the run's frontier]
-!      10  A214757  in          28  191913047             a(n) = smallest Ramanujan prime R_k in A104272 that is >= ...
+!      10  A214757  in          28  191,913,047                a(n) = smallest Ramanujan prime R_k in A104272 that is >= ...
                     not reviewed [last term below the run's frontier]
-!      10  A330428  in          12  26923643849953        Smallest prime p such that both nearest primes up and down ...
+!      10  A330428  in          12  26,923,643,849,953         Smallest prime p such that both nearest primes up and down ...
                     not reviewed [last term below the run's frontier]
-!      10  A335366  in         777  40934204206305917081  Primes preceding the first-occurrence gaps in A014320.
+!      10  A335366  in         777  40,934,204,206,305,917,081 Primes preceding the first-occurrence gaps in A014320.
                     not reviewed [last term past the frontier]
-!      10  A335367  in         777  40934204206305918589  Primes at the end of the first-occurrence gaps in A014320.
+!      10  A335367  in         777  40,934,204,206,305,918,589 Primes at the end of the first-occurrence gaps in A014320.
                     not reviewed [last term past the frontier]
-        9  A001632  in         595  83673835565279347     Smallest prime p such that there is a gap of 2n between p ...
+        9  A001632  in         595  83,673,835,565,279,347     Smallest prime p such that there is a gap of 2n between p ...
                     least prime ending a gap of exactly 2n: first occurrences, not records [last term past the frontier]
-!       9  A209407  in          67  1561919               Primes p(i) such that p(i+1)/p(i) > p(k+1)/p(k) for all ...
+!       9  A209407  in          67  1,561,919                  Primes p(i) such that p(i+1)/p(i) > p(k+1)/p(k) for all ...
                     not reviewed [last term below the run's frontier]
-        8  A051650  out+in     212  90874329411895        Lonely numbers: distance to closest prime sets a new record.
+        8  A051650  out+in     212  90,874,329,411,895         Lonely numbers: distance to closest prime sets a new record.
                     lonely NUMBERS: records over all integers, not primes [last term below the run's frontier]
-        7  A100964  in         775  18361375334787046697  Smallest prime number that begins a prime gap of at least ...
+        7  A100964  in         775  18,361,375,334,787,046,697 Smallest prime number that begins a prime gap of at least ...
                     least prime starting a gap >= 2n: the gap records re-indexed by size, not a new sequence [last term past the frontier]
-        7  A102723  out+in     479  941114429467073       Smallest prime a(n) such that a(n)-x and a(n)+x, for x=1 ...
+        7  A102723  out+in     479  941,114,429,467,073        Smallest prime a(n) such that a(n)-x and a(n)+x, for x=1 ...
                     least prime with every integer within n composite; its b-file ends at lonely(56), so lonely(57) extends it [last term below the run's frontier]
-!       6  A268140  in          11  1693182318746371      Smallest prime followed by at least 2^n nonprimes.
+!       6  A268140  in          11  1,693,182,318,746,371      Smallest prime followed by at least 2^n nonprimes.
                     not reviewed [last term below the run's frontier]
-        5  A051652  out+in     229  25056082315           Smallest number at distance n from nearest prime.
+        5  A051652  out+in     229  25,056,082,315             Smallest number at distance n from nearest prime.
                     over all integers, not primes [last term below the run's frontier]
-!       5  A058193  in         240  4253027105513399527   Smallest prime p such that there is a gap of 6n between p ...
+!       5  A058193  in         240  4,253,027,105,513,399,527  Smallest prime p such that there is a gap of 6n between p ...
                     not reviewed [last term past the frontier]
-!       5  A104138  in        1001  1693182318746371      Smallest prime followed by n or more composites.
+!       5  A104138  in        1001  1,693,182,318,746,371      Smallest prime followed by n or more composites.
                     not reviewed [last term below the run's frontier]
-!       5  A123995  in          21  2069461000669981      First occurrence of prime gaps which are perfect powers.
+!       5  A123995  in          21  2,069,461,000,669,981      First occurrence of prime gaps which are perfect powers.
                     not reviewed [last term below the run's frontier]
-!       5  A123996  in          20  2069461000670881      Smallest prime q such that the gap between q and the ...
+!       5  A123996  in          20  2,069,461,000,670,881      Smallest prime q such that the gap between q and the ...
                     not reviewed [last term below the run's frontier]
-!       4  A075741  in          46  19655                 Smallest a(n)>2 such that all integers strictly between ...
+!       4  A075741  in          46  19,655                     Smallest a(n)>2 such that all integers strictly between ...
                     not reviewed [last term below the run's frontier]
-!       4  A084105  in          57  325909215045497       Middle q of three consecutive primes p,q,r, such that one ...
+!       4  A084105  in          57  325,909,215,045,497        Middle q of three consecutive primes p,q,r, such that one ...
                     not reviewed [last term below the run's frontier]
-!       4  A138198  in          21  48186815362225632199  First occurrence of prime gaps which are squares.
+!       4  A138198  in          21  48,186,815,362,225,632,199 First occurrence of prime gaps which are squares.
                     not reviewed [last term past the frontier]
-!       4  A309877  in         282  436273009             a(n) is the smallest number k such that the difference ...
+!       4  A309877  in         282  436,273,009                a(n) is the smallest number k such that the difference ...
                     not reviewed [last term below the run's frontier]
-!       3  A075051  in          29  1975675658371         Smallest prime for which the n closest primes are smaller.
+!       3  A075051  in          29  1,975,675,658,371          Smallest prime for which the n closest primes are smaller.
                     not reviewed [last term below the run's frontier]
-!       3  A224522  in          24  111113196467011       Least prime which is followed by a gap of 30n.
+!       3  A224522  in          24  111,113,196,467,011        Least prime which is followed by a gap of 30n.
                     not reviewed [last term below the run's frontier]
-!       3  A241886  in          36  3103251464536797599   a(n) = smallest prime p such that there is a gap of ...
+!       3  A241886  in          36  3,103,251,464,536,797,599  a(n) = smallest prime p such that there is a gap of ...
                     not reviewed [last term past the frontier]
-!       3  A243593  in         207  32057                 Primes giving record values of f(n) = ...
+!       3  A243593  in         207  32,057                     Primes giving record values of f(n) = ...
                     not reviewed [last term below the run's frontier]
 
   not tracked -- not record sequences, so never a b-file from a scan:
@@ -178,12 +178,12 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 FRONTIER vs PUBLISHED
 =====================
 
-  fresh/frontier.txt = 12,542,688,621,853,146  (1.2543e+16)
+  fresh/frontier.txt = 12,758,357,659,713,217  (1.2758e+16)
 
   family       ours   published to   terms  via       what is left
   gap            64   1.0141e+20        85  A002386   21 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
   lonely         60   9.4111e+14        56  A023186   4 term(s) beyond A023186  <-- SUBMITTABLE
-  aloof          69   1.6932e+15        68  A031134   1 term(s) beyond A031134  <-- SUBMITTABLE
+  aloof          70   1.6932e+15        68  A031134   2 term(s) beyond A031134  <-- SUBMITTABLE
   equidistant    34   1.8789e+14        30  A058867   4 term(s) beyond A058867  <-- SUBMITTABLE; 1 already tabulated in A052187
   pairwise       40   9.1564e+12        29  A087770   11 term(s) beyond A087770  <-- SUBMITTABLE
 
@@ -198,17 +198,17 @@ PUBLISHED SOURCES -- prior values and future checkpoints
   A052187 is not a complete equidistant-record list; its unmatched
   first occurrences cannot extend the scan's completeness bound.
 
-  Aloof checkpoints beyond 12,542,688,621,853,146, beating span 1168:
+  Aloof checkpoints beyond 12,758,357,659,713,217, beating span 1170:
   Source: https://sweet.ua.pt/tos/gaps/t0.txt.gz
   From Oliveira e Silva's first-occurrence gap table; adjacent
   primes and all intervening odd integers checked by deterministic
   Miller-Rabin. These are witnesses, NOT confirmed next records.
-    p=28269785077312447  gaps=(1038, 142)  span=1180  source gap=1038  other: B. Nyman
-      28269785077311409 < p < 28269785077312589
-    p=29835422457878441  gaps=(160, 1106)  span=1266  source gap=1106  other: B. Nyman
-      29835422457878281 < p < 29835422457879547
-    p=33288359939766091  gaps=(1074, 96)  span=1170  source gap=1074  other: B. Nyman
-      33288359939765017 < p < 33288359939766187
+    p=28,269,785,077,312,447  gaps=(1,038, 142)  span=1,180  source gap=1,038  other: B. Nyman
+      28,269,785,077,311,409 < p < 28,269,785,077,312,589
+    p=29,835,422,457,878,441  gaps=(160, 1,106)  span=1,266  source gap=1,106  other: B. Nyman
+      29,835,422,457,878,281 < p < 29,835,422,457,879,547
+    p=39,793,570,504,640,219  gaps=(1,102, 92)  span=1,194  source gap=1,102  other: B. Nyman
+      39,793,570,504,639,117 < p < 39,793,570,504,640,311
   At least one new aloof record occurs by 28,269,785,077,312,447;
   an earlier stronger record may supersede any of these witnesses.
   No scan terms, frontiers, or submission DATA come from these checkpoints.
@@ -236,8 +236,8 @@ SUBMISSION  --  one draft per sequence
       Extend DATA by 4 terms; credit the prior A052187 table; add a search-bound comment; add an a-file with the bounding primes.
   10. A087770  DATA +11 terms, bound comment, a-file 39 rows, Xref +A096265
       Extend DATA by 11 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A096265.
-  11. A096265  DATA +13 terms, bound comment, b-file 69 terms, a-file 68 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
-      Extend DATA by 13 terms; add a search-bound comment; extend the b-file; add an a-file with the bounding primes; add cross-references to A031133, A031134, A122412, A122413.
+  11. A096265  DATA +14 terms, bound comment, b-file 70 terms, a-file 69 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
+      Extend DATA by 14 terms; add a search-bound comment; extend the b-file; add an a-file with the bounding primes; add cross-references to A031133, A031134, A122412, A122413.
   12. A107578  b-file 85 terms
       Extend the b-file to 85 terms.
    -. new       balanced-lonely primes  [drafted]

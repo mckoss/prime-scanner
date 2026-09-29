@@ -7,7 +7,7 @@
 # np   next prime (A031134)
 #
 # Mike Koss. Data as of 2026-09-28, when the scan last advanced.
-# Searched all below 12,542,688,621,853,146: every record up to that
+# Searched all below 12,758,357,659,713,217: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -82,3 +82,4 @@
   67    811782668945987  1032    811782668945159    811782668946191
   68   1693182318746371  1152   1693182318746351   1693182318747503
   69  12099132127787501  1168  12099132127786609  12099132127787777
+  70  12568891238650091  1170  12568891238649583  12568891238650753

@@ -2,14 +2,33 @@
 """Offline regressions for transformed source attribution and checkpoints."""
 import contextlib
 import io
+import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
+import check_oeis
 import oeis_audit as audit
 import oeis_sources as sources
 
 
 class PublishedSourcesTests(unittest.TestCase):
+    def test_frontier_readers_accept_plain_and_grouped_numbers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "frontier.txt")
+            for number in ("12345678901234567", "12,345,678,901,234,567"):
+                with open(path, "w") as f:
+                    f.write(f"gap {number}\nlonely 0\n")
+                self.assertEqual(audit.read_frontier(directory)[0]["gap"], 12345678901234567)
+                self.assertEqual(check_oeis.frontiers(directory)["gap"], 12345678901234567)
+
+                with open(os.path.join(directory, "gap.txt"), "w") as f:
+                    f.write("# records\n")
+                with open(path, "w") as f:
+                    f.write(number + "\n")
+                self.assertEqual(audit.read_frontier(directory)[0]["gap"], 12345678901234567)
+                self.assertEqual(check_oeis.frontiers(directory)["gap"], 12345678901234567)
+
     def test_balanced_table_transform_and_scan_agreement(self):
         triples = sources.balanced_triples()
         self.assertEqual(len(triples), 72)

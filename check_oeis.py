@@ -226,11 +226,11 @@ def frontiers(directory):
 
     text = open(path).read()
     head = text.split()
-    if head and head[0].isdigit():
-        legacy = float(head[0])
+    if head and head[0].replace(",", "").isdigit():
+        legacy = int(head[0].replace(",", ""))
         for kind in SEQ:
             fronts[kind] = legacy if os.path.exists(
-                os.path.join(directory, f"{kind}.txt")) else 0.0
+                os.path.join(directory, f"{kind}.txt")) else 0
         return fronts
 
     for line in text.splitlines():
@@ -238,7 +238,7 @@ def frontiers(directory):
             continue
         f = line.split()
         if len(f) >= 2:
-            fronts[f[0]] = float(f[1])
+            fronts[f[0]] = int(f[1].replace(",", ""))
     return fronts
 
 
