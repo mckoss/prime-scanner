@@ -32,14 +32,49 @@ $\mathrm{MaxEquidistant}$ are the highest respective values recorded before
 evaluating $P_n$. $\mathrm{LastPairBelow}$ and $\mathrm{LastPairAbove}$ are the
 two gaps at the most recently appended pairwise term.
 
-| family | OEIS | condition for a new term at $P_n$ | first terms |
-|--------|------|---------------------------------|-------------|
-| **gap** | [A002386](https://oeis.org/A002386) (lower prime), [A000101](https://oeis.org/A000101) (upper), [A005250](https://oeis.org/A005250) (size) | $P_{n+1}-P_n > \mathrm{MaxGap}$ | 2, 3, 7, 23, 89, 113, 523, … |
-| **lonely** | [A023186](https://oeis.org/A023186), [A023187](https://oeis.org/A023187) (distance) | $\min(P_n-P_{n-1},\,P_{n+1}-P_n) > \mathrm{MaxLonely}$ | 2, 5, 23, 53, 211, 1847, … |
-| **aloof** | [A096265](https://oeis.org/A096265); also [A031133](https://oeis.org/A031133)/[A031134](https://oeis.org/A031134)/[A031132](https://oeis.org/A031132), indexed one lower | $P_{n+1}-P_{n-1} > \mathrm{MaxAloof}$ | 2, 3, 5, 7, 23, 53, 89, … |
-| **equidistant** | [A058867](https://oeis.org/A058867), [A058868](https://oeis.org/A058868) (distance) | $(P_n-P_{n-1}=P_{n+1}-P_n) \land (P_{n+1}-P_n > \mathrm{MaxEquidistant})$ | 5, 53, 211, 16787, 69623, … |
-| **pairwise** | [A087770](https://oeis.org/A087770) | $(P_n-P_{n-1} > \mathrm{LastPairBelow}) \land (P_{n+1}-P_n > \mathrm{LastPairAbove})$ | 2, 3, 7, 23, 89, 211, 1847, … |
-| **balanced-lonely** | not yet in OEIS — [draft](oeis/submit/edits.yaml) | $(P_n-P_{n-1}=P_{n+1}-P_n) \land (P_{n+1}-P_n > \mathrm{MaxLonely})$ | 5, 53, 211, 26923643849953, 187891466722913, 4685407635944059 |
+<table>
+<thead>
+<tr><th>family</th><th>OEIS</th><th>condition for a new term at $P_n$</th></tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">gap</th>
+<td><a href="https://oeis.org/A002386">A002386</a> (lower prime), <a href="https://oeis.org/A000101">A000101</a> (upper), <a href="https://oeis.org/A005250">A005250</a> (size)</td>
+<td>$P_{n+1}-P_n > \mathrm{MaxGap}$</td>
+</tr>
+<tr><td colspan="3"><strong>First terms:</strong> 2, 3, 7, 23, 89, 113, 523, …</td></tr>
+<tr>
+<th scope="row">lonely</th>
+<td><a href="https://oeis.org/A023186">A023186</a>, <a href="https://oeis.org/A023187">A023187</a> (distance)</td>
+<td>$\min(P_n-P_{n-1},\,P_{n+1}-P_n) > \mathrm{MaxLonely}$</td>
+</tr>
+<tr><td colspan="3"><strong>First terms:</strong> 2, 5, 23, 53, 211, 1847, …</td></tr>
+<tr>
+<th scope="row">aloof</th>
+<td><a href="https://oeis.org/A096265">A096265</a>; also <a href="https://oeis.org/A031133">A031133</a>/<a href="https://oeis.org/A031134">A031134</a>/<a href="https://oeis.org/A031132">A031132</a>, indexed one lower</td>
+<td>$P_{n+1}-P_{n-1} > \mathrm{MaxAloof}$</td>
+</tr>
+<tr><td colspan="3"><strong>First terms:</strong> 2, 3, 5, 7, 23, 53, 89, …</td></tr>
+<tr>
+<th scope="row">equidistant</th>
+<td><a href="https://oeis.org/A058867">A058867</a>, <a href="https://oeis.org/A058868">A058868</a> (distance)</td>
+<td>$(P_n-P_{n-1}=P_{n+1}-P_n) \land (P_{n+1}-P_n > \mathrm{MaxEquidistant})$</td>
+</tr>
+<tr><td colspan="3"><strong>First terms:</strong> 5, 53, 211, 16787, 69623, …</td></tr>
+<tr>
+<th scope="row">pairwise</th>
+<td><a href="https://oeis.org/A087770">A087770</a></td>
+<td>$(P_n-P_{n-1} > \mathrm{LastPairBelow}) \land (P_{n+1}-P_n > \mathrm{LastPairAbove})$</td>
+</tr>
+<tr><td colspan="3"><strong>First terms:</strong> 2, 3, 7, 23, 89, 211, 1847, …</td></tr>
+<tr>
+<th scope="row">balanced-lonely</th>
+<td>not yet in OEIS — <a href="oeis/submit/edits.yaml">draft</a></td>
+<td>$(P_n-P_{n-1}=P_{n+1}-P_n) \land (P_{n+1}-P_n > \mathrm{MaxLonely})$</td>
+</tr>
+<tr><td colspan="3"><strong>First terms:</strong> 5, 53, 211, 26923643849953, 187891466722913, 4685407635944059</td></tr>
+</tbody>
+</table>
 
 At $P_n=2$, there is no previous prime. Gap uses the upper gap of 1; lonely
 and aloof use that same value, and pairwise starts with gaps $(0,1)$. The
