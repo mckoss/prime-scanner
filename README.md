@@ -46,10 +46,12 @@ even though `lonely(9) = 16033` had already reached 24 with gaps (26, 24).
 Balanced-lonely requires a record over *all* primes, so it is a 6-term
 subsequence of A058867's 30.
 
-![The six fresh prime sequences, color-coded by family, with prime values on a logarithmic scale](docs/prime-sequences.svg)
+![Six prime sequences on a logarithmic scale; the dashed gap line continues through published terms beyond the scan](docs/prime-sequences.svg)
 
-The graph uses the first two b-file columns (`n`, `prime`) in `fresh/`. Run
-`make graph` to rebuild it as the scan advances.
+The graph uses the first two b-file columns (`n`, `prime`) in `fresh/`, then
+continues the blue gap line through the published A002386 terms in
+[`oeis/gap.txt`](oeis/gap.txt). Its dashed segment shows the gap primes beyond
+our scan. Run `make graph` to rebuild it as the scan advances.
 
 ## Reproducing the results
 

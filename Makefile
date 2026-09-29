@@ -32,10 +32,10 @@ PGAPS_ARGS ?=
 pgaps: $(BIN)
 	python3 -u pgaps.py --out $(PGAPS_OUT) $(PGAPS_WORKERS) $(PGAPS_ARGS)
 
-# Rebuild the README graph from the six fresh b-file columns.
+# Rebuild the README graph from fresh b-files and published gap primes.
 graph: docs/prime-sequences.svg
 
-docs/prime-sequences.svg: plot_sequences.py fresh/gap.txt fresh/lonely.txt fresh/aloof.txt fresh/equidistant.txt fresh/balanced.txt fresh/pairwise.txt
+docs/prime-sequences.svg: plot_sequences.py fresh/gap.txt fresh/lonely.txt fresh/aloof.txt fresh/equidistant.txt fresh/balanced.txt fresh/pairwise.txt oeis/gap.txt
 	python3 plot_sequences.py
 
 $(BIN): sieve.c Makefile

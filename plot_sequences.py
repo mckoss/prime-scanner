@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot the fresh b-file columns as a self-contained SVG for the README."""
+"""Plot fresh b-file terms and the published gap continuation for the README."""
 
 from __future__ import annotations
 
@@ -43,15 +43,21 @@ def read_terms(path: Path) -> list[tuple[int, int]]:
     return terms
 
 
-def build_svg(source: Path) -> ET.Element:
+def build_svg(source: Path, published_gap: Path) -> ET.Element:
     data = [(name, title, oeis, color, dash, read_terms(source / f"{name}.txt"))
             for name, title, oeis, color, dash in SEQUENCES]
-    max_n = max(terms[-1][0] for *_, terms in data)
-    max_prime = max(terms[-1][1] for *_, terms in data)
+    published = read_terms(published_gap)
+    scanned_gap = data[0][-1]
+    shared = min(len(scanned_gap), len(published))
+    if scanned_gap[:shared] != published[:shared]:
+        raise ValueError(f"{source / 'gap.txt'} disagrees with {published_gap}")
+    published_only = published[len(scanned_gap):]
+    max_n = max(published[-1][0], *(terms[-1][0] for *_, terms in data))
+    max_prime = max(published[-1][1], *(terms[-1][1] for *_, terms in data))
 
     width, height = 1100, 700
     left, right, top, bottom = 118, 1058, 164, 570
-    log_max = math.log10(max_prime * 1.45)
+    log_max = math.log10(max_prime) + 0.6
 
     def x(n: int) -> float:
         return left + (n - 1) / (max_n - 1) * (right - left)
@@ -64,26 +70,35 @@ def build_svg(source: Path) -> ET.Element:
         "role": "img", "aria-labelledby": "chart-title chart-desc",
         "font-family": "system-ui, -apple-system, sans-serif",
     })
-    element(svg, "title", id="chart-title").text = "Prime record sequences from fresh b-files"
+    element(svg, "title", id="chart-title").text = "Prime record sequences and published gap primes"
     element(svg, "desc", id="chart-desc").text = (
         "Six color-coded sequences show prime p against term number n. "
-        "The vertical axis is logarithmic. The key lists each sequence and its term count."
+        "The vertical axis is logarithmic. The dashed blue gap segment continues "
+        f"from {len(scanned_gap)} scanned terms to {len(published)} published terms."
     )
     element(svg, "rect", width=width, height=height, fill="#FFFFFF")
     label(svg, "Prime record sequences", left, 48, fill="#17212B", font_size=30, font_weight=600)
-    label(svg, "Prime p at term n · logarithmic vertical axis", left, 76,
+    label(svg, "Prime p at term n · dashed blue continues gap A002386 beyond our scan", left, 76,
           fill="#52616D", font_size=18)
 
-    for i, (_, title, oeis, color, dash, terms) in enumerate(data):
+    for i, (name, title, oeis, color, dash, terms) in enumerate(data):
         column, row = i % 3, i // 3
         lx, ly = left + column * 315, 111 + row * 30
         line_attrs = {"x1": lx, "x2": lx + 37, "y1": ly - 5, "y2": ly - 5,
                       "stroke": color, "stroke_width": 3.5, "stroke_linecap": "round"}
+        if name == "gap" and published_only:
+            line_attrs["x2"] = lx + 19
         if dash:
             line_attrs["stroke_dasharray"] = dash
         element(svg, "line", **line_attrs)
+        if name == "gap" and published_only:
+            element(svg, "line", x1=lx + 19, x2=lx + 37, y1=ly - 5, y2=ly - 5,
+                    stroke=color, stroke_width=3.5, stroke_dasharray="5 4",
+                    stroke_linecap="round")
         element(svg, "circle", cx=lx + 19, cy=ly - 5, r=3.5, fill=color)
-        label(svg, f"{title} · {oeis} ({len(terms)})", lx + 46, ly,
+        legend = (f"Gap · {oeis} ({len(terms)} → {len(published)})"
+                  if name == "gap" and published_only else f"{title} · {oeis} ({len(terms)})")
+        label(svg, legend, lx + 46, ly,
               fill="#17212B", font_size=17)
 
     # Powers of ten remain legible at README width; minor grid lines add clutter.
@@ -118,12 +133,23 @@ def build_svg(source: Path) -> ET.Element:
             element(svg, "circle", cx=f"{x(n):.2f}", cy=f"{y(prime):.2f}",
                     r=3.2 if dash else 2.5, fill=color)
 
+    if published_only:
+        continuation = [scanned_gap[-1], *published_only]
+        path = " ".join(("M" if i == 0 else "L") + f"{x(n):.2f},{y(prime):.2f}"
+                        for i, (n, prime) in enumerate(continuation))
+        element(svg, "path", d=path, fill="none", stroke=SEQUENCES[0][3],
+                stroke_width=2.8, stroke_dasharray="7 5", stroke_linejoin="round",
+                stroke_linecap="round", aria_label="Published gap continuation")
+        for n, prime in published_only:
+            element(svg, "circle", cx=f"{x(n):.2f}", cy=f"{y(prime):.2f}",
+                    r=3.2, fill=SEQUENCES[0][3])
+
     label(svg, "Term number n", (left + right) / 2, 640, text_anchor="middle",
           fill="#17212B", font_size=21)
     label(svg, "Prime p (log scale)", 34, (top + bottom) / 2,
           transform=f"rotate(-90 34 {(top + bottom) / 2})", text_anchor="middle",
           fill="#17212B", font_size=21)
-    label(svg, "Source: fresh/*.txt · first two columns (n, p) · run make graph to refresh",
+    label(svg, "Sources: fresh/*.txt + oeis/gap.txt · b-file columns (n, p) · make graph to refresh",
           left, 679, fill="#52616D", font_size=14)
     return svg
 
@@ -131,10 +157,11 @@ def build_svg(source: Path) -> ET.Element:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=ROOT / "fresh")
+    parser.add_argument("--published-gap", type=Path, default=ROOT / "oeis" / "gap.txt")
     parser.add_argument("--output", type=Path, default=ROOT / "docs" / "prime-sequences.svg")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    tree = ET.ElementTree(build_svg(args.source))
+    tree = ET.ElementTree(build_svg(args.source, args.published_gap))
     ET.indent(tree, space="  ")
     tree.write(args.output, encoding="utf-8", xml_declaration=True)
 
