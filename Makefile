@@ -19,7 +19,7 @@ LDLIBS := -lm
 BIN := sieve
 REF := reference/mod30
 
-.PHONY: all test test-slow test-widths test-submit bench reference clean audit submit pgaps
+.PHONY: all test test-slow test-widths test-submit bench reference clean audit submit pgaps graph
 
 all: $(BIN)
 
@@ -31,6 +31,12 @@ PGAPS_ARGS ?=
 
 pgaps: $(BIN)
 	python3 -u pgaps.py --out $(PGAPS_OUT) $(PGAPS_WORKERS) $(PGAPS_ARGS)
+
+# Rebuild the README graph from the six fresh b-file columns.
+graph: docs/prime-sequences.svg
+
+docs/prime-sequences.svg: plot_sequences.py fresh/gap.txt fresh/lonely.txt fresh/aloof.txt fresh/equidistant.txt fresh/balanced.txt fresh/pairwise.txt
+	python3 plot_sequences.py
 
 $(BIN): sieve.c Makefile
 	$(CC) $(CFLAGS) $< $(LDLIBS) -o $@

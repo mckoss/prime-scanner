@@ -33,7 +33,7 @@ Where that stands, and what is being submitted, is in
 | **aloof** | [A096265](https://oeis.org/A096265); also [A031133](https://oeis.org/A031133)/[A031134](https://oeis.org/A031134)/[A031132](https://oeis.org/A031132), indexed one lower | `nextprime(p) − prevprime(p)` | 2, 3, 5, 7, 23, 53, 89, … |
 | **equidistant** | [A058867](https://oeis.org/A058867), [A058868](https://oeis.org/A058868) (distance) | the common gap, ranked among *balanced* primes only | 5, 53, 211, 16787, 69623, … |
 | **pairwise** | [A087770](https://oeis.org/A087770) | a chain, not a maximum: gap below *and* gap above both beat the previous term's | 2, 3, 7, 23, 89, 211, 1847, … |
-| **balanced-lonely** | not yet in OEIS — [draft](oeis/submit/edits.yaml) | lonely records that are also balanced primes | 5, 53, 211, 26923643849953, 187891466722913 |
+| **balanced-lonely** | not yet in OEIS — [draft](oeis/submit/edits.yaml) | lonely records that are also balanced primes | 5, 53, 211, 26923643849953, 187891466722913, 4685407635944059 |
 
 Several sequences are in play at once, so `a(n)` would be ambiguous. Terms are
 written `gap(n)`, `lonely(n)`, `aloof(n)`, `equidistant(n)` and `pairwise(n)`:
@@ -43,8 +43,13 @@ of related sequences, covered or not, is in [`oeis/README.md`](oeis/README.md).
 Equidistant and balanced-lonely are easy to conflate. A058867 ranks balanced
 primes only against each other, so 16787, with gaps (24, 24), is a term there
 even though `lonely(9) = 16033` had already reached 24 with gaps (26, 24).
-Balanced-lonely requires a record over *all* primes, so it is a 5-term
+Balanced-lonely requires a record over *all* primes, so it is a 6-term
 subsequence of A058867's 30.
+
+![The six fresh prime sequences, color-coded by family, with prime values on a logarithmic scale](docs/prime-sequences.svg)
+
+The graph uses the first two b-file columns (`n`, `prime`) in `fresh/`. Run
+`make graph` to rebuild it as the scan advances.
 
 ## Reproducing the results
 
