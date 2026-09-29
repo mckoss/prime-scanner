@@ -26,14 +26,24 @@ Where that stands, and what is being submitted, is in
 
 ## The sequences
 
-| family | OEIS | record of | first terms |
-|--------|------|-----------|-------------|
-| **gap** | [A002386](https://oeis.org/A002386) (lower prime), [A000101](https://oeis.org/A000101) (upper), [A005250](https://oeis.org/A005250) (size) | `nextprime(p) − p` | 2, 3, 7, 23, 89, 113, 523, … |
-| **lonely** | [A023186](https://oeis.org/A023186), [A023187](https://oeis.org/A023187) (distance) | `min(gap below, gap above)` | 2, 5, 23, 53, 211, 1847, … |
-| **aloof** | [A096265](https://oeis.org/A096265); also [A031133](https://oeis.org/A031133)/[A031134](https://oeis.org/A031134)/[A031132](https://oeis.org/A031132), indexed one lower | `nextprime(p) − prevprime(p)` | 2, 3, 5, 7, 23, 53, 89, … |
-| **equidistant** | [A058867](https://oeis.org/A058867), [A058868](https://oeis.org/A058868) (distance) | the common gap, ranked among *balanced* primes only | 5, 53, 211, 16787, 69623, … |
-| **pairwise** | [A087770](https://oeis.org/A087770) | a chain, not a maximum: gap below *and* gap above both beat the previous term's | 2, 3, 7, 23, 89, 211, 1847, … |
-| **balanced-lonely** | not yet in OEIS — [draft](oeis/submit/edits.yaml) | lonely records that are also balanced primes | 5, 53, 211, 26923643849953, 187891466722913, 4685407635944059 |
+Let $P_{n-1}$, $P_n$, and $P_{n+1}$ be the previous, current, and next
+primes. $\mathrm{MaxGap}$, $\mathrm{MaxLonely}$, $\mathrm{MaxAloof}$, and
+$\mathrm{MaxEquidistant}$ are the highest respective values recorded before
+evaluating $P_n$. $\mathrm{LastPairBelow}$ and $\mathrm{LastPairAbove}$ are the
+two gaps at the most recently appended pairwise term.
+
+| family | OEIS | condition for a new term at $P_n$ | first terms |
+|--------|------|---------------------------------|-------------|
+| **gap** | [A002386](https://oeis.org/A002386) (lower prime), [A000101](https://oeis.org/A000101) (upper), [A005250](https://oeis.org/A005250) (size) | $P_{n+1}-P_n > \mathrm{MaxGap}$ | 2, 3, 7, 23, 89, 113, 523, … |
+| **lonely** | [A023186](https://oeis.org/A023186), [A023187](https://oeis.org/A023187) (distance) | $\min(P_n-P_{n-1},\,P_{n+1}-P_n) > \mathrm{MaxLonely}$ | 2, 5, 23, 53, 211, 1847, … |
+| **aloof** | [A096265](https://oeis.org/A096265); also [A031133](https://oeis.org/A031133)/[A031134](https://oeis.org/A031134)/[A031132](https://oeis.org/A031132), indexed one lower | $P_{n+1}-P_{n-1} > \mathrm{MaxAloof}$ | 2, 3, 5, 7, 23, 53, 89, … |
+| **equidistant** | [A058867](https://oeis.org/A058867), [A058868](https://oeis.org/A058868) (distance) | $(P_n-P_{n-1}=P_{n+1}-P_n) \land (P_{n+1}-P_n > \mathrm{MaxEquidistant})$ | 5, 53, 211, 16787, 69623, … |
+| **pairwise** | [A087770](https://oeis.org/A087770) | $(P_n-P_{n-1} > \mathrm{LastPairBelow}) \land (P_{n+1}-P_n > \mathrm{LastPairAbove})$ | 2, 3, 7, 23, 89, 211, 1847, … |
+| **balanced-lonely** | not yet in OEIS — [draft](oeis/submit/edits.yaml) | $(P_n-P_{n-1}=P_{n+1}-P_n) \land (P_{n+1}-P_n > \mathrm{MaxLonely})$ | 5, 53, 211, 26923643849953, 187891466722913, 4685407635944059 |
+
+At $P_n=2$, there is no previous prime. Gap uses the upper gap of 1; lonely
+and aloof use that same value, and pairwise starts with gaps $(0,1)$. The
+three-prime conditions apply from $P_n=3$ onward.
 
 Several sequences are in play at once, so `a(n)` would be ambiguous. Terms are
 written `gap(n)`, `lonely(n)`, `aloof(n)`, `equidistant(n)` and `pairwise(n)`:
