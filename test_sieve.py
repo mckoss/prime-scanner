@@ -667,6 +667,24 @@ def test_frontier_accepts_plain_and_grouped_numbers():
 
 
 @test
+def test_round_start_notation_and_all_cores_option():
+    pgaps = load_pgaps()
+    if pgaps.round_start_label(1536) != "1.54e+03; 1.500 x 2^10":
+        raise SieveError("round start notation is wrong for 1536")
+    if pgaps.round_start_label(0) != "0.00e+00; 0.000 x 2^0":
+        raise SieveError("round start notation is wrong for zero")
+
+    with tempfile.TemporaryDirectory() as d:
+        proc = subprocess.run([sys.executable, pgaps.__file__, "--out", d,
+                               "--all-cores", "--to", "0"],
+                              capture_output=True, text=True, timeout=30)
+        expected = f"across {os.cpu_count() or 4} workers"
+        if proc.returncode != 0 or expected not in proc.stdout:
+            raise SieveError(f"--all-cores did not select {expected}: "
+                             f"{proc.stdout}{proc.stderr}")
+
+
+@test
 def test_catch_up_rolls_each_sequence_in_at_its_own_frontier():
     """Rounds stop at the next frontier, so a sequence rolls in on a boundary"""
     pgaps = load_pgaps()

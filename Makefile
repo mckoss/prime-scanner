@@ -19,9 +19,18 @@ LDLIBS := -lm
 BIN := sieve
 REF := reference/mod30
 
-.PHONY: all test test-slow test-widths test-submit bench reference clean audit submit
+.PHONY: all test test-slow test-widths test-submit bench reference clean audit submit pgaps
 
 all: $(BIN)
+
+# Resume the fresh scan with one worker per CPU core. Override PGAPS_OUT,
+# PGAPS_WORKERS (e.g. '--jobs 8'), or PGAPS_ARGS (e.g. '--to 1e14') as needed.
+PGAPS_OUT ?= fresh
+PGAPS_WORKERS ?= --all-cores
+PGAPS_ARGS ?=
+
+pgaps: $(BIN)
+	python3 -u pgaps.py --out $(PGAPS_OUT) $(PGAPS_WORKERS) $(PGAPS_ARGS)
 
 $(BIN): sieve.c Makefile
 	$(CC) $(CFLAGS) $< $(LDLIBS) -o $@

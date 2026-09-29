@@ -62,10 +62,14 @@ ten minutes, merging after each; Ctrl-C (or SPACE to pause) stops cleanly, and
 rerunning the same command resumes:
 
 ```
-python3 pgaps.py --jobs 8 --out myrun              # open-ended
+make pgaps                                          # resume fresh/ on all CPU cores
+python3 pgaps.py --all-cores --out myrun            # open-ended on all CPU cores
 python3 pgaps.py --to 1e14 --jobs 8 --out myrun    # or stop at a bound
 python3 pgaps.py --out myrun --status              # each sequence's frontier
 ```
+
+For the Makefile target, set `PGAPS_OUT` to use another directory, `PGAPS_ARGS`
+for scan options, and `PGAPS_WORKERS='--jobs 8'` to choose a fixed worker count.
 
 When a sequence is added to a run that has already come a long way, the
 driver asks whether to catch it up from zero first or to skip that for now.

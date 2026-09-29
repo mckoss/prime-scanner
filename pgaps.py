@@ -296,6 +296,16 @@ def write_round(path, lo, hi, jobs, kinds):
     open(path, "w").write(f"{lo} {hi} {jobs} {','.join(kinds)}\n")
 
 
+def round_start_label(n):
+    """Approximate a round's start in decimal and binary scientific notation."""
+    power = n.bit_length() - 1 if n else 0
+    mantissa = n / (1 << power) if n else 0
+    if mantissa >= 1.9995:
+        mantissa /= 2
+        power += 1
+    return f"{n:.2e}; {mantissa:.3f} x 2^{power}"
+
+
 def derive_balanced(out):
     """Lonely records whose two neighbours are equidistant.
 
@@ -879,10 +889,14 @@ def main():
     ap.add_argument("--round-seconds", type=int, default=600,
                     help="target wall time per round when --to is omitted "
                          "(default 600); each round ends in a merge")
-    ap.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 4,
-                    help="worker processes (default: all cores). Prefer the "
-                         "number of FREE performance cores; efficiency cores "
-                         "add little and a busy core costs more than it gives")
+    workers = ap.add_mutually_exclusive_group()
+    workers.add_argument("--jobs", "-j", type=int,
+                         help="worker processes (default: all cores). Prefer "
+                              "the number of FREE performance cores; efficiency "
+                              "cores add little and a busy core costs more "
+                              "than it gives")
+    workers.add_argument("--all-cores", action="store_true",
+                         help="use one worker per CPU core reported by the OS")
     ap.add_argument("--out", required=True,
                     help="output directory; merged results land here and "
                          "workers under <out>/shards/")
@@ -901,6 +915,8 @@ def main():
                          "frontier without asking, holding the lagging ones' "
                          "candidates until a later catch-up")
     args = ap.parse_args()
+    if args.all_cores or args.jobs is None:
+        args.jobs = os.cpu_count() or 4
 
     if not os.path.exists(BINARY):
         sys.exit("./sieve not built -- run 'make' first")
@@ -1049,7 +1065,8 @@ def main():
                       f"nothing still wanted")
                 clear_shards(args.out)
                 continue
-            print(f"\n  resuming round [{a:,}, {b:,}) for {','.join(kinds)}")
+            print(f"\n  resuming round [{a:,}, {b:,}) for {','.join(kinds)}"
+                  f"\n    start {round_start_label(a)}")
         else:
             jobs = args.jobs
             held = read_pending(args.out)
@@ -1069,7 +1086,8 @@ def main():
             print(f"\n  round [{a:,}, {b:,})"
                   + (f"  catching up: {','.join(kinds)} only"
                      if set(kinds) != set(KINDS) else "")
-                  + (f"  holding: {','.join(lagging)}" if lagging else ""))
+                  + (f"  holding: {','.join(lagging)}" if lagging else "")
+                  + f"\n    start {round_start_label(a)}")
 
         # A sequence being caught up is rebuilt from zero, so it takes no
         # threshold from the run it is catching up with.
