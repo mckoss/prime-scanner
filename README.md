@@ -26,6 +26,8 @@ Where that stands, and what is being submitted, is in
 
 ## The sequences
 
+![Three consecutive primes on a number line, with small diagrams showing what each sequence measures](docs/prime-sequence-guide.svg)
+
 Let $P_{n-1}$, $P_n$, and $P_{n+1}$ be the previous, current, and next
 primes. $\mathrm{MaxGap}$, $\mathrm{MaxLonely}$, $\mathrm{MaxAloof}$, and
 $\mathrm{MaxEquidistant}$ are the highest respective values recorded before

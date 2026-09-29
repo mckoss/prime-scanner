@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="344" viewBox="0 0 800 344" role="img" aria-labelledby="title description" font-family="system-ui, -apple-system, sans-serif">
+  <title id="title">How prime sequence names describe neighboring gaps</title>
+  <desc id="description">A number line marks the previous, current, and next primes, with the gap below shorter than the gap above. Six small diagrams show: gap uses the space to the next prime; lonely uses the nearer neighbor; aloof spans both neighbors; equidistant has equal gaps; pairwise grows both gaps beyond its preceding term; balanced-lonely combines equal gaps with a lonely record.</desc>
+  <rect width="800" height="344" fill="#fff"/>
+  <text x="32" y="34" fill="#17212B" font-size="22" font-weight="600">Reading a prime’s neighborhood</text>
+
+  <line x1="62" y1="115" x2="738" y2="115" stroke="#9EABB4" stroke-width="2"/>
+  <path d="M738 115 l-8 -5 m8 5 l-8 5" fill="none" stroke="#9EABB4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="150" y1="138" x2="346" y2="138" stroke="#D55E00" stroke-width="5" stroke-linecap="round"/>
+  <line x1="346" y1="138" x2="660" y2="138" stroke="#0072B2" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="150" cy="115" r="6" fill="#17212B"/>
+  <circle cx="346" cy="115" r="8" fill="#17212B"/>
+  <circle cx="660" cy="115" r="6" fill="#17212B"/>
+  <text x="150" y="99" text-anchor="middle" fill="#17212B" font-size="19" font-style="italic">P<tspan font-size="12" baseline-shift="sub">n−1</tspan></text>
+  <text x="346" y="96" text-anchor="middle" fill="#17212B" font-size="21" font-style="italic">P<tspan font-size="12" baseline-shift="sub">n</tspan></text>
+  <text x="660" y="99" text-anchor="middle" fill="#17212B" font-size="19" font-style="italic">P<tspan font-size="12" baseline-shift="sub">n+1</tspan></text>
+  <text x="248" y="161" text-anchor="middle" fill="#A84900" font-size="13">gap below</text>
+  <text x="503" y="161" text-anchor="middle" fill="#00649C" font-size="13">gap above</text>
+
+  <line x1="32" y1="178" x2="768" y2="178" stroke="#E2E7EB" stroke-width="1"/>
+  <line x1="400" y1="190" x2="400" y2="330" stroke="#E2E7EB" stroke-width="1"/>
+
+  <g transform="translate(42 205)">
+    <line x1="0" y1="0" x2="66" y2="0" stroke="#C5CDD3" stroke-width="2"/>
+    <line x1="25" y1="0" x2="66" y2="0" stroke="#0072B2" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#52616D"/><circle cx="25" cy="0" r="4" fill="#17212B"/><circle cx="66" cy="0" r="3" fill="#52616D"/>
+  </g>
+  <text x="124" y="202" fill="#17212B" font-size="15" font-weight="600">Gap</text>
+  <text x="124" y="220" fill="#52616D" font-size="13">space to the next prime</text>
+
+  <g transform="translate(426 205)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#7B61A8" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#52616D"/><circle cx="30" cy="0" r="4" fill="#17212B"/><circle cx="60" cy="0" r="3" fill="#52616D"/>
+    <text x="30" y="-9" text-anchor="middle" fill="#7B61A8" font-size="15">=</text>
+  </g>
+  <text x="508" y="202" fill="#17212B" font-size="15" font-weight="600">Equidistant</text>
+  <text x="508" y="220" fill="#52616D" font-size="13">equal gaps, ranked together</text>
+
+  <g transform="translate(42 257)">
+    <line x1="0" y1="0" x2="66" y2="0" stroke="#C5CDD3" stroke-width="2"/>
+    <line x1="0" y1="0" x2="25" y2="0" stroke="#D55E00" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#52616D"/><circle cx="25" cy="0" r="4" fill="#17212B"/><circle cx="66" cy="0" r="3" fill="#52616D"/>
+  </g>
+  <text x="124" y="254" fill="#17212B" font-size="15" font-weight="600">Lonely</text>
+  <text x="124" y="272" fill="#52616D" font-size="13">distance to the nearer prime</text>
+
+  <g transform="translate(426 257)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#B34770" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#52616D"/><circle cx="25" cy="0" r="4" fill="#17212B"/><circle cx="60" cy="0" r="3" fill="#52616D"/>
+    <path d="M12 -5 v-15 m0 0 l-4 5 m4 -5 l4 5 M44 -5 v-15 m0 0 l-4 5 m4 -5 l4 5" fill="none" stroke="#B34770" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="508" y="254" fill="#17212B" font-size="15" font-weight="600">Pairwise</text>
+  <text x="508" y="272" fill="#52616D" font-size="13">both gaps grow from last term</text>
+
+  <g transform="translate(42 309)">
+    <line x1="0" y1="0" x2="66" y2="0" stroke="#009E73" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#52616D"/><circle cx="25" cy="0" r="4" fill="#17212B"/><circle cx="66" cy="0" r="3" fill="#52616D"/>
+    <path d="M0 -10 v-6 h66 v6" fill="none" stroke="#009E73" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <text x="124" y="306" fill="#17212B" font-size="15" font-weight="600">Aloof</text>
+  <text x="124" y="324" fill="#52616D" font-size="13">span across both neighbors</text>
+
+  <g transform="translate(426 309)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#B8860B" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="3" fill="#52616D"/><circle cx="30" cy="0" r="4" fill="#17212B"/><circle cx="60" cy="0" r="3" fill="#52616D"/>
+    <path d="M30 -23 l2.2 5.4 5.8 .4 -4.5 3.7 1.5 5.6 -5 -3.1 -5 3.1 1.5 -5.6 -4.5 -3.7 5.8 -.4 Z" fill="#B8860B"/>
+  </g>
+  <text x="508" y="306" fill="#17212B" font-size="15" font-weight="600">Balanced-lonely</text>
+  <text x="508" y="324" fill="#52616D" font-size="13">equal gaps and a lonely record</text>
+</svg>
