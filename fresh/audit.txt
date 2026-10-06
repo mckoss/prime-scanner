@@ -178,7 +178,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 FRONTIER vs PUBLISHED
 =====================
 
-  fresh/frontier.txt = 25,422,978,944,721,100  (2.5423e+16)
+  fresh/frontier.txt = 26,099,160,246,699,733  (2.6099e+16)
 
   family       ours   published to   terms  via       what is left
   gap            64   1.0141e+20        85  A002386   21 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
@@ -198,7 +198,7 @@ PUBLISHED SOURCES -- prior values and future checkpoints
   A052187 is not a complete equidistant-record list; its unmatched
   first occurrences cannot extend the scan's completeness bound.
 
-  Aloof checkpoints beyond 25,422,978,944,721,100, beating span 1220:
+  Aloof checkpoints beyond 26,099,160,246,699,733, beating span 1220:
   Source: https://sweet.ua.pt/tos/gaps/t0.txt.gz
   From Oliveira e Silva's first-occurrence gap table; adjacent
   primes and all intervening odd integers checked by deterministic
@@ -229,9 +229,9 @@ SUBMISSION  --  one draft per sequence
    6. A031132  Xref +A096265
       Add the reverse cross-reference.
    7. A031133  bound comment
-      Add a search-bound comment: no further term below 2.5*10^16.
+      Add a search-bound comment: no further term below 2.6*10^16.
    8. A031134  bound comment
-      Add a search-bound comment: no further term below 2.5*10^16.
+      Add a search-bound comment: no further term below 2.6*10^16.
    9. A058867  DATA +4 terms, bound comment, a-file 34 rows
       Extend DATA by 4 terms; credit the prior A052187 table; add a search-bound comment; add an a-file with the bounding primes.
   10. A087770  DATA +12 terms, bound comment, a-file 40 rows, Xref +A096265
