@@ -1,6 +1,6 @@
 # a096265.txt -- aloof prime records with bounding primes
 #
-# n    index (A000027)
+# n    index
 # p    the aloof prime (A096265)
 # span np - pp, the record (A031132)
 # pp   previous prime (A031133)

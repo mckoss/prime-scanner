@@ -1,6 +1,6 @@
 # a087770.txt -- pairwise lonely prime records with bounding primes
 #
-# n    index (A000027)
+# n    index
 # p    the pairwise lonely prime (A087770)
 # gb   p - pp
 # ga   np - p

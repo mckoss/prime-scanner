@@ -1,6 +1,6 @@
 # a058867.txt -- equidistant prime records with bounding primes
 #
-# n    index (A000027)
+# n    index
 # p    the balanced prime (A058867)
 # d    p - pp = np - p, the record (A058868)
 # pp   previous prime

@@ -1,6 +1,6 @@
 # a023186.txt -- lonely prime records with bounding primes
 #
-# n    index (A000027)
+# n    index
 # p    the lonely prime (A023186)
 # d    min(p-pp, np-p), the record (A023187)
 # pp   previous prime

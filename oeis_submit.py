@@ -143,7 +143,7 @@ AFILE = {
     "lonely": {
         "aid": "A023186",
         "title": "lonely prime records with bounding primes",
-        "cols": [("n", "index", "A000027", lambda r: r[0]),
+        "cols": [("n", "index", "", lambda r: r[0]),
                  ("p", "the lonely prime", "A023186", lambda r: r[1]),
                  ("d", "min(p-pp, np-p), the record", "A023187",
                   lambda r: r[2]),
@@ -153,7 +153,7 @@ AFILE = {
     "aloof": {
         "aid": "A096265",
         "title": "aloof prime records with bounding primes",
-        "cols": [("n", "index", "A000027", lambda r: r[0]),
+        "cols": [("n", "index", "", lambda r: r[0]),
                  ("p", "the aloof prime", "A096265", lambda r: r[1]),
                  ("span", "np - pp, the record", "A031132", lambda r: r[2]),
                  ("pp", "previous prime", "A031133", lambda r: r[5]),
@@ -162,7 +162,7 @@ AFILE = {
     "equidistant": {
         "aid": "A058867",
         "title": "equidistant prime records with bounding primes",
-        "cols": [("n", "index", "A000027", lambda r: r[0]),
+        "cols": [("n", "index", "", lambda r: r[0]),
                  ("p", "the balanced prime", "A058867", lambda r: r[1]),
                  ("d", "p - pp = np - p, the record", "A058868",
                   lambda r: r[2]),
@@ -174,7 +174,7 @@ AFILE = {
         "title": "pairwise lonely prime records with bounding primes",
         # Both gaps carry the record here -- each beats the previous term's --
         # so neither alone is the value, and both are named outright.
-        "cols": [("n", "index", "A000027", lambda r: r[0]),
+        "cols": [("n", "index", "", lambda r: r[0]),
                  ("p", "the pairwise lonely prime", "A087770",
                   lambda r: r[1]),
                  ("gb", "p - pp", "", lambda r: r[3]),
