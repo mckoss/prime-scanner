@@ -297,10 +297,10 @@ def render_yaml(drafts, new_seqs, other, meta):
         o.append(f"  summary: {block(d['summary'], 4)}")
         if d.get("to_editors"):
             o.append(f"  to_editors: {block(d['to_editors'], 4)}")
-        if d.get("upload"):
-            u = d["upload"]
-            o += ["  upload:",
-                  f"    kind: {u['kind']}",
+        if d.get("uploads"):
+            o.append("  uploads:")
+        for u in d.get("uploads") or []:
+            o += [f"  - kind: {u['kind']}",
                   f"    path: {u['path']}",
                   f"    rows: {u['rows']}",
                   f"    from: {q(u['from'])}"]
@@ -486,19 +486,36 @@ FILL_JS = r"""
     } catch (msg) { return { err: String(msg) }; }
   }
 
+  // The form's upload boxes are upload_file0, upload_file1, ... A file goes
+  // in the box already holding it, else the first empty one, so attaching
+  // twice is harmless and a page with fewer boxes than files says so.
+  function box(k) {
+    return document.querySelector('input[name=upload_file' + k + ']');
+  }
+  function holder(name) {
+    for (var k = 0, inp; (inp = box(k)); k++)
+      if (inp.files && inp.files.length && inp.files[0].name === name) return k;
+    return -1;
+  }
   function attach(u) {
-    var inp = document.querySelector('input[name=upload_file' + u.slot + ']');
-    if (!inp) return { err: 'no upload slot ' + u.slot };
+    var k = holder(u.name);
+    if (k >= 0) return { ok: true, slot: k };
+    for (k = 0; box(k) && box(k).files && box(k).files.length; k++) {}
+    var inp = box(k);
+    if (!inp)
+      return { err: k ? 'every upload box on this page is in use: Save '
+                        + 'Changes, reopen the draft, and attach ' + u.name
+                      : 'no upload box on this page' };
     try {
       var dt = new DataTransfer();
       dt.items.add(new File([u.content], u.name, { type: 'text/plain' }));
       inp.files = dt.files;
       inp.dispatchEvent(new Event('change', { bubbles: true }));
     } catch (err) { return { err: 'attach failed: ' + err }; }
-    var cb = document.getElementById('upload_bfile' + u.slot);
+    var cb = document.getElementById('upload_bfile' + k);
     if (u.kind === 'b-file' && cb && !cb.checked) cb.click();
-    if (u.desc) write('upload_' + u.slot, u.desc);
-    return { ok: true };
+    if (u.desc) write('upload_' + k, u.desc);
+    return { ok: true, slot: k };
   }
 
   var draft = null, panel = null;
@@ -519,7 +536,8 @@ FILL_JS = r"""
   }
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
-           upload: draft && draft.upload ? draft.upload.name : null,
+           uploads: draft ? (draft.uploads || []).map(function (u) {
+             return { name: u.name, slot: holder(u.name) }; }) : [],
            saved: /\/draft\//.test(location.pathname) });
   }
 
@@ -538,10 +556,17 @@ FILL_JS = r"""
         var p = plan(e);
         if (p.val) write(e.field, p.val);
       });
-      if (draft.upload) attach(draft.upload);
+      var errs = {};
+      (draft.uploads || []).forEach(function (u, i) {
+        var r = attach(u);
+        if (r.err) errs[i] = r.err;
+      });
+      post({ type: 'ATTACHED', errs: errs });
       report();
     } else if (m.type === 'ATTACH') {
-      post({ type: 'ATTACHED', r: attach(draft.upload) });
+      var r = attach(draft.uploads[m.index]), one = {};
+      if (r.err) one[m.index] = r.err;
+      post({ type: 'ATTACHED', errs: one, index: m.index });
       report();
     } else if (m.type === 'NAVIGATE') {
       location.href = m.url;
@@ -606,12 +631,17 @@ PANEL_HTML = r"""<!doctype html>
  button.p{background:#0969da;color:#fff;border-color:#0969da}
  .bar{display:flex;gap:6px;padding:8px 12px}
  .note{color:var(--dim);font-size:11px;padding:0 12px 10px}
+ .up{border:1px solid var(--line);border-radius:4px;padding:7px;margin:6px 0}
+ .up .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
+ .up a{font-size:11px;color:#0969da;margin-left:6px}
+ .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
   <div class="sub" id="sub"></div>
 </header>
 <div id="fields"></div>
+<section id="uploads" hidden><h2>Uploads</h2><div id="uplist"></div></section>
 <div class="bar">
   <button class="p" id="all">Fill all</button>
   <button id="re">Rescan</button>
@@ -676,26 +706,55 @@ function render(msg){
                + '<pre>'+esc((s.next||'').slice(0,400))+'</pre>';
       out += '</section>';
     });
-    if(draft.upload)
-      out += '<section class="f"><b>'+draft.upload.kind+'</b> '
-           + '<span class="code">'+esc(draft.upload.name)+'</span>'
-           + ' <button id="att">Attach</button></section>';
   }
   document.getElementById('fields').innerHTML = out;
   [].forEach.call(document.querySelectorAll('#fields button[data-i]'),
     function(b){ b.onclick=function(){ send({type:'FILL',index:+b.dataset.i}) }});
-  var a=document.getElementById('att');
-  if(a) a.onclick=function(){ send({type:'ATTACH'}) };
+  renderUploads(msg.uploads||[]);
   if(draft) remember(draft.aid, msg.saved ? 'saved' : liveState(states));
   renderList(states);
-  document.getElementById('note').textContent = draft && draft.upload
-    ? 'Attach sets the file from the payload; no file picker needed.'
-    : '';
+}
+
+// One card per file: what it is for, which upload box holds it, and the file
+// itself, so it can be checked or uploaded by hand if Attach cannot.
+var attachErr = {};
+function renderUploads(live){
+  var ups = draft ? (draft.uploads||[]) : [], out = '';
+  document.getElementById('uploads').hidden = !ups.length;
+  if(!ups.length){ document.getElementById('note').textContent=''; return; }
+  out += '<ol class="steps"><li>Attach '+(ups.length>1?'each file':'the file')
+       + ' below (Fill all attaches '+(ups.length>1?'them':'it')+' too).</li>'
+       + '<li>Check the form, then Save Changes.</li></ol>';
+  ups.forEach(function(u,i){
+    var at = (live[i]||{}).slot, st = at>=0
+      ? '<span class="st done">✓ in upload box '+(at+1)+'</span>'
+      : '<span class="st" style="color:#aaa">not attached</span>';
+    out += '<div class="up"><b>'+(i+1)+'. '+esc(u.kind)+'</b> '
+         + '<span class="code">'+esc(u.name)+'</span> '+st
+         + '<div class="why">'+esc(u.purpose||'')+'</div>'
+         + (attachErr[i] ? '<div class="err">'+esc(attachErr[i])+'</div>' : '')
+         + (at>=0 ? '' : '<button data-u="'+i+'">Attach</button>')
+         + '<a href="'+encodeURIComponent(u.name)+'" target="_blank">view</a>'
+         + '<a href="'+encodeURIComponent(u.name)+'" download>download</a>'
+         + '</div>';
+  });
+  document.getElementById('uplist').innerHTML = out;
+  [].forEach.call(document.querySelectorAll('#uplist button[data-u]'),
+    function(b){ b.onclick=function(){ send({type:'ATTACH',index:+b.dataset.u}) }});
+  document.getElementById('note').textContent =
+    'Attach sets the file from the payload; no file picker needed. '
+    + 'If it cannot, download the file and choose it in the form\'s upload box.';
 }
 
 window.addEventListener('message', function(ev){
   if(ev.origin!==OEIS) return;
-  if((ev.data||{}).type==='STATE') render(ev.data);
+  var m = ev.data||{};
+  if(m.type==='STATE') render(m);
+  if(m.type==='ATTACHED'){
+    if(m.index==null) attachErr = {};
+    else delete attachErr[m.index];
+    for(var k in (m.errs||{})) attachErr[k] = m.errs[k];
+  }
 });
 document.getElementById('all').onclick=function(){ send({type:'FILL_ALL'}) };
 document.getElementById('re').onclick =function(){ send({type:'RESCAN'}) };
@@ -775,6 +834,19 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
             out.append(e)
         return out
 
+    def purpose(u, d):
+        """What the file is for, in the words of the edit form."""
+        name = os.path.basename(u["path"])
+        if u["kind"] == "b-file":
+            return (f"The b-file: {u['rows']} terms. Its upload box is ticked "
+                    f"as a b-file, and the %H line linking {name} is "
+                    f"rewritten to match.")
+        linked = any(name in (e.get("text") or "") for e in d["edits"])
+        return (f"The a-file: {u['rows']} rows, each record with its "
+                f"bounding primes and gaps. "
+                + ("A new %H line links it." if linked else
+                   "Replaces the file the existing %H line already links."))
+
     payload = {
         "meta": meta,
         "drafts": [{
@@ -782,12 +854,13 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
             "summary": d["summary"],
             "blocked_on": d.get("blocked_on") or None,
             "edits": for_js(d["edits"]),
-            "upload": ({"kind": d["upload"]["kind"],
-                        "name": os.path.basename(d["upload"]["path"]),
-                        "slot": 0,
-                        "desc": d["upload"].get("desc", ""),
-                        "content": files[os.path.basename(d["upload"]["path"])]}
-                       if d.get("upload") else None),
+            "uploads": [{"kind": u["kind"],
+                         "name": os.path.basename(u["path"]),
+                         "slot": i, "rows": u["rows"],
+                         "purpose": purpose(u, d),
+                         "desc": u.get("desc", ""),
+                         "content": files[os.path.basename(u["path"])]}
+                        for i, u in enumerate(d.get("uploads") or [])],
         } for d in drafts],
     }
     write(os.path.join(out_dir, "payload.js"),
@@ -797,13 +870,16 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
 
     rows = []
     for i, d in enumerate(drafts, 1):
-        f = os.path.basename(d["upload"]["path"]) if d.get("upload") else ""
+        f = "<br>".join(
+            f'<a href="{os.path.basename(u["path"])}"><code>'
+            f'{os.path.basename(u["path"])}</code></a> {u["kind"]}'
+            for u in d.get("uploads") or [])
         st = d.get("status") or ("blocked" if d.get("blocked_on") else "")
         rows.append(
             f'<tr><td class="n">{i}</td>'
             f'<td><a href="{d["url"]}">{d["aid"]}</a></td>'
             f'<td class="what">{d["what"]}</td>'
-            f'<td><code>{f}</code></td>'
+            f'<td>{f}</td>'
             f'<td class="warn">{st}</td></tr>')
     extra = ""
     if new_seqs:
