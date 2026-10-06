@@ -448,6 +448,21 @@ FILL_JS = r"""
     return t + ', ' + terms.join(', ');
   }
 
+  // OEIS writes the uploaded b-file's link line crediting only the uploader;
+  // put back the earlier contributors, keeping the href OEIS chose.
+  function creditLine(cur, up, text) {
+    var href = 'href="/' + SEQ + '/' + up + '"';
+    var want = text.replace(/href="[^"]*"/, href);
+    var lines = (cur || '').split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf(href) < 0) continue;
+      if (lines[i].trim() === want.trim()) return null;
+      lines[i] = want;
+      return lines.join('\n');
+    }
+    throw 'no link line for ' + up;
+  }
+
   function addLine(cur, text) {
     var probe = text.replace(/\s+/g, ' ').slice(0, 45);
     if ((cur || '').replace(/\s+/g, ' ').indexOf(probe) >= 0) return null;
@@ -468,6 +483,14 @@ FILL_JS = r"""
         v = appendData(cur, e.after_n_term, e.terms);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
+      else if (e.action === 'credit_bfile_link') {
+        var u = (draft.uploads || []).filter(function (x) {
+          return x.kind === 'b-file'; })[0];
+        var up = u && uploadedAs(u);
+        if (!up) return { wait: 'after the b-file is uploaded: Save Changes, '
+                                + 'reopen the draft, and Fill this' };
+        v = creditLine(cur, up, e.text);
+      }
       return v === null ? { done: true } : { val: v };
     } catch (msg) { return { err: String(msg) }; }
   }
@@ -524,7 +547,7 @@ FILL_JS = r"""
     return draft.edits.map(function (e) {
       var p = plan(e);
       return { field: e.field, code: e.code, action: e.action,
-               done: !!p.done, err: p.err || null,
+               done: !!p.done, err: p.err || null, wait: p.wait || null,
                cur: read(e.field), next: p.val || null };
     });
   }
@@ -632,7 +655,7 @@ PANEL_HTML = r"""<!doctype html>
  .bar{display:flex;gap:6px;padding:8px 12px}
  .note{color:var(--dim);font-size:11px;padding:0 12px 10px}
  .up{border:1px solid var(--line);border-radius:4px;padding:7px;margin:6px 0}
- .up .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
+ .up .why,.f .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
  .up a{font-size:11px;color:#0969da;margin-left:6px}
  .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
 </style>
@@ -700,6 +723,7 @@ function render(msg){
       out += '<section class="f"><b>'+s.field+'</b> '
            + '<span class="code">'+esc(s.code)+' · '+s.action+'</span>';
       if(s.err) out += '<div class="err">'+esc(s.err)+'</div>';
+      else if(s.wait) out += '<div class="why">Waits: '+esc(s.wait)+'</div>';
       else if(s.done) out += '<span class="st done"> ✓ applied</span>';
       else out += ' <button data-i="'+i+'">Fill</button>'
                + '<pre class="was">'+esc((s.cur||'').slice(0,300))+'</pre>'
@@ -844,8 +868,9 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
         name = os.path.basename(u["path"])
         if u["kind"] == "b-file":
             return (f"The b-file: {u['rows']} terms, uploaded with the b-file "
-                    f"box ticked. OEIS then rewrites the b-file %H line "
-                    f"itself; after saving, check it reads n = 1..{u['rows']}.")
+                    f"box ticked. OEIS then rewrites the b-file %H line to "
+                    f"credit only you; once saved, the Link card puts the "
+                    f"earlier contributors back.")
         linked = any(name in (e.get("text") or "") for e in d["edits"])
         return (f"The a-file: {u['rows']} rows, each record with its "
                 f"bounding primes and gaps. "
