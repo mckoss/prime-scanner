@@ -152,7 +152,7 @@ which family members lag their siblings, which lack b-files or a-files, and
 where the frontier stands against each family. Both read cached copies in
 [`oeis/`](oeis/README.md); add `--refresh` to refetch.
 
-Use `--jobs` equal to the free *performance* cores. Wall time on an M1 Max
+Use `--jobs` equal to the free *performance* cores. Wall time on an M1 Pro
 with 8 workers, from the measured rate curve:
 
 | to | covers | 8 workers | core-hours |
@@ -170,15 +170,15 @@ rate curve:
 
 | stage | range | machine | core-hours |
 |-------|-------|---------|-----------:|
-| first four sequences, incl. a pre-speedup start and the A058867 catch-up | 0 → 2.07e15 | M1 Max, 8 workers | ~850 |
-| same, to where the pairwise catch-up began | 2.07e15 → 2.17e15 | M1 Max, 8 workers | ~30 |
-| pairwise catch-up | 0 → 2.17e15 | mostly M1 Max | ~600 |
+| first four sequences, incl. a pre-speedup start and the A058867 catch-up | 0 → 2.07e15 | M1 Pro, 8 workers | ~850 |
+| same, to where the pairwise catch-up began | 2.07e15 → 2.17e15 | M1 Pro, 8 workers | ~30 |
+| pairwise catch-up | 0 → 2.17e15 | mostly M1 Pro | ~600 |
 | all five sequences, 2026-09-23 → 10-06 | 2.17e15 → 2.61e16 | Mac Studio, 30 workers, ~12.5 days | ~9,000 |
 | **total** | | | **≈ 10,500** |
 
-The Mac Studio run advanced the frontier about 40 times as fast as one M1 Max
-worker, so each of its 30 cores did about 1.3 M1 Max cores' worth of work: the
-rate curve prices that range at 11,300 M1 Max core-hours. The first row is
+The Mac Studio run advanced the frontier about 40 times as fast as one M1 Pro
+worker, so each of its 30 cores did about 1.3 M1 Pro cores' worth of work: the
+rate curve prices that range at 11,300 M1 Pro core-hours. The first row is
 broken down in [`oeis/README.md`](oeis/README.md).
 
 ### Output
@@ -231,7 +231,7 @@ crossing gap is recorded. Continuing the scan resolves it.
 
 **The ceiling** is 2^64 ≈ 1.84e19, a deliberate choice of word size, because
 128-bit division would slow every scan. Time binds long before that: from
-today's frontier of 2.61e16, gap(65) at 4.38e16 is about 11,200 M1 Max
+today's frontier of 2.61e16, gap(65) at 4.38e16 is about 11,200 M1 Pro
 core-hours away, 12 days on the 30-core Mac Studio, and 1e17 about 55,000,
 two months on it. Confirmed gap records already reach 1.014e20, past the
 ceiling, so there is published data to check against across the whole range,
@@ -271,7 +271,7 @@ whole families, not single A-numbers. And a driver killed by `timeout` orphaned
 its workers, which silently dropped lonely(44) until the check caught it. The
 driver now locks its directory and cannot exit without stopping its workers.
 
-Timings are from an Apple M1 Max (8 performance + 2 efficiency cores, 64 GB),
+Timings are from an Apple M1 Pro (8 performance + 2 efficiency cores, 64 GB),
 macOS 26.5, Apple clang 21, `-O3 -march=native -flto`. On Apple silicon
 `sysctl hw.l1dcachesize` reports the *efficiency* cores' caches; the
 performance cores are under `hw.perflevel0.*` (128 KB L1d, 12 MB L2 per

@@ -73,7 +73,7 @@ Record submission progress in [`submissions.txt`](submissions.txt).
 ## Compute cost through the 2026-09-14 checkpoint
 
 About **850 core-hours**, or roughly 4½ days of 8 performance cores on an
-Apple M1 Max, not counting pauses and restarts. Per-round worker logs are
+Apple M1 Pro, not counting pauses and restarts. Per-round worker logs are
 deleted each round, so the figure is reconstructed from wall-clock times
 recorded in commits and the measured rate curve in `pgaps.py`:
 
