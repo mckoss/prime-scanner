@@ -90,7 +90,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A005669/b005669_k.txt\">Table of n, a(n) for n = 1..85</a>, terms 1..82 as previously published."
+     "text": "Mike Koss, <a href=\"/A005669/b005669_k.txt\">Table of n, a(n) for n = 1..85</a> (terms 1..77 from Charles R Greathouse IV, terms 78..82 from John W. Nicholson)"
     },
     {
      "field": "Xref",
@@ -128,7 +128,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A023186/b023186_k.txt\">Table of n, a(n) for n = 1..61</a>, terms 1..56 from Dmitry Petukhov (first 40 terms from Ken Takusagawa, terms 41..52 from Giovanni Resta)."
+     "text": "Mike Koss, <a href=\"/A023186/b023186_k.txt\">Table of n, a(n) for n = 1..61</a> (terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni Resta, terms 53..56 from Dmitry Petukhov)"
     },
     {
      "field": "Ext",
@@ -173,7 +173,7 @@ window.OEIS_SUBMIT = {
      "published": true,
      "purpose": "The b-file: 61 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A023186, 61 terms.\n#\n# Terms 1..56 from Dmitry Petukhov (first 40 terms from Ken Takusagawa, terms 41..52 from Giovanni Resta).\n# Terms 57..61 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 5\n3 23\n4 53\n5 211\n6 1847\n7 2179\n8 3967\n9 16033\n10 24281\n11 38501\n12 58831\n13 203713\n14 206699\n15 413353\n16 1272749\n17 2198981\n18 5102953\n19 10938023\n20 12623189\n21 72546283\n22 142414669\n23 162821917\n24 163710121\n25 325737821\n26 1131241763\n27 1791752797\n28 3173306951\n29 4841337887\n30 6021542119\n31 6807940367\n32 7174208683\n33 8835528511\n34 11179888193\n35 15318488291\n36 26329105043\n37 31587561361\n38 45241670743\n39 113482615613\n40 138465682247\n41 307608752579\n42 313455525683\n43 343834606051\n44 491856414677\n45 1362810282439\n46 1480975873513\n47 5551890283531\n48 9156364643509\n49 16303344721399\n50 25328423597831\n51 26923643849953\n52 92299530249323\n53 187891466722913\n54 342540487510231\n55 475963705368391\n56 941114429467073\n57 2662972908869401\n58 4685407635944059\n59 4911417538051463\n60 10991084454046573\n61 23771684406473771\n"
+     "content": "# A023186, 61 terms.\n#\n# Terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni Resta, terms 53..56 from Dmitry Petukhov.\n# Terms 57..61 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 5\n3 23\n4 53\n5 211\n6 1847\n7 2179\n8 3967\n9 16033\n10 24281\n11 38501\n12 58831\n13 203713\n14 206699\n15 413353\n16 1272749\n17 2198981\n18 5102953\n19 10938023\n20 12623189\n21 72546283\n22 142414669\n23 162821917\n24 163710121\n25 325737821\n26 1131241763\n27 1791752797\n28 3173306951\n29 4841337887\n30 6021542119\n31 6807940367\n32 7174208683\n33 8835528511\n34 11179888193\n35 15318488291\n36 26329105043\n37 31587561361\n38 45241670743\n39 113482615613\n40 138465682247\n41 307608752579\n42 313455525683\n43 343834606051\n44 491856414677\n45 1362810282439\n46 1480975873513\n47 5551890283531\n48 9156364643509\n49 16303344721399\n50 25328423597831\n51 26923643849953\n52 92299530249323\n53 187891466722913\n54 342540487510231\n55 475963705368391\n56 941114429467073\n57 2662972908869401\n58 4685407635944059\n59 4911417538051463\n60 10991084454046573\n61 23771684406473771\n"
     },
     {
      "kind": "a-file",
@@ -251,7 +251,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A058867/b058867_k.txt\">Table of n, a(n) for n = 1..34</a>, terms 1..30 as previously published."
+     "text": "Mike Koss, <a href=\"/A058867/b058867_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 1..30 as previously published)"
     },
     {
      "field": "Ext",
@@ -330,7 +330,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A087770/b087770_k.txt\">Table of n, a(n) for n = 1..41</a>, terms 1..29 as previously published."
+     "text": "Mike Koss, <a href=\"/A087770/b087770_k.txt\">Table of n, a(n) for n = 1..41</a> (terms 1..29 as previously published)"
     },
     {
      "field": "Ext",
@@ -396,7 +396,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A096265/b096265_k.txt\">Table of n, a(n) for n = 1..72</a>, terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner."
+     "text": "Mike Koss, <a href=\"/A096265/b096265_k.txt\">Table of n, a(n) for n = 1..72</a> (terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner)"
     },
     {
      "field": "Ext",
@@ -474,7 +474,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A107578/b107578_k.txt\">Table of n, a(n) for n = 1..85</a>, terms 1..80 as previously published."
+     "text": "Mike Koss, <a href=\"/A107578/b107578_k.txt\">Table of n, a(n) for n = 1..85</a> (terms 1..80 from John W. Nicholson; terms 1..75 from Jens Kruse Andersen; further terms coming from Thomas R. Nicely site)"
     }
    ],
    "uploads": [

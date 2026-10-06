@@ -1307,17 +1307,6 @@ def run_audit(args):
 # structure through contributions().
 # ---------------------------------------------------------------------------
 
-# Prior contributors to a b-file, credited in the extended one's header and
-# link line.
-# Dropping them to write our own name over the whole range would take credit
-# for terms other people computed.
-PRIOR = {
-    "A096265": "terms 1..50 from Ken Takusagawa, terms 51..55 from "
-               "Hugo Pfoertner",
-    "A005669": "terms 1..82 as previously published",
-    "A107578": "terms 1..80 as previously published",
-}
-
 # OEIS shows DATA as the first terms only -- about 260 characters -- and the
 # b-file carries the rest. Editors do not accept a DATA append past that, so
 # new terms go in DATA only while it stays within this; the b-file gets them
@@ -1325,22 +1314,51 @@ PRIOR = {
 DATA_LIMIT = 260
 
 
+def credit_ranges(author, note, n_pub):
+    """The documented credit for an extended b-file, or None.
+
+    OEIS asks whoever extends a b-file to put their own name on the link and
+    credit the earlier terms after it, "(terms 1..500 from Jon E. Schoenfield,
+    terms 501..1000 from Chai Wah Wu)". The published link names its author
+    up front and anyone before them in its note; when every clause of the note
+    is a range, the author's share is what follows the last one.
+    """
+    ranges = []
+    for clause in re.split(r"[,;]\s*", note) if note else []:
+        m = (re.fullmatch(r"first (\d+) terms? from (.+)", clause)
+             or re.fullmatch(r"terms? (\d+)\s*\.\.\s*(\d+) from (.+)", clause))
+        if not m:
+            return None
+        g = m.groups()
+        ranges.append((1, int(g[0]), g[1]) if len(g) == 2
+                      else (int(g[0]), int(g[1]), g[2]))
+    end = 0
+    for lo, hi, _ in ranges:
+        if lo != end + 1:
+            return None
+        end = hi
+    if end < n_pub:
+        ranges.append((end + 1, n_pub, author))
+    elif end > n_pub:
+        return None
+    return ", ".join(f"terms {lo}..{hi} from {who}" for lo, hi, who in ranges)
+
+
 def prior_credit(aid, n_pub, refresh):
     """Credit for the published terms an extended b-file carries over.
 
-    PRIOR names it by hand where the link line is not enough. Otherwise the
-    existing b-file link names its author and any earlier contributors; with
-    no uploaded b-file, the terms came from DATA.
+    Read from the existing b-file link line. A note that is not all ranges is
+    kept whole after the author's own range; with no uploaded b-file, the
+    terms came from DATA.
     """
-    if aid in PRIOR:
-        return PRIOR[aid]
     for line in entry(aid, refresh).get("link", []):
         if f"/b{aid[1:]}.txt" not in line:
             continue
         author = line.split(", <a", 1)[0].strip()
-        rest = line.split("</a>", 1)[-1].strip(" ,.()")
-        return (f"terms 1..{n_pub} from {author}"
-                + (f" ({rest})" if rest else ""))
+        note = line.split("</a>", 1)[-1].strip(" ,.()")
+        return (credit_ranges(author, note, n_pub)
+                or f"terms 1..{n_pub} from {author}"
+                   + (f"; {note}" if note else ""))
     return f"terms 1..{n_pub} as previously published"
 
 
@@ -1531,7 +1549,7 @@ def submission(items, families, results, refresh, check):
             "Link", "credit_bfile_link",
             text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/'
                  f'{name[:-4]}_k.txt">Table of n, a(n) for n = 1..{n}</a>'
-                 + (f", {credit}." if credit else ".")))
+                 + (f" ({credit})" if credit else "")))
         if not d["summary"]:
             d["summary"] = f"Extend the b-file to {n} terms."
 
@@ -1579,7 +1597,7 @@ def submission(items, families, results, refresh, check):
                            for r in new]))
             # The b-file carries every extension, whether or not DATA does.
             name = f"b{aid[1:]}.txt"
-            credit = prior_credit(aid, n_pub, refresh)
+            credit = prior_credit(aid, len(pub), refresh)
             if ("b", aid) not in built:
                 last = f["rows"][-1][0]
                 files[name] = oeis_submit.bfile(
@@ -1653,7 +1671,8 @@ def submission(items, families, results, refresh, check):
             famname, _, s = member_of(families, aid)
             d = draft(aid, s["m"]["role"] if s else aid)
             d["items"].append(iid)
-            add_bfile(d, aid, name, n, PRIOR.get(aid))
+            add_bfile(d, aid, name, n, prior_credit(
+                aid, len(bfile_terms_list(aid, refresh)), refresh))
 
         elif kind == "a-file":
             # `a-file:<family>` is one we would add; `a-file:<A-number>` is an

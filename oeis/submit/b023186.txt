@@ -1,6 +1,6 @@
 # A023186, 61 terms.
 #
-# Terms 1..56 from Dmitry Petukhov (first 40 terms from Ken Takusagawa, terms 41..52 from Giovanni Resta).
+# Terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni Resta, terms 53..56 from Dmitry Petukhov.
 # Terms 57..61 are new.
 # Every term independently rederived by an exhaustive scan from 0.
 #

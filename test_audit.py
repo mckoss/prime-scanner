@@ -3,6 +3,7 @@
 import contextlib
 import io
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -102,14 +103,26 @@ class ExtensionTests(unittest.TestCase):
         full = {"data": ",".join(["123456789"] * 25)}  # 249 characters
         self.assertFalse(audit.data_append_fits(full, 25, [1234567890123]))
 
-    def test_prior_credit_keeps_the_existing_b_file_author(self):
-        link = ('Dmitry Petukhov, <a href="/A023186/b023186.txt">Table of n, '
-                'a(n) for n = 1..56</a> (first 40 terms from Ken Takusagawa)')
-        with patch.object(audit, "entry", return_value={"link": [link]}):
-            self.assertEqual(
-                audit.prior_credit("A023186", 56, False),
-                "terms 1..56 from Dmitry Petukhov "
-                "(first 40 terms from Ken Takusagawa)")
+    def test_prior_credit_follows_the_documented_ranges(self):
+        cases = [
+            ('Dmitry Petukhov, <a href="/A023186/b023186.txt">Table of n, a(n) '
+             'for n = 1..56</a> (first 40 terms from Ken Takusagawa, terms '
+             '41..52 from Giovanni Resta)', 56,
+             "terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni "
+             "Resta, terms 53..56 from Dmitry Petukhov"),
+            ('Hugo Pfoertner, <a href="/A096265/b096265.txt">Table of n, a(n) '
+             'for n = 1..55</a>, terms 1..50 from Ken Takusagawa.', 55,
+             "terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner"),
+            ('John W. Nicholson, <a href="/A107578/b107578.txt">Table of n, '
+             'a(n) for n = 1..80</a> (terms 1..75 from Jens Kruse Andersen; '
+             'further terms coming from Thomas R. Nicely site).', 80,
+             "terms 1..80 from John W. Nicholson; terms 1..75 from Jens Kruse "
+             "Andersen; further terms coming from Thomas R. Nicely site"),
+        ]
+        for link, n_pub, want in cases:
+            aid = re.search(r"/(A\d{6})/", link).group(1)
+            with patch.object(audit, "entry", return_value={"link": [link]}):
+                self.assertEqual(audit.prior_credit(aid, n_pub, False), want)
         with patch.object(audit, "entry", return_value={"link": []}):
             self.assertEqual(audit.prior_credit("A058867", 30, False),
                              "terms 1..30 as previously published")
@@ -137,8 +150,9 @@ class ExtensionTests(unittest.TestCase):
         # OEIS rewrites the b-file link on upload, crediting only the
         # uploader; the draft's edit puts the earlier contributors back.
         link = next(e for e in d["edits"] if e["action"] == "credit_bfile_link")
-        self.assertIn("n = 1..61", link["text"])
-        self.assertIn("terms 1..56 from Dmitry Petukhov", link["text"])
+        self.assertTrue(link["text"].startswith("Mike Koss, <a "))
+        self.assertTrue(link["text"].endswith(
+            "for n = 1..61</a> (terms 1..56 from Dmitry Petukhov)"))
         self.assertTrue(d["uploads"][0]["published"])
         self.assertIn("Terms 1..56 from Dmitry Petukhov", files["b023186.txt"])
         body = [l for l in files["b023186.txt"].splitlines()
