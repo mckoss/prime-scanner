@@ -400,7 +400,7 @@ def shard_dir(out, i):
     return os.path.join(out, "shards", f"{i:03d}")
 
 
-# Measured scan rate (log10 x -> numbers/sec per worker) on an M1 Pro.
+# Measured scan rate (log10 x -> numbers/sec per worker) on an M1 Max.
 #
 # These are what ONE worker achieves while EIGHT are running, not what a
 # worker reaches alone, so every consumer here multiplies by jobs and none
