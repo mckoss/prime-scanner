@@ -1436,7 +1436,7 @@ def generate_files(families, results, cov, index, check):
                     "Prior published triples: " + oeis_sources.BALANCED_URL,
                     "Table credited to Jerry M. Lagrou and earlier contributors;",
                     "these triples were independently rederived by this scan."] + credits)
-            built[("a", fam)] = (name, sum(1 for r in rows if r[5]))
+            built[("a", fam)] = (name, len(rows))
 
     # A096265: terms 56..68 are the same records A031133/A031134 publish, so
     # the b-file is short against its own family rather than against the scan.

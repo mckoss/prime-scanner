@@ -147,7 +147,7 @@ AFILE = {
                  ("p", "the lonely prime", "A023186", lambda r: r[1]),
                  ("d", "min(p-pp, np-p), the record", "A023187",
                   lambda r: r[2]),
-                 ("pp", "previous prime", "", lambda r: r[5]),
+                 ("pp", "previous prime", "", lambda r: r[5] or None),
                  ("np", "next prime", "", lambda r: r[6])],
     },
     "aloof": {
@@ -155,8 +155,9 @@ AFILE = {
         "title": "aloof prime records with bounding primes",
         "cols": [("n", "index", "", lambda r: r[0]),
                  ("p", "the aloof prime", "A096265", lambda r: r[1]),
-                 ("span", "np - pp, the record", "A031132", lambda r: r[2]),
-                 ("pp", "previous prime", "A031133", lambda r: r[5]),
+                 ("span", "np - pp, the record", "A031132",
+                  lambda r: r[2] if r[5] else None),
+                 ("pp", "previous prime", "A031133", lambda r: r[5] or None),
                  ("np", "next prime", "A031134", lambda r: r[6])],
     },
     "equidistant": {
@@ -166,7 +167,7 @@ AFILE = {
                  ("p", "the balanced prime", "A058867", lambda r: r[1]),
                  ("d", "p - pp = np - p, the record", "A058868",
                   lambda r: r[2]),
-                 ("pp", "previous prime", "", lambda r: r[5]),
+                 ("pp", "previous prime", "", lambda r: r[5] or None),
                  ("np", "next prime", "", lambda r: r[6])],
     },
     "pairwise": {
@@ -177,9 +178,9 @@ AFILE = {
         "cols": [("n", "index", "", lambda r: r[0]),
                  ("p", "the pairwise lonely prime", "A087770",
                   lambda r: r[1]),
-                 ("gb", "p - pp", "", lambda r: r[3]),
+                 ("gb", "p - pp", "", lambda r: r[3] if r[5] else None),
                  ("ga", "np - p", "", lambda r: r[4]),
-                 ("pp", "previous prime", "", lambda r: r[5]),
+                 ("pp", "previous prime", "", lambda r: r[5] or None),
                  ("np", "next prime", "", lambda r: r[6])],
     },
 }
@@ -188,13 +189,16 @@ AFILE = {
 def afile(fam, rows, byline, bound, checked):
     spec = AFILE[fam]
     cols = spec["cols"]
-    # A record with no lower neighbour (p = 2) cannot state its span or its
-    # lower gap, so it is left out rather than published with a zero.
-    rows = [r for r in rows if r[5]]
+    # p = 2 is a term but has no previous prime, so the cells that need one
+    # -- pp, and a span or lower gap measured from it -- read "-" rather than
+    # dropping the row, which keeps the a-file aligned with the b-file.
     key = [f"{c[0]:<5}{c[1]}" + (f" ({c[2]})" if c[2] else "") for c in cols]
+    body = [["-" if (v := c[3](r)) is None else str(v) for c in cols]
+            for r in rows]
+    if any("-" in b for b in body):
+        key.append("-    none: p = 2 has no previous prime")
     head = [f"a{spec['aid'][1:]}.txt -- {spec['title']}", ""] + key + [""]
     head += attribution_lines(byline, bound, checked) + [""]
-    body = [[str(c[3](r)) for c in cols] for r in rows]
     w = [max(len(c[0]), max((len(b[i]) for b in body), default=0))
          for i, c in enumerate(cols)]
     out = header(head)

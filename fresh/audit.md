@@ -243,7 +243,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
       Update the existing a-file to 85 rows; its link text is unchanged.
    4. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file to 85 terms; add cross-references to A107578.
-   5. A023186  b-file 61 terms, bound comment, a-file 60 rows, Xref +A087770, Xref +A096265
+   5. A023186  b-file 61 terms, bound comment, a-file 61 rows, Xref +A087770, Xref +A096265
       Extend the b-file to 61 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A087770, A096265.
    6. A031132  Xref +A096265
       Add the reverse cross-reference.
@@ -253,9 +253,9 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
       Add a search-bound comment: no further term below 2.6*10^16.
    9. A058867  b-file 34 terms, bound comment, a-file 34 rows
       Extend the b-file to 34 terms; credit the prior A052187 table; add a search-bound comment; add an a-file with the bounding primes.
-  10. A087770  b-file 41 terms, bound comment, a-file 40 rows, Xref +A096265
+  10. A087770  b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265
       Extend the b-file to 41 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A096265.
-  11. A096265  b-file 72 terms, bound comment, a-file 71 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
+  11. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
       Extend the b-file to 72 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A031133, A031134, A122412, A122413.
   12. A107578  b-file 85 terms
       Extend the b-file to 85 terms.

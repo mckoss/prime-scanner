@@ -146,7 +146,7 @@ class ExtensionTests(unittest.TestCase):
         d = drafts[0]
         self.assertFalse(any(e["field"] == "Data" for e in d["edits"]))
         self.assertEqual([(u["kind"], u["rows"]) for u in d["uploads"]],
-                         [("b-file", 61), ("a-file", 60)])
+                         [("b-file", 61), ("a-file", 61)])
         # OEIS rewrites the b-file link on upload, crediting only the
         # uploader; the draft's edit puts the earlier contributors back.
         link = next(e for e in d["edits"] if e["action"] == "credit_bfile_link")
