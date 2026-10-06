@@ -448,18 +448,6 @@ FILL_JS = r"""
     return t + ', ' + terms.join(', ');
   }
 
-  function replaceLine(cur, needle, text) {
-    var lines = (cur || '').split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      if (lines[i].indexOf(needle) >= 0) {
-        if (lines[i].trim() === text.trim()) return null;
-        lines[i] = text;
-        return lines.join('\n');
-      }
-    }
-    return (cur && cur.trim() ? cur.trim() + '\n' : '') + text;
-  }
-
   function addLine(cur, text) {
     var probe = text.replace(/\s+/g, ' ').slice(0, 45);
     if ((cur || '').replace(/\s+/g, ' ').indexOf(probe) >= 0) return null;
@@ -478,8 +466,6 @@ FILL_JS = r"""
         v = addXrefs(cur, e.add);
       else if (e.action === 'append')
         v = appendData(cur, e.after_n_term, e.terms);
-      else if (e.action === 'replace_bfile_link')
-        v = replaceLine(cur, e.needle, e.text);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
       return v === null ? { done: true } : { val: v };
@@ -497,7 +483,20 @@ FILL_JS = r"""
       if (inp.files && inp.files.length && inp.files[0].name === name) return k;
     return -1;
   }
+  // A b-file an earlier save of this draft already uploaded: OEIS points the
+  // b-file link at the stored copy, renamed b<nnnnnn>_<k>.txt when the name
+  // is taken. Only a link the published entry did not have counts.
+  function uploadedAs(u) {
+    if (u.kind !== 'b-file') return null;
+    var stem = u.name.replace(/\.txt$/, ''), re = new RegExp(
+      '/' + SEQ + '/(' + stem + '(_\\d+)?\\.txt)', 'g'), m;
+    var cur = read('Link') || '';
+    while ((m = re.exec(cur)))
+      if (m[2] || !u.published) return m[1];
+    return null;
+  }
   function attach(u) {
+    if (uploadedAs(u)) return { ok: true, uploaded: uploadedAs(u) };
     var k = holder(u.name);
     if (k >= 0) return { ok: true, slot: k };
     for (k = 0; box(k) && box(k).files && box(k).files.length; k++) {}
@@ -537,7 +536,8 @@ FILL_JS = r"""
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
            uploads: draft ? (draft.uploads || []).map(function (u) {
-             return { name: u.name, slot: holder(u.name) }; }) : [],
+             return { name: u.name, slot: holder(u.name),
+                      uploaded: uploadedAs(u) }; }) : [],
            saved: /\/draft\//.test(location.pathname) });
   }
 
@@ -724,10 +724,15 @@ function renderUploads(live){
   if(!ups.length){ document.getElementById('note').textContent=''; return; }
   out += '<ol class="steps"><li>Attach '+(ups.length>1?'each file':'the file')
        + ' below (Fill all attaches '+(ups.length>1?'them':'it')+' too).</li>'
-       + '<li>Check the form, then Save Changes.</li></ol>';
+       + '<li>Check the form, then Save Changes.</li>'
+       + (ups.length>1 ? '<li>The form takes one file per save: reopen the '
+         + 'draft and attach the next.</li>' : '')
+       + '</ol>';
   ups.forEach(function(u,i){
-    var at = (live[i]||{}).slot, st = at>=0
-      ? '<span class="st done">✓ in upload box '+(at+1)+'</span>'
+    var at = (live[i]||{}).slot, up = (live[i]||{}).uploaded;
+    if(up) at = 0;
+    var st = up ? '<span class="st done">✓ uploaded as '+esc(up)+'</span>'
+      : at>=0 ? '<span class="st done">✓ in upload box '+(at+1)+'</span>'
       : '<span class="st" style="color:#aaa">not attached</span>';
     out += '<div class="up"><b>'+(i+1)+'. '+esc(u.kind)+'</b> '
          + '<span class="code">'+esc(u.name)+'</span> '+st
@@ -838,13 +843,15 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
         """What the file is for, in the words of the edit form."""
         name = os.path.basename(u["path"])
         if u["kind"] == "b-file":
-            return (f"The b-file: {u['rows']} terms. Its upload box is ticked "
-                    f"as a b-file, and the %H line linking {name} is "
-                    f"rewritten to match.")
+            return (f"The b-file: {u['rows']} terms, uploaded with the b-file "
+                    f"box ticked. OEIS then rewrites the b-file %H line "
+                    f"itself; after saving, check it reads n = 1..{u['rows']}.")
         linked = any(name in (e.get("text") or "") for e in d["edits"])
         return (f"The a-file: {u['rows']} rows, each record with its "
                 f"bounding primes and gaps. "
-                + ("A new %H line links it." if linked else
+                + (f"A new %H line links it as {name}; if OEIS stores it "
+                   f"under another name, such as {name[:-4]}_1.txt, make the "
+                   f"link match." if linked else
                    "Replaces the file the existing %H line already links."))
 
     payload = {
@@ -857,6 +864,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
             "uploads": [{"kind": u["kind"],
                          "name": os.path.basename(u["path"]),
                          "slot": i, "rows": u["rows"],
+                         "published": bool(u.get("published")),
                          "purpose": purpose(u, d),
                          "desc": u.get("desc", ""),
                          "content": files[os.path.basename(u["path"])]}
