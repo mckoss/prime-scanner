@@ -80,9 +80,9 @@ bench: $(BIN) $(REF)
 
 # Regenerate oeis/submit/ -- the edit script, the b-files and a-files to
 # upload, and the browser tooling that fills the OEIS edit form. The report
-# is kept beside the run it audits, in fresh/audit.txt.
+# is kept beside the run it audits, in fresh/audit.md.
 audit:
-	set -o pipefail; python3 -u oeis_audit.py --results fresh | tee fresh/audit.txt
+	python3 -u oeis_audit.py --results fresh --markdown fresh/audit.md
 	python3 oeis_readme.py
 
 # Refresh just the scan-dependent parts of oeis/README.md from local files.

@@ -3,6 +3,7 @@
 import contextlib
 import io
 import os
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -86,6 +87,36 @@ class PublishedSourcesTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             audit.published_sources_report(families, "fresh")
         self.assertIn("a(31) = A052187(72) + 426", output.getvalue())
+
+
+class MarkdownTests(unittest.TestCase):
+    def test_report_becomes_headings_prose_and_fenced_tables(self):
+        text = "\n".join([
+            "", "COVERAGE  --  where terms are", "=============================",
+            "", "A family is one set", "of records.", "",
+            "gap -- maximal prime gaps", "-------------------------",
+            "  sequence   DATA", "  A002386      31", "! A005669      36",
+            "-------------------------", "  deepest member: 85 terms.", "",
+            "  wrote 13 files", ""])
+        self.assertEqual(audit.to_markdown(text).split("\n")[4:], [
+            "## COVERAGE  --  where terms are", "",
+            "A family is one set", "of records.", "",
+            "### gap -- maximal prime gaps", "",
+            "```", "  sequence   DATA", "  A002386      31", "! A005669      36",
+            "-------------------------", "  deepest member: 85 terms.", "```", "",
+            "```", "  wrote 13 files", "```", ""])
+
+    def test_markdown_option_writes_what_was_printed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "audit.md")
+            with patch.object(sys, "argv", ["oeis_audit.py", "--markdown", path]), \
+                 patch.object(audit, "run_audit",
+                              side_effect=lambda args: print("HEAD\n====\n\n  row") or 0), \
+                 contextlib.redirect_stdout(io.StringIO()) as shown:
+                self.assertEqual(audit.main(), 0)
+            self.assertEqual(shown.getvalue(), "HEAD\n====\n\n  row\n")
+            with open(path) as f:
+                self.assertIn("## HEAD\n\n```\n  row\n```\n", f.read())
 
 
 if __name__ == "__main__":
