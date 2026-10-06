@@ -1,13 +1,16 @@
 # Search results — from scratch, in parallel
 
-Live output of `pgaps.py`, the parallel driver, run open-ended across 8 workers:
+Live output of `pgaps.py`, the parallel driver, run open-ended on every core:
 
 ```
-python3 pgaps.py --jobs 8 --out fresh
+python3 pgaps.py --all-cores --out fresh     # or: make pgaps
 ```
+
+It ran on 8 workers on an M1 Max to 2.17e15, then on 30 workers on a Mac
+Studio (M5 Ultra) to the current frontier of 2.61e16.
 
 Unlike [`results/`](../results/README.md), this search was **not seeded**. It
-started at 0 with every threshold at zero and re-derived all four sequences
+started at 0 with every threshold at zero and re-derived every sequence
 from the first term, so `gap.txt` begins at p=2 rather than at a published
 record. That makes the whole file a check on the scanner rather than just its
 tail: a seeded run can only be wrong about new terms, an unseeded one has to
@@ -57,15 +60,16 @@ prime is a lonely record by definition, so the filter cannot miss one —
 `lonely.txt` already holds every term there can be below the frontier, which
 is why the workers collect nothing for it and it needs no threshold.
 
-Because three sequences are in play at once, terms are written `gap(n)`,
-`lonely(n)` and `aloof(n)` rather than `a(n)` — the nth term of A002386,
-A023186 and A096265 respectively.
+Because several sequences are in play at once, terms are written `gap(n)`,
+`lonely(n)`, `aloof(n)`, `equidistant(n)` and `pairwise(n)` rather than
+`a(n)` — the nth term of A002386, A023186, A096265, A058867 and A087770
+respectively.
 
 ## The frontier, and why it is not a position
 
 A single-threaded run resumes from the last line of `progress.txt`, because
 everything below that point has been visited. That is not true of a parallel
-run: eight workers advance through eight disjoint shards at once, so at any
+run: every worker advances through its own disjoint shard at once, so at any
 instant the covered region is full of holes. Merging across a hole would
 promote a later, smaller value to "record" when the real one sits in the gap.
 
@@ -180,11 +184,23 @@ published b-files, plus a deterministic Miller-Rabin re-test of each record,
 independent of the sieve. Every published term below the frontier must appear
 at the same index, with nothing missing and nothing extra.
 
-At the 2026-09-14 checkpoint (frontier 2,075,805,595,153,846) every family
-matches: gap 64 of 64, lonely 56 of 56, aloof 68 of 68 against the
-A031133/4/2 family, and equidistant 30 of 30. There are no new terms. What
-that establishes for OEIS, and what it cost, is summarised in
-[`../oeis/README.md`](../oeis/README.md).
+At the 2026-10-06 checkpoint (frontier 26,099,160,246,699,733) every
+published term below the frontier matches: gap 64 of 64, lonely 56 of 56,
+aloof 68 of 68 against the A031133/4/2 family, equidistant 30 of 30 and
+pairwise 29 of 29. Every record re-tests prime. Past the published data the
+run has found new terms:
+
+| sequence | published to | new terms | latest |
+|----------|--------------|-----------|--------|
+| lonely (A023186) | 9.41e14 | 5 | lonely(61) = 23,771,684,406,473,771 |
+| aloof (A031133/4/2) | 1.69e15 | 4 | aloof(72) = 16,020,873,778,857,163 |
+| equidistant (A058867) | 1.88e14 | 4 | equidistant(34) = 4,685,407,635,944,059 |
+| pairwise (A087770) | 9.16e12 | 12 | pairwise(41) = 23,771,684,406,473,771 |
+
+Gap has nothing new to find: the confirmed A002386 data runs to 1.014e20, and
+the next record, gap(65), is at 4.38e16. What all this establishes for OEIS is
+summarised in [`../oeis/README.md`](../oeis/README.md), and what it cost in
+[`../README.md`](../README.md).
 
 Aloof records are published twice: as A096265, whose b-file stops at 55, and
 as the A031133/A031134/A031132 family, indexed one lower, which reaches
@@ -197,7 +213,7 @@ Not a precision question. The ceiling is a word size, not a limit of the
 method: every prime, window bound and neighbour is stored in an
 `unsigned long`, 64-bit here, so nothing above
 ULONG_MAX = 18,446,744,073,709,551,615 ≈ 1.84e19 is representable. There is no
-`__int128` anywhere in `sieve.c`. The frontier is roughly 48,000x below it.
+`__int128` anywhere in `sieve.c`. The frontier is roughly 700x below it.
 
 That is a deliberate trade. The inner loop is bit-index arithmetic —
 `s / BITS_PER_WORD`, `s % BITS_PER_WORD`, `p * wheel_scaled[t]` — all single
@@ -234,29 +250,26 @@ have published data to check against.
 Memory is not the constraint either. Each worker holds the sieving primes up
 to sqrt(hi), 8 bytes each:
 
-| hi | sieving primes | per worker | 8 workers |
-|----|----------------|-----------|-----------|
-| 1e15 | 1.8e6 | 14 MB | 0.1 GB |
-| 1e16 | 5.4e6 | 41 MB | 0.3 GB |
-| 1e18 | 4.8e7 | 368 MB | 2.9 GB |
-| 2^64 | 1.9e8 | 1.5 GB | 11.5 GB |
+| hi | sieving primes | per worker | 8 workers | 30 workers |
+|----|----------------|-----------|-----------|------------|
+| 1e15 | 1.8e6 | 14 MB | 0.1 GB | 0.4 GB |
+| 1e16 | 5.4e6 | 41 MB | 0.3 GB | 1.2 GB |
+| 1e18 | 4.8e7 | 368 MB | 2.9 GB | 11 GB |
+| 2^64 | 1.9e8 | 1.5 GB | 11.5 GB | 45 GB |
 
 The binding constraint is time. Integrating the measured rate curve from the
-5.700e14 frontier, at the 8-worker throughput actually observed here:
+2.61e16 frontier:
 
-| target | added time |
-|--------|-----------|
-| 9.41e14 — last published A023186 term | +13 hours |
-| 1.19e15 — gap(62) | +22 hours |
-| 1.69e15 — gap(64) | +1.7 days |
-| 1e16 | +18 days |
-| 4.38e16 — gap(65) | +120 days |
-| 1e17 | +0.96 years |
-| 1e18 | +19 years |
-| 2^64 | +865 years |
+| target | M1 Max core-hours | 8 workers, M1 Max | 30 workers, Mac Studio |
+|--------|------------------:|-------------------|------------------------|
+| 4.38e16 — gap(65) | 11,200 | +58 days | +12 days |
+| 1e17 | 55,000 | +0.8 years | +58 days |
+| 1e18 | 1.3 million | +19 years | +3.8 years |
+| 2^64 | 61 million | +865 years | +174 years |
 
-From `pgaps.py`'s `RATE_POINTS`, re-measured 2026-09-10 against the current
-binary. An earlier version of this table ran 3-4x longer, for two compounding
+From `pgaps.py`'s `RATE_POINTS`, measured on the M1 Max 2026-09-10 against the
+current binary. The Mac Studio column uses its observed throughput, about 40
+M1 Max workers' worth from 30 workers. An earlier version of this table ran 3-4x longer, for two compounding
 reasons: the segment loop has since gained CTZ prime extraction and
 per-prime cursors, together worth 1.98x at this frontier, and `est_seconds()`
 was applying an 8-worker efficiency factor to rates that already had
