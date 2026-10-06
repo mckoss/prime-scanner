@@ -124,10 +124,15 @@ function renderUploads(live){
   if(!ups.length){ document.getElementById('note').textContent=''; return; }
   out += '<ol class="steps"><li>Attach '+(ups.length>1?'each file':'the file')
        + ' below (Fill all attaches '+(ups.length>1?'them':'it')+' too).</li>'
-       + '<li>Check the form, then Save Changes.</li></ol>';
+       + '<li>Check the form, then Save Changes.</li>'
+       + (ups.length>1 ? '<li>The form takes one file per save: reopen the '
+         + 'draft and attach the next.</li>' : '')
+       + '</ol>';
   ups.forEach(function(u,i){
-    var at = (live[i]||{}).slot, st = at>=0
-      ? '<span class="st done">✓ in upload box '+(at+1)+'</span>'
+    var at = (live[i]||{}).slot, up = (live[i]||{}).uploaded;
+    if(up) at = 0;
+    var st = up ? '<span class="st done">✓ uploaded as '+esc(up)+'</span>'
+      : at>=0 ? '<span class="st done">✓ in upload box '+(at+1)+'</span>'
       : '<span class="st" style="color:#aaa">not attached</span>';
     out += '<div class="up"><b>'+(i+1)+'. '+esc(u.kind)+'</b> '
          + '<span class="code">'+esc(u.name)+'</span> '+st

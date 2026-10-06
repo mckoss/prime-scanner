@@ -172,27 +172,6 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
 }
 
 // --- Link: replace only the b-file line ---------------------------------
-{
-  const cur = 'Hugo Pfoertner, <a href="/A096265/b096265.txt">Table of n, ' +
-              'a(n) for n = 1..55</a>, terms 1..50 from Ken Takusagawa.\n' +
-              'Eric Weisstein, <a href="http://example.com">Aloof Prime</a>';
-  const p = makePage({ Link: cur }, { seq: 'A096265' });
-  p.run(SRC);
-  const text = 'Mike Koss, <a href="/A096265/b096265.txt">Table of n, a(n) ' +
-               'for n = 1..68</a>, terms 1..50 from Ken Takusagawa.';
-  p.post({ type: 'READY', draft: { aid: 'A096265', edits: [
-    { field: 'Link', action: 'replace_bfile_link',
-      needle: 'b096265.txt', text: text }] } });
-  p.post({ type: 'FILL', index: 0 });
-  const lines = p.field('Link').split('\n');
-  eq(lines[0], text, 'b-file link line replaced');
-  eq(lines[1], 'Eric Weisstein, <a href="http://example.com">Aloof Prime</a>',
-     'other link lines untouched');
-  ok(/<a href="\/A096265\/b096265\.txt">/.test(p.els.edit_Link.innerHTML
-       .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')),
-     'angle brackets survive the innerHTML round-trip');
-}
-
 // --- Comment: add, and do not re-add ------------------------------------
 {
   const p = makePage({ Comment: 'Erdos and Suranyi call these reclusive ' +
@@ -226,7 +205,7 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   eq(p.els.edit_upload_0.textContent, 'Table of n, a(n) for n = 1..68',
      'upload description filled');
   const st = p.sent.filter(m => m.type === 'STATE').pop();
-  eq(JSON.stringify(st.uploads), '[{"name":"b096265.txt","slot":0}]',
+  eq(JSON.stringify(st.uploads), '[{"name":"b096265.txt","slot":0,"uploaded":null}]',
      'state reports which box holds the file');
 }
 
@@ -259,6 +238,34 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   ok(/Save Changes, reopen the draft, and attach a023186.txt/.test(att.errs[1]),
      'a full page names the file still to attach');
   ok(!(0 in att.errs), 'the first file still attached');
+}
+
+// A b-file an earlier save uploaded: OEIS has pointed the link line at the
+// stored copy, so the panel says so and Fill all does not upload it again.
+{
+  const files = [
+    { kind: 'b-file', name: 'b023186.txt', slot: 0, content: '1 2\n',
+      published: true },
+    { kind: 'a-file', name: 'a023186.txt', slot: 1, content: '# a\n' }];
+  const saved = 'Dmitry Petukhov, Mike Koss, <a href="/A023186/b023186_3.txt">' +
+                'Table of n, a(n) for n = 1..61</a>';
+  const p = makePage({ Link: saved }, { seq: 'A023186', upload: 1 });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: files } });
+  p.post({ type: 'FILL_ALL' });
+  eq(p.uploads.upload_file0.files[0].name, 'a023186.txt',
+     'the one box goes to the a-file, not the uploaded b-file');
+  const st = p.sent.filter(m => m.type === 'STATE').pop();
+  eq(st.uploads[0].uploaded, 'b023186_3.txt', 'b-file reported as uploaded');
+  eq(st.uploads[1].uploaded, null, 'a-file not mistaken for uploaded');
+
+  // The published link to the old b-file is not an upload.
+  const q = makePage({ Link: saved.replace('_3', '').replace('61', '56') },
+                     { seq: 'A023186', upload: 1 });
+  q.run(SRC);
+  q.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: files } });
+  const st2 = q.sent.filter(m => m.type === 'STATE').pop();
+  eq(st2.uploads[0].uploaded, null, 'published b-file link is not an upload');
 }
 
 // --- navigation goes through the shim, never the iframe ------------------
@@ -309,9 +316,8 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
         ok(typeof e.after_n_term === 'number',
            `${d.aid} Data has a numeric anchor term`);
       }
-      if (e.action === 'replace_bfile_link')
-        ok(typeof e.needle === 'string' && e.needle.endsWith('.txt'),
-           `${d.aid} b-file link edit names the file to replace`);
+      ok(e.action !== 'replace_bfile_link',
+         `${d.aid} leaves the b-file link line to OEIS`);
     }
     ok(Array.isArray(d.uploads), `${d.aid} uploads is a list`);
     for (const u of d.uploads) {

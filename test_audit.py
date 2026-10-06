@@ -134,9 +134,11 @@ class ExtensionTests(unittest.TestCase):
         self.assertFalse(any(e["field"] == "Data" for e in d["edits"]))
         self.assertEqual([(u["kind"], u["rows"]) for u in d["uploads"]],
                          [("b-file", 61), ("a-file", 60)])
-        link = next(e for e in d["edits"] if e["action"] == "replace_bfile_link")
-        self.assertIn("n = 1..61", link["text"])
-        self.assertIn("terms 1..56 from Dmitry Petukhov", link["text"])
+        # OEIS rewrites the b-file link itself on upload; the draft does not.
+        self.assertFalse(any(e["field"] == "Link" and "b023186" in e.get("text", "")
+                             for e in d["edits"]))
+        self.assertTrue(d["uploads"][0]["published"])
+        self.assertIn("Terms 1..56 from Dmitry Petukhov", files["b023186.txt"])
         body = [l for l in files["b023186.txt"].splitlines()
                 if not l.startswith("#")]
         self.assertEqual(body[-1], f"61 {rows[60][1]}")

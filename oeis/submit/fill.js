@@ -46,18 +46,6 @@
     return t + ', ' + terms.join(', ');
   }
 
-  function replaceLine(cur, needle, text) {
-    var lines = (cur || '').split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      if (lines[i].indexOf(needle) >= 0) {
-        if (lines[i].trim() === text.trim()) return null;
-        lines[i] = text;
-        return lines.join('\n');
-      }
-    }
-    return (cur && cur.trim() ? cur.trim() + '\n' : '') + text;
-  }
-
   function addLine(cur, text) {
     var probe = text.replace(/\s+/g, ' ').slice(0, 45);
     if ((cur || '').replace(/\s+/g, ' ').indexOf(probe) >= 0) return null;
@@ -76,8 +64,6 @@
         v = addXrefs(cur, e.add);
       else if (e.action === 'append')
         v = appendData(cur, e.after_n_term, e.terms);
-      else if (e.action === 'replace_bfile_link')
-        v = replaceLine(cur, e.needle, e.text);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
       return v === null ? { done: true } : { val: v };
@@ -95,7 +81,20 @@
       if (inp.files && inp.files.length && inp.files[0].name === name) return k;
     return -1;
   }
+  // A b-file an earlier save of this draft already uploaded: OEIS points the
+  // b-file link at the stored copy, renamed b<nnnnnn>_<k>.txt when the name
+  // is taken. Only a link the published entry did not have counts.
+  function uploadedAs(u) {
+    if (u.kind !== 'b-file') return null;
+    var stem = u.name.replace(/\.txt$/, ''), re = new RegExp(
+      '/' + SEQ + '/(' + stem + '(_\\d+)?\\.txt)', 'g'), m;
+    var cur = read('Link') || '';
+    while ((m = re.exec(cur)))
+      if (m[2] || !u.published) return m[1];
+    return null;
+  }
   function attach(u) {
+    if (uploadedAs(u)) return { ok: true, uploaded: uploadedAs(u) };
     var k = holder(u.name);
     if (k >= 0) return { ok: true, slot: k };
     for (k = 0; box(k) && box(k).files && box(k).files.length; k++) {}
@@ -135,7 +134,8 @@
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
            uploads: draft ? (draft.uploads || []).map(function (u) {
-             return { name: u.name, slot: holder(u.name) }; }) : [],
+             return { name: u.name, slot: holder(u.name),
+                      uploaded: uploadedAs(u) }; }) : [],
            saved: /\/draft\//.test(location.pathname) });
   }
 
