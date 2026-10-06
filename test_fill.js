@@ -275,7 +275,7 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
                    content: '1 2\n', published: true }];
   const edit = { field: 'Link', action: 'credit_bfile_link',
     text: 'Mike Koss, <a href="/A023186/b023186_k.txt">Table of n, a(n) for ' +
-          'n = 1..61</a>, terms 1..56 from Dmitry Petukhov.' };
+          'n = 1..61</a> (terms 1..56 from Dmitry Petukhov)' };
   const before = 'Dmitry Petukhov, <a href="/A023186/b023186.txt">Table of n, ' +
                  'a(n) for n = 1..56</a>\nOther, <a href="/x">x</a>';
   const p = makePage({ Link: before }, { seq: 'A023186', upload: 1 });
@@ -294,7 +294,7 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   q.post({ type: 'FILL', index: 0 });
   eq(q.field('Link').split('\n')[0],
      'Mike Koss, <a href="/A023186/b023186_3.txt">Table of n, a(n) for ' +
-     'n = 1..61</a>, terms 1..56 from Dmitry Petukhov.',
+     'n = 1..61</a> (terms 1..56 from Dmitry Petukhov)',
      'credit restored, href kept as OEIS stored it');
   eq(q.field('Link').split('\n')[1], 'Other, <a href="/x">x</a>',
      'other link lines untouched');
