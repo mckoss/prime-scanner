@@ -44,12 +44,12 @@ function makePage(fields, opts) {
       get textContent() { return this._t; } };
   }
   const uploads = {};
-  if (opts.upload) {
-    uploads['upload_file0'] = { name: 'upload_file0', files: null,
-                                dispatchEvent() { this.dispatched = true; } };
-    els['upload_bfile0'] = { checked: false,
-                             click() { this.checked = true; } };
-    els['edit_upload_0'] = { _t: '',
+  for (let k = 0; k < (opts.upload === true ? 1 : opts.upload || 0); k++) {
+    uploads['upload_file' + k] = { name: 'upload_file' + k, files: null,
+                                   dispatchEvent() { this.dispatched = true; } };
+    els['upload_bfile' + k] = { checked: false,
+                                click() { this.checked = true; } };
+    els['edit_upload_' + k] = { _t: '',
       get innerHTML() { return esc(this._t); },
       set textContent(v) { this._t = v; }, get textContent() { return this._t; } };
   }
@@ -215,16 +215,50 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
 {
   const p = makePage({ Link: '' }, { seq: 'A096265', upload: true });
   p.run(SRC);
-  p.post({ type: 'READY', draft: { aid: 'A096265', edits: [], upload: {
+  p.post({ type: 'READY', draft: { aid: 'A096265', edits: [], uploads: [{
     kind: 'b-file', name: 'b096265.txt', slot: 0,
-    content: '1 2\n2 3\n', desc: 'Table of n, a(n) for n = 1..68' } } });
-  p.post({ type: 'ATTACH' });
+    content: '1 2\n2 3\n', desc: 'Table of n, a(n) for n = 1..68' }] } });
+  p.post({ type: 'ATTACH', index: 0 });
   const inp = p.uploads.upload_file0;
   ok(inp.files && inp.files[0].name === 'b096265.txt', 'file attached to slot 0');
   ok(inp.dispatched, 'change event dispatched');
   ok(p.els.upload_bfile0.checked, 'b-file checkbox ticked');
   eq(p.els.edit_upload_0.textContent, 'Table of n, a(n) for n = 1..68',
      'upload description filled');
+  const st = p.sent.filter(m => m.type === 'STATE').pop();
+  eq(JSON.stringify(st.uploads), '[{"name":"b096265.txt","slot":0}]',
+     'state reports which box holds the file');
+}
+
+// A b-file and an a-file: each takes its own box, the a-file's box is not
+// marked as a b-file, and attaching again does not move or duplicate either.
+{
+  const files = [
+    { kind: 'b-file', name: 'b023186.txt', slot: 0, content: '1 2\n' },
+    { kind: 'a-file', name: 'a023186.txt', slot: 1, content: '# a\n' }];
+  const p = makePage({ Link: '' }, { seq: 'A023186', upload: 2 });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: files } });
+  p.post({ type: 'FILL_ALL' });
+  eq(p.uploads.upload_file0.files[0].name, 'b023186.txt', 'b-file in box 1');
+  eq(p.uploads.upload_file1.files[0].name, 'a023186.txt', 'a-file in box 2');
+  ok(p.els.upload_bfile0.checked && !p.els.upload_bfile1.checked,
+     'only the b-file box is ticked as a b-file');
+  p.post({ type: 'ATTACH', index: 1 });
+  eq(p.uploads.upload_file1.files[0].name, 'a023186.txt',
+     're-attaching keeps the file in its box');
+  const st = p.sent.filter(m => m.type === 'STATE').pop();
+  eq(JSON.stringify(st.uploads.map(u => u.slot)), '[0,1]', 'both reported');
+
+  // One box only: the second file says what to do instead of failing quietly.
+  const q = makePage({ Link: '' }, { seq: 'A023186', upload: 1 });
+  q.run(SRC);
+  q.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: files } });
+  q.post({ type: 'FILL_ALL' });
+  const att = q.sent.filter(m => m.type === 'ATTACHED').pop();
+  ok(/Save Changes, reopen the draft, and attach a023186.txt/.test(att.errs[1]),
+     'a full page names the file still to attach');
+  ok(!(0 in att.errs), 'the first file still attached');
 }
 
 // --- navigation goes through the shim, never the iframe ------------------
@@ -279,15 +313,20 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
         ok(typeof e.needle === 'string' && e.needle.endsWith('.txt'),
            `${d.aid} b-file link edit names the file to replace`);
     }
-    if (d.upload) {
+    ok(Array.isArray(d.uploads), `${d.aid} uploads is a list`);
+    for (const u of d.uploads) {
       uploads++;
-      ok(typeof d.upload.content === 'string' && d.upload.content.length > 0,
-         `${d.aid} upload carries its file contents`);
-      ok(/^[ -~\n]*$/.test(d.upload.content),
-         `${d.aid} upload is plain ASCII, as the b-file spec requires`);
+      ok(typeof u.content === 'string' && u.content.length > 0,
+         `${d.aid} ${u.name} carries its file contents`);
+      ok(/^[ -~\n]*$/.test(u.content),
+         `${d.aid} ${u.name} is plain ASCII, as the b-file spec requires`);
+      ok(typeof u.purpose === 'string' && u.purpose.length > 0,
+         `${d.aid} ${u.name} says what it is for`);
     }
   }
-  ok(xrefs > 0 && datas > 0 && uploads > 0,
+  // Data appends are rare now -- most DATA sections are already full -- so
+  // only Xref and uploads must appear for the payload to be exercised.
+  ok(xrefs > 0 && uploads > 0,
      `payload exercised: ${xrefs} Xref, ${datas} Data, ${uploads} uploads`);
 }
 

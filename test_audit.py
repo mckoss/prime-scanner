@@ -76,8 +76,12 @@ class PublishedSourcesTests(unittest.TestCase):
             drafts, _, _, files, _, _ = audit.submission(
                 items, families, "fresh", False, (True, []))
         draft = drafts[0]
-        data = next(e for e in draft["edits"] if e["field"] == "Data")
-        self.assertEqual([r[0] for r in data["terms"]], [r[1] for r in rows[30:]])
+        # A058867's DATA is already past the length editors accept, so the
+        # new terms travel in the b-file alone.
+        self.assertFalse(any(e["field"] == "Data" for e in draft["edits"]))
+        body = [l.split() for l in files["b058867.txt"].splitlines()
+                if l and not l.startswith("#")]
+        self.assertEqual([int(v) for _, v in body[30:]], [r[1] for r in rows[30:]])
         extensions = [e["text"] for e in draft["edits"] if e["field"] == "Ext"]
         self.assertIn("A052187(72) + 426", extensions[0])
         self.assertIn("Lagrou", extensions[0])
@@ -87,6 +91,56 @@ class PublishedSourcesTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as output:
             audit.published_sources_report(families, "fresh")
         self.assertIn("a(31) = A052187(72) + 426", output.getvalue())
+
+
+class ExtensionTests(unittest.TestCase):
+    def test_data_append_only_while_data_is_complete_and_short(self):
+        short = {"data": "2,3,5,7"}
+        self.assertTrue(audit.data_append_fits(short, 4, [11, 13]))
+        self.assertFalse(audit.data_append_fits(short, 6, [17]),
+                         "DATA that stops before the b-file cannot be appended to")
+        full = {"data": ",".join(["123456789"] * 25)}  # 249 characters
+        self.assertFalse(audit.data_append_fits(full, 25, [1234567890123]))
+
+    def test_prior_credit_keeps_the_existing_b_file_author(self):
+        link = ('Dmitry Petukhov, <a href="/A023186/b023186.txt">Table of n, '
+                'a(n) for n = 1..56</a> (first 40 terms from Ken Takusagawa)')
+        with patch.object(audit, "entry", return_value={"link": [link]}):
+            self.assertEqual(
+                audit.prior_credit("A023186", 56, False),
+                "terms 1..56 from Dmitry Petukhov "
+                "(first 40 terms from Ken Takusagawa)")
+        with patch.object(audit, "entry", return_value={"link": []}):
+            self.assertEqual(audit.prior_credit("A058867", 30, False),
+                             "terms 1..30 as previously published")
+
+    def test_extension_gets_a_b_file_instead_of_an_oversized_data_append(self):
+        rows = audit.load_rows("fresh", "lonely")[:61]
+        families = {"lonely": {
+            "info": audit.FAMILIES["lonely"], "rows": rows,
+            "seqs": [{"aid": "A023186",
+                      "m": audit.FAMILIES["lonely"]["members"]["A023186"]}]}}
+        items = [audit.item("terms", "terms:lonely", "Extend A023186"),
+                 audit.item("afile", "a-file:lonely", "a-file")]
+        rec = {"data": ",".join(str(r[1]) for r in rows[:38]),
+               "link": ['Dmitry Petukhov, <a href="/A023186/b023186.txt">'
+                        'Table of n, a(n) for n = 1..56</a>']}
+        with patch.object(audit, "bfile_terms_list",
+                          return_value=[r[1] for r in rows[:56]]), \
+             patch.object(audit, "entry", return_value=rec):
+            drafts, _, _, files, _, _ = audit.submission(
+                items, families, "fresh", False, (True, []))
+        d = drafts[0]
+        self.assertFalse(any(e["field"] == "Data" for e in d["edits"]))
+        self.assertEqual([(u["kind"], u["rows"]) for u in d["uploads"]],
+                         [("b-file", 61), ("a-file", 60)])
+        link = next(e for e in d["edits"] if e["action"] == "replace_bfile_link")
+        self.assertIn("n = 1..61", link["text"])
+        self.assertIn("terms 1..56 from Dmitry Petukhov", link["text"])
+        body = [l for l in files["b023186.txt"].splitlines()
+                if not l.startswith("#")]
+        self.assertEqual(body[-1], f"61 {rows[60][1]}")
+        self.assertIn("Terms 57..61 are new.", files["b023186.txt"])
 
 
 class MarkdownTests(unittest.TestCase):

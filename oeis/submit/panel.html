@@ -31,12 +31,17 @@
  button.p{background:#0969da;color:#fff;border-color:#0969da}
  .bar{display:flex;gap:6px;padding:8px 12px}
  .note{color:var(--dim);font-size:11px;padding:0 12px 10px}
+ .up{border:1px solid var(--line);border-radius:4px;padding:7px;margin:6px 0}
+ .up .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
+ .up a{font-size:11px;color:#0969da;margin-left:6px}
+ .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
   <div class="sub" id="sub"></div>
 </header>
 <div id="fields"></div>
+<section id="uploads" hidden><h2>Uploads</h2><div id="uplist"></div></section>
 <div class="bar">
   <button class="p" id="all">Fill all</button>
   <button id="re">Rescan</button>
@@ -101,26 +106,55 @@ function render(msg){
                + '<pre>'+esc((s.next||'').slice(0,400))+'</pre>';
       out += '</section>';
     });
-    if(draft.upload)
-      out += '<section class="f"><b>'+draft.upload.kind+'</b> '
-           + '<span class="code">'+esc(draft.upload.name)+'</span>'
-           + ' <button id="att">Attach</button></section>';
   }
   document.getElementById('fields').innerHTML = out;
   [].forEach.call(document.querySelectorAll('#fields button[data-i]'),
     function(b){ b.onclick=function(){ send({type:'FILL',index:+b.dataset.i}) }});
-  var a=document.getElementById('att');
-  if(a) a.onclick=function(){ send({type:'ATTACH'}) };
+  renderUploads(msg.uploads||[]);
   if(draft) remember(draft.aid, msg.saved ? 'saved' : liveState(states));
   renderList(states);
-  document.getElementById('note').textContent = draft && draft.upload
-    ? 'Attach sets the file from the payload; no file picker needed.'
-    : '';
+}
+
+// One card per file: what it is for, which upload box holds it, and the file
+// itself, so it can be checked or uploaded by hand if Attach cannot.
+var attachErr = {};
+function renderUploads(live){
+  var ups = draft ? (draft.uploads||[]) : [], out = '';
+  document.getElementById('uploads').hidden = !ups.length;
+  if(!ups.length){ document.getElementById('note').textContent=''; return; }
+  out += '<ol class="steps"><li>Attach '+(ups.length>1?'each file':'the file')
+       + ' below (Fill all attaches '+(ups.length>1?'them':'it')+' too).</li>'
+       + '<li>Check the form, then Save Changes.</li></ol>';
+  ups.forEach(function(u,i){
+    var at = (live[i]||{}).slot, st = at>=0
+      ? '<span class="st done">✓ in upload box '+(at+1)+'</span>'
+      : '<span class="st" style="color:#aaa">not attached</span>';
+    out += '<div class="up"><b>'+(i+1)+'. '+esc(u.kind)+'</b> '
+         + '<span class="code">'+esc(u.name)+'</span> '+st
+         + '<div class="why">'+esc(u.purpose||'')+'</div>'
+         + (attachErr[i] ? '<div class="err">'+esc(attachErr[i])+'</div>' : '')
+         + (at>=0 ? '' : '<button data-u="'+i+'">Attach</button>')
+         + '<a href="'+encodeURIComponent(u.name)+'" target="_blank">view</a>'
+         + '<a href="'+encodeURIComponent(u.name)+'" download>download</a>'
+         + '</div>';
+  });
+  document.getElementById('uplist').innerHTML = out;
+  [].forEach.call(document.querySelectorAll('#uplist button[data-u]'),
+    function(b){ b.onclick=function(){ send({type:'ATTACH',index:+b.dataset.u}) }});
+  document.getElementById('note').textContent =
+    'Attach sets the file from the payload; no file picker needed. '
+    + 'If it cannot, download the file and choose it in the form\'s upload box.';
 }
 
 window.addEventListener('message', function(ev){
   if(ev.origin!==OEIS) return;
-  if((ev.data||{}).type==='STATE') render(ev.data);
+  var m = ev.data||{};
+  if(m.type==='STATE') render(m);
+  if(m.type==='ATTACHED'){
+    if(m.index==null) attachErr = {};
+    else delete attachErr[m.index];
+    for(var k in (m.errs||{})) attachErr[k] = m.errs[k];
+  }
 });
 document.getElementById('all').onclick=function(){ send({type:'FILL_ALL'}) };
 document.getElementById('re').onclick =function(){ send({type:'RESCAN'}) };

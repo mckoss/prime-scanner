@@ -1,0 +1,46 @@
+# A058867, 34 terms.
+#
+# Terms 1..30 as previously published.
+# Terms 31..34 are new.
+# Every term independently rederived by an exhaustive scan from 0.
+#
+# Mike Koss. Data as of 2026-10-06, when the scan last advanced.
+# Searched all below 26,099,160,246,699,733: every record up to that
+# bound is present, and there is no further one below it.
+# Independently confirmed by an exhaustive scan; check_oeis.py passes.
+# Source: https://github.com/mckoss/prime-scanner
+# OEIS data CC BY-SA 4.0
+1 5
+2 53
+3 211
+4 16787
+5 69623
+6 247141
+7 3565979
+8 4911311
+9 12012743
+10 23346809
+11 34346287
+12 36598607
+13 51042053
+14 383204683
+15 4470608101
+16 5007182863
+17 5558570491
+18 48287689717
+19 50284155289
+20 178796541817
+21 264860525507
+22 374787490919
+23 1521870804107
+24 2093308790851
+25 4228611064537
+26 6537587646671
+27 17432065861517
+28 22546768250359
+29 26923643849953
+30 187891466722913
+31 2422627449334097
+32 2848704456458411
+33 3955678819752329
+34 4685407635944059
