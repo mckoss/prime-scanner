@@ -160,11 +160,26 @@ with 8 workers, from the measured rate curve:
 | 1e14 | gap(59), lonely(52), aloof(62), equidistant(29) | 2.7 h | 21 |
 | 9.42e14 | every published lonely and equidistant term | 30 h | 243 |
 | 1.70e15 | every published aloof term; gap(64) | 58 h | 467 |
-| 2.07e15 | where [`fresh/`](fresh/README.md) stands | 73 h | 586 |
+| 1e16 | | 19 days | 3,665 |
+| 2.61e16 | where [`fresh/`](fresh/README.md) stands | 62 days | 11,935 |
+| 4.38e16 | gap(65) | 120 days | 23,117 |
 
-Those figures are for the current binary. `fresh/` itself took about 850
-core-hours, since part of it ran before the 2x speedup and A058867 was caught
-up separately; see [`oeis/README.md`](oeis/README.md).
+Those figures are for the current binary. `fresh/` itself took about 10,500
+core-hours on mixed hardware, reconstructed from checkpoint commits and the
+rate curve:
+
+| stage | range | machine | core-hours |
+|-------|-------|---------|-----------:|
+| first four sequences, incl. a pre-speedup start and the A058867 catch-up | 0 → 2.07e15 | M1 Max, 8 workers | ~850 |
+| same, to where the pairwise catch-up began | 2.07e15 → 2.17e15 | M1 Max, 8 workers | ~30 |
+| pairwise catch-up | 0 → 2.17e15 | mostly M1 Max | ~600 |
+| all five sequences, 2026-09-23 → 10-06 | 2.17e15 → 2.61e16 | Mac Studio, 30 workers, ~12.5 days | ~9,000 |
+| **total** | | | **≈ 10,500** |
+
+The Mac Studio run advanced the frontier about 40 times as fast as one M1 Max
+worker, so each of its 30 cores did about 1.3 M1 Max cores' worth of work: the
+rate curve prices that range at 11,300 M1 Max core-hours. The first row is
+broken down in [`oeis/README.md`](oeis/README.md).
 
 ### Output
 
@@ -216,8 +231,9 @@ crossing gap is recorded. Continuing the scan resolves it.
 
 **The ceiling** is 2^64 ≈ 1.84e19, a deliberate choice of word size, because
 128-bit division would slow every scan. Time binds long before that: from
-today's frontier, 1e16 is about 16 days away on 8 cores and gap(65) at 4.38e16
-about four months. Confirmed gap records already reach 1.014e20, past the
+today's frontier of 2.61e16, gap(65) at 4.38e16 is about 11,200 M1 Max
+core-hours away, 12 days on the 30-core Mac Studio, and 1e17 about 55,000,
+two months on it. Confirmed gap records already reach 1.014e20, past the
 ceiling, so there is published data to check against across the whole range,
 though the next checkpoint after gap(64) is gap(65), 26x further out.
 
