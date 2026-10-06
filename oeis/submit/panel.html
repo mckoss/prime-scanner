@@ -32,7 +32,7 @@
  .bar{display:flex;gap:6px;padding:8px 12px}
  .note{color:var(--dim);font-size:11px;padding:0 12px 10px}
  .up{border:1px solid var(--line);border-radius:4px;padding:7px;margin:6px 0}
- .up .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
+ .up .why,.f .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
  .up a{font-size:11px;color:#0969da;margin-left:6px}
  .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
 </style>
@@ -100,6 +100,7 @@ function render(msg){
       out += '<section class="f"><b>'+s.field+'</b> '
            + '<span class="code">'+esc(s.code)+' · '+s.action+'</span>';
       if(s.err) out += '<div class="err">'+esc(s.err)+'</div>';
+      else if(s.wait) out += '<div class="why">Waits: '+esc(s.wait)+'</div>';
       else if(s.done) out += '<span class="st done"> ✓ applied</span>';
       else out += ' <button data-i="'+i+'">Fill</button>'
                + '<pre class="was">'+esc((s.cur||'').slice(0,300))+'</pre>'

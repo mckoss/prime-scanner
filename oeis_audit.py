@@ -1307,7 +1307,8 @@ def run_audit(args):
 # structure through contributions().
 # ---------------------------------------------------------------------------
 
-# Prior contributors to a b-file, named in the header of the extended one.
+# Prior contributors to a b-file, credited in the extended one's header and
+# link line.
 # Dropping them to write our own name over the whole range would take credit
 # for terms other people computed.
 PRIOR = {
@@ -1514,15 +1515,23 @@ def submission(items, families, results, refresh, check):
                                               for l in links)})
         return True
 
-    def add_bfile(d, aid, name, n):
-        """The b-file upload. No link edit: on upload, OEIS rewrites the
-        b-file link line itself -- it points it at the stored file (renamed
-        b<nnnnnn>_<k>.txt while in review), adds the uploader to its authors
-        and keeps the earlier credits -- so a line written here would only
-        point at the old file."""
+    def add_bfile(d, aid, name, n, credit):
+        """The b-file upload, and the credit its link line needs afterwards.
+
+        On upload OEIS rewrites the b-file link line itself, pointing it at
+        the stored copy (b<nnnnnn>_<k>.txt while in review) -- and crediting
+        only the uploader, which drops everyone who computed the earlier
+        terms. The stored name is unknown until then, so the edit carries a
+        placeholder href that fill.js swaps for the name OEIS chose.
+        """
         if not upload(d, "b-file", name, n):
             return
         d["what"].append(f"b-file {n} terms")
+        d["edits"].append(op(
+            "Link", "credit_bfile_link",
+            text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/'
+                 f'{name[:-4]}_k.txt">Table of n, a(n) for n = 1..{n}</a>'
+                 + (f", {credit}." if credit else ".")))
         if not d["summary"]:
             d["summary"] = f"Extend the b-file to {n} terms."
 
@@ -1584,7 +1593,7 @@ def submission(items, families, results, refresh, check):
                     "Independently confirmed by an exhaustive scan; "
                     "check_oeis.py passes." if check[0] else None)
                 built[("b", aid)] = (name, len(f["rows"]))
-            add_bfile(d, aid, *built[("b", aid)])
+            add_bfile(d, aid, *built[("b", aid)], credit)
             prior = (oeis_sources.balanced_matches(new)
                      if fam == "equidistant" else {})
             if prior:
@@ -1644,7 +1653,7 @@ def submission(items, families, results, refresh, check):
             famname, _, s = member_of(families, aid)
             d = draft(aid, s["m"]["role"] if s else aid)
             d["items"].append(iid)
-            add_bfile(d, aid, name, n)
+            add_bfile(d, aid, name, n, PRIOR.get(aid))
 
         elif kind == "a-file":
             # `a-file:<family>` is one we would add; `a-file:<A-number>` is an
@@ -1742,6 +1751,8 @@ def summarise(d):
         elif e["field"] == "Xref":
             bits.append("add cross-references to "
                         + ", ".join(sorted(e["add"])))
+        elif e["action"] == "credit_bfile_link":
+            continue
         elif e["field"] == "Link":
             if "/A052187/" in e.get("text", ""):
                 bits.append("credit the prior A052187 table")

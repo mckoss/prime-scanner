@@ -268,6 +268,40 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   eq(st2.uploads[0].uploaded, null, 'published b-file link is not an upload');
 }
 
+// The credit edit waits for the upload, then rewrites the line OEIS wrote --
+// keeping OEIS's href -- to name the earlier contributors again.
+{
+  const files = [{ kind: 'b-file', name: 'b023186.txt', slot: 0,
+                   content: '1 2\n', published: true }];
+  const edit = { field: 'Link', action: 'credit_bfile_link',
+    text: 'Mike Koss, <a href="/A023186/b023186_k.txt">Table of n, a(n) for ' +
+          'n = 1..61</a>, terms 1..56 from Dmitry Petukhov.' };
+  const before = 'Dmitry Petukhov, <a href="/A023186/b023186.txt">Table of n, ' +
+                 'a(n) for n = 1..56</a>\nOther, <a href="/x">x</a>';
+  const p = makePage({ Link: before }, { seq: 'A023186', upload: 1 });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: { aid: 'A023186', edits: [edit], uploads: files } });
+  let st = p.sent.filter(m => m.type === 'STATE').pop();
+  ok(st.states[0].wait && !st.states[0].done, 'credit waits for the upload');
+  p.post({ type: 'FILL', index: 0 });
+  eq(p.field('Link'), before, 'nothing written before the upload');
+
+  const after = 'Mike Koss, <a href="/A023186/b023186_3.txt">Table of n, a(n) ' +
+                'for n = 1..61</a>\nOther, <a href="/x">x</a>';
+  const q = makePage({ Link: after }, { seq: 'A023186', upload: 1 });
+  q.run(SRC);
+  q.post({ type: 'READY', draft: { aid: 'A023186', edits: [edit], uploads: files } });
+  q.post({ type: 'FILL', index: 0 });
+  eq(q.field('Link').split('\n')[0],
+     'Mike Koss, <a href="/A023186/b023186_3.txt">Table of n, a(n) for ' +
+     'n = 1..61</a>, terms 1..56 from Dmitry Petukhov.',
+     'credit restored, href kept as OEIS stored it');
+  eq(q.field('Link').split('\n')[1], 'Other, <a href="/x">x</a>',
+     'other link lines untouched');
+  st = q.sent.filter(m => m.type === 'STATE').pop();
+  ok(st.states[0].done, 'credit reported as applied');
+}
+
 // --- navigation goes through the shim, never the iframe ------------------
 {
   const p = makePage({ Xref: '' }, { seq: 'A000101' });

@@ -46,6 +46,21 @@
     return t + ', ' + terms.join(', ');
   }
 
+  // OEIS writes the uploaded b-file's link line crediting only the uploader;
+  // put back the earlier contributors, keeping the href OEIS chose.
+  function creditLine(cur, up, text) {
+    var href = 'href="/' + SEQ + '/' + up + '"';
+    var want = text.replace(/href="[^"]*"/, href);
+    var lines = (cur || '').split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf(href) < 0) continue;
+      if (lines[i].trim() === want.trim()) return null;
+      lines[i] = want;
+      return lines.join('\n');
+    }
+    throw 'no link line for ' + up;
+  }
+
   function addLine(cur, text) {
     var probe = text.replace(/\s+/g, ' ').slice(0, 45);
     if ((cur || '').replace(/\s+/g, ' ').indexOf(probe) >= 0) return null;
@@ -66,6 +81,14 @@
         v = appendData(cur, e.after_n_term, e.terms);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
+      else if (e.action === 'credit_bfile_link') {
+        var u = (draft.uploads || []).filter(function (x) {
+          return x.kind === 'b-file'; })[0];
+        var up = u && uploadedAs(u);
+        if (!up) return { wait: 'after the b-file is uploaded: Save Changes, '
+                                + 'reopen the draft, and Fill this' };
+        v = creditLine(cur, up, e.text);
+      }
       return v === null ? { done: true } : { val: v };
     } catch (msg) { return { err: String(msg) }; }
   }
@@ -122,7 +145,7 @@
     return draft.edits.map(function (e) {
       var p = plan(e);
       return { field: e.field, code: e.code, action: e.action,
-               done: !!p.done, err: p.err || null,
+               done: !!p.done, err: p.err || null, wait: p.wait || null,
                cur: read(e.field), next: p.val || null };
     });
   }
