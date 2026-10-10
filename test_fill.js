@@ -302,28 +302,20 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   ok(st.states[0].done, 'credit reported as applied');
 }
 
-// A replace edit swaps the one line linking the old file, and only it.
+// A remove edit drops the one line linking the file being replaced.
 {
-  const edit = { field: 'Link', action: 'replace',
-    find: 'href="/A023186/a023186_1.txt"',
-    text: 'Mike Koss, <a href="/A023186/a023186.txt">Table of the first 61 ' +
-          'records</a>' };
+  const edit = { field: 'Link', action: 'remove',
+                 find: 'href="/A023186/a023186_1.txt"' };
   const before = 'Other, <a href="/x">x</a>\nMike Koss, <a href="/A023186/' +
                  'a023186_1.txt">Table of the first 60 records</a>';
   const p = makePage({ Link: before }, { seq: 'A023186' });
   p.run(SRC);
   p.post({ type: 'READY', draft: { aid: 'A023186', edits: [edit] } });
   p.post({ type: 'FILL', index: 0 });
-  eq(p.field('Link'), 'Other, <a href="/x">x</a>\n' + edit.text,
-     'replace swaps the old file\'s line');
+  eq(p.field('Link'), 'Other, <a href="/x">x</a>',
+     'remove drops the old file\'s line only');
   const st = p.sent.filter(m => m.type === 'STATE').pop();
-  ok(st.states[0].done, 'replace reported as applied');
-
-  const q = makePage({ Link: 'Other, <a href="/x">x</a>' }, { seq: 'A023186' });
-  q.run(SRC);
-  q.post({ type: 'READY', draft: { aid: 'A023186', edits: [edit] } });
-  const st2 = q.sent.filter(m => m.type === 'STATE').pop();
-  ok(st2.states[0].err, 'replace refuses when the old line is gone');
+  ok(st.states[0].done, 'remove reported as applied');
 }
 
 // --- navigation goes through the shim, never the iframe ------------------

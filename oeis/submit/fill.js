@@ -61,18 +61,12 @@
     throw 'no link line for ' + up;
   }
 
-  // Swap the one line containing `find` -- the link to a file being
-  // replaced -- for `text`.
-  function replaceLine(cur, find, text) {
+  // Drop the one line containing `find` -- the link to a file an upload is
+  // replacing. Already gone means already applied.
+  function removeLine(cur, find) {
     var lines = (cur || '').split('\n');
-    for (var i = 0; i < lines.length; i++)
-      if (lines[i].trim() === text.trim()) return null;
-    for (i = 0; i < lines.length; i++) {
-      if (lines[i].indexOf(find) < 0) continue;
-      lines[i] = text;
-      return lines.join('\n');
-    }
-    throw 'no line containing ' + find;
+    var keep = lines.filter(function (l) { return l.indexOf(find) < 0; });
+    return keep.length === lines.length ? null : keep.join('\n');
   }
 
   function addLine(cur, text) {
@@ -95,8 +89,8 @@
         v = appendData(cur, e.after_n_term, e.terms);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
-      else if (e.action === 'replace')
-        v = replaceLine(cur, e.find, e.text);
+      else if (e.action === 'remove')
+        v = removeLine(cur, e.find);
       else if (e.action === 'credit_bfile_link') {
         var u = (draft.uploads || []).filter(function (x) {
           return x.kind === 'b-file'; })[0];

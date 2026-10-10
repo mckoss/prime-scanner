@@ -309,6 +309,8 @@ def render_yaml(drafts, new_seqs, other, meta):
                   f"    path: {u['path']}",
                   f"    rows: {u['rows']}",
                   f"    from: {q(u['from'])}"]
+            if u.get("desc"):
+                o.append(f"    link: {q(u['desc'])}")
         if d["edits"]:
             o.append("  edits:")
         for e in d["edits"]:
@@ -470,18 +472,12 @@ FILL_JS = r"""
     throw 'no link line for ' + up;
   }
 
-  // Swap the one line containing `find` -- the link to a file being
-  // replaced -- for `text`.
-  function replaceLine(cur, find, text) {
+  // Drop the one line containing `find` -- the link to a file an upload is
+  // replacing. Already gone means already applied.
+  function removeLine(cur, find) {
     var lines = (cur || '').split('\n');
-    for (var i = 0; i < lines.length; i++)
-      if (lines[i].trim() === text.trim()) return null;
-    for (i = 0; i < lines.length; i++) {
-      if (lines[i].indexOf(find) < 0) continue;
-      lines[i] = text;
-      return lines.join('\n');
-    }
-    throw 'no line containing ' + find;
+    var keep = lines.filter(function (l) { return l.indexOf(find) < 0; });
+    return keep.length === lines.length ? null : keep.join('\n');
   }
 
   function addLine(cur, text) {
@@ -504,8 +500,8 @@ FILL_JS = r"""
         v = appendData(cur, e.after_n_term, e.terms);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
-      else if (e.action === 'replace')
-        v = replaceLine(cur, e.find, e.text);
+      else if (e.action === 'remove')
+        v = removeLine(cur, e.find);
       else if (e.action === 'credit_bfile_link') {
         var u = (draft.uploads || []).filter(function (x) {
           return x.kind === 'b-file'; })[0];
@@ -929,15 +925,14 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
                     f"earlier contributors back.")
         if u.get("replaces"):
             return (f"The a-file update: {u['rows']} rows, replacing "
-                    f"{u['replaces']}. The Link card swaps that file's %H line "
-                    f"for one linking {name}; if OEIS stores it under another "
-                    f"name, such as {name[:-4]}_2.txt, make the link match.")
-        linked = any(name in (e.get("text") or "") for e in d["edits"])
+                    f"{u['replaces']}. Its link text fills the upload box, so "
+                    f"OEIS writes the new %H line itself; the Link card drops "
+                    f"the old one.")
         return (f"The a-file: {u['rows']} rows, each record with its "
                 f"bounding primes and gaps. "
-                + (f"A new %H line links it as {name}; if OEIS stores it "
-                   f"under another name, such as {name[:-4]}_1.txt, make the "
-                   f"link match." if linked else
+                + ("Its link text fills the upload box, so OEIS writes the "
+                   "%H line itself, with the name it stores the file under."
+                   if u.get("desc") else
                    "Replaces the file the existing %H line already links."))
 
     payload = {

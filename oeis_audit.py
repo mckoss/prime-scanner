@@ -1708,6 +1708,13 @@ def generate_files(families, results, cov, index, check):
     return files, built
 
 
+def afile_link_text(n):
+    """What goes in an a-file upload's link-text box. OEIS fills in the
+    <a>'s href itself, with the name it stores the file under."""
+    return (f"{oeis_submit.ATTRIB['name']}, <a>Table of the first {n} records "
+            f"with both bounding primes and both gaps</a>")
+
+
 def build_sibling_bfile(aid, families, files, built, results, cov, check,
                         refresh):
     """Build aid's b-file from the scan's records; None, or why it cannot.
@@ -1953,11 +1960,9 @@ def submission(items, families, results, refresh, check):
                 continue
             d["what"].append(f"a-file {n} rows")
             if fam in oeis_submit.AFILE:
-                d["edits"].append(op(
-                    "Link", "add",
-                    text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/{name}">'
-                         f'Table of the first {n} records with both bounding '
-                         f'primes and both gaps</a>'))
+                # The upload's own link-text box makes the %H line, with the
+                # href OEIS stores the file under filled in for us.
+                d["uploads"][-1]["desc"] = afile_link_text(n)
                 d["summary"] = d["summary"] or (
                     f"Add an a-file giving each record's bounding primes and "
                     f"both gaps ({n} rows).")
@@ -2012,13 +2017,11 @@ def submission(items, families, results, refresh, check):
         d["items"].append(iid)
         if not upload(d, "a-file", name, n):
             continue
-        d["uploads"][-1].update(minor=True, replaces=stored)
+        d["uploads"][-1].update(minor=True, replaces=stored,
+                                desc=afile_link_text(n))
         d["what"].append(f"a-file {n} rows (minor update)")
-        d["edits"].append(op(
-            "Link", "replace", find=f'href="/{aid}/{stored}"',
-            text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/{name}">'
-                 f'Table of the first {n} records with both bounding '
-                 f'primes and both gaps</a>'))
+        # The upload writes the new file's %H line; the old one goes.
+        d["edits"].append(op("Link", "remove", find=f'href="/{aid}/{stored}"'))
         d["summary"] = d["summary"] or (
             f"Replace the a-file {stored} with a {n}-row update.")
 
@@ -2055,7 +2058,7 @@ def submission(items, families, results, refresh, check):
         drafts that only add comments or cross-references, then a draft
         holding nothing but a minor a-file update."""
         kinds = {u["kind"] for u in d["uploads"] if not u.get("minor")}
-        if not kinds and all(e["action"] == "replace" for e in d["edits"]):
+        if not kinds and all(e["action"] == "remove" for e in d["edits"]):
             return 4, d["aid"]
         _, _, s = member_of(families, d["aid"])
         if "b-file" in kinds:
