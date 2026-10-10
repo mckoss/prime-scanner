@@ -1816,8 +1816,6 @@ def submission(items, families, results, refresh, check):
     detected = detect_approved(families, refresh)
     other = {"blocked": [], "pending": [], "review": [],
              "done": done_items({**status, **detected})}
-    for r in other["done"]:
-        r["files"] = done_files(r, families, files)
 
     def draft(aid, role):
         role = role.split(" (")[0]
@@ -1862,6 +1860,36 @@ def submission(items, families, results, refresh, check):
         if not d["summary"]:
             d["summary"] = f"Extend the b-file to {n} terms."
 
+    def build_terms_bfile(fam):
+        """Build the extended b-file of fam's record primes; its credit."""
+        f = families[fam]
+        primary = [s["aid"] for s in f["seqs"] if s["m"]["col"] == 2]
+        aid = primary[0] if primary else f["info"]["extent"][0]
+        pub = bfile_terms_list(aid, refresh)
+        n_pub = len(pub) + f["info"]["extent"][1]
+        credit = prior_credit(aid, len(pub), refresh)
+        if ("b", aid) not in built:
+            name = f"b{aid[1:]}.txt"
+            files[name] = oeis_submit.bfile(
+                aid, [(r[0], r[1]) for r in f["rows"]],
+                [credit[0].upper() + credit[1:] + ".",
+                 f"Terms {n_pub + 1}..{f['rows'][-1][0]} are new.",
+                 "Every term independently rederived by an exhaustive "
+                 "scan from 0."],
+                oeis_submit.scan_byline(data_date(results)),
+                cov.get(fam, 0),
+                "Independently confirmed by an exhaustive scan; "
+                "check_oeis.py passes." if check[0] else None)
+            built[("b", aid)] = (name, len(f["rows"]))
+        return credit
+
+    # A terms item in review still has its b-file built, so the schedule can
+    # link what went to OEIS.
+    for iid, (st, _, _) in status.items():
+        fam = iid.split(":", 1)[1] if iid.startswith("terms:") else None
+        if st in REVIEW_STATUSES and fam in families and families[fam]["rows"]:
+            build_terms_bfile(fam)
+
     for it in items:
         gid, iid = it["group"], it["id"]
         st = status.get(iid)
@@ -1905,21 +1933,7 @@ def submission(items, families, results, refresh, check):
                     terms=[[r[1], f"gaps {r[3]}, {r[4]}; {r[5]} < p < {r[6]}"]
                            for r in new]))
             # The b-file carries every extension, whether or not DATA does.
-            name = f"b{aid[1:]}.txt"
-            credit = prior_credit(aid, len(pub), refresh)
-            if ("b", aid) not in built:
-                last = f["rows"][-1][0]
-                files[name] = oeis_submit.bfile(
-                    aid, [(r[0], r[1]) for r in f["rows"]],
-                    [credit[0].upper() + credit[1:] + ".",
-                     f"Terms {n_pub + 1}..{last} are new.",
-                     "Every term independently rederived by an exhaustive "
-                     "scan from 0."],
-                    oeis_submit.scan_byline(data_date(results)),
-                    cov.get(fam, 0),
-                    "Independently confirmed by an exhaustive scan; "
-                    "check_oeis.py passes." if check[0] else None)
-                built[("b", aid)] = (name, len(f["rows"]))
+            credit = build_terms_bfile(fam)
             add_bfile(d, aid, *built[("b", aid)], credit)
             prior = (oeis_sources.balanced_matches(new)
                      if fam == "equidistant" else {})
@@ -2098,6 +2112,9 @@ def submission(items, families, results, refresh, check):
                 d["status"] = status[i][0]
         if len(d["items"]) > 1:
             d["summary"] = summarise(d)
+    for r in other["done"]:
+        r["files"] = done_files(r, families, files)
+
     def priority(d):
         """Schedule order: a b-file for a family's named sequence -- the
         record primes themselves -- then other b-files, then a-files, then

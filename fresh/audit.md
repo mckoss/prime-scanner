@@ -235,37 +235,39 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## SUBMISSION  --  one draft per sequence
 
 ```
-   1. A058867  b-file 34 terms, bound comment, a-file 34 rows
-      Extend the b-file to 34 terms; credit the prior A052187 table; add a search-bound comment.
-   2. A087770  b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265
+   1. A087770  b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265
       Extend the b-file to 41 terms; add a search-bound comment; add cross-references to A096265.
-   3. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413
+   2. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413
       Extend the b-file to 72 terms; add a search-bound comment; add cross-references to A031133, A031134, A122412, A122413.
-   4. A005669  b-file 85 terms, Xref +A107578
+   3. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file to 85 terms; add cross-references to A107578.
-   5. A023187  b-file 61 terms
+   4. A023187  b-file 61 terms
       Extend the b-file to 61 terms.
-   6. A031132  b-file 71 terms, Xref +A096265
+   5. A031132  b-file 71 terms, Xref +A096265
       Extend the b-file to 71 terms; add cross-references to A096265.
-   7. A031133  bound comment, b-file 71 terms
+   6. A031133  bound comment, b-file 71 terms
       Extend the b-file to 71 terms; add a search-bound comment.
-   8. A031134  bound comment, b-file 71 terms
+   7. A031134  bound comment, b-file 71 terms
       Extend the b-file to 71 terms; add a search-bound comment.
-   9. A058868  b-file 34 terms
+   8. A058868  b-file 34 terms
       Extend the b-file to 34 terms.
-  10. A107578  b-file 85 terms
+   9. A107578  b-file 85 terms
       Extend the b-file to 85 terms.
-  11. A000101  Xref +A053695
+  10. A000101  Xref +A053695
       Add the reverse cross-reference.
-  12. A002386  Xref +A053695, Xref +A087770, Xref +A107578
+  11. A002386  Xref +A053695, Xref +A087770, Xref +A107578
       Add cross-references to A053695, A087770, A107578.
-  13. A023186  bound comment, Xref +A087770, Xref +A096265, a-file 61 rows (minor update)
+  12. A023186  bound comment, Xref +A087770, Xref +A096265, a-file 61 rows (minor update)
       Add a search-bound comment; add cross-references to A087770, A096265; add an a-file with the bounding primes.
    -. new       balanced-lonely primes
    -. blocked  b-file:A122412
    -. blocked  b-file:A122413
    -. review   review:A120384
    -. review   review:neighbours
+     in review  A058867  a-file:equidistant  2026-10-10
+     in review  A058867  b-file:A058867  2026-10-10
+     in review  A058867  bound:equidistant  2026-10-10
+     in review  A058867  terms:equidistant  2026-10-10
    ✓ approved  A023186  a-file:lonely  2026-10-06
    ✓ approved  A023186  terms:lonely  2026-10-06
    ✗ rejected  A000101  a-file:A000101  2026-09-30

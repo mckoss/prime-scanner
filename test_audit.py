@@ -73,7 +73,10 @@ class PublishedSourcesTests(unittest.TestCase):
             "seqs": [{"aid": "A058867",
                       "m": audit.FAMILIES["equidistant"]["members"]["A058867"]}]}}
         items = [audit.item("terms", "terms:equidistant", "Extend A058867")]
-        with patch.object(audit, "bfile_terms_list", return_value=[r[1] for r in rows[:30]]):
+        # Independent of the live oeis/submissions.txt, where this draft may
+        # already be marked submitted.
+        with patch.object(audit, "bfile_terms_list", return_value=[r[1] for r in rows[:30]]), \
+             patch.object(audit, "read_submissions", return_value={}):
             drafts, _, _, files, _, _ = audit.submission(
                 items, families, "fresh", False, (True, []))
         draft = drafts[0]
