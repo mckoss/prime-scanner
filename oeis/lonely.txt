@@ -1,3 +1,15 @@
+# A023186, 61 terms.
+#
+# Terms 1..56 from Dmitry Petukhov (first 40 terms from Ken Takusagawa, terms 41..52 from Giovanni Resta).
+# Terms 57..61 are new.
+# Every term independently rederived by an exhaustive scan from 0.
+#
+# Mike Koss. Data as of 2026-10-06, when the scan last advanced.
+# Searched all below 26,099,160,246,699,733: every record up to that
+# bound is present, and there is no further one below it.
+# Independently confirmed by an exhaustive scan; check_oeis.py passes.
+# Source: https://github.com/mckoss/prime-scanner
+# OEIS data CC BY-SA 4.0
 1 2
 2 5
 3 23
@@ -54,3 +66,8 @@
 54 342540487510231
 55 475963705368391
 56 941114429467073
+57 2662972908869401
+58 4685407635944059
+59 4911417538051463
+60 10991084454046573
+61 23771684406473771
