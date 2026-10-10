@@ -114,16 +114,26 @@
       if (inp.files && inp.files.length && inp.files[0].name === name) return k;
     return -1;
   }
-  // A b-file an earlier save of this draft already uploaded: OEIS points the
-  // b-file link at the stored copy, renamed b<nnnnnn>_<k>.txt when the name
-  // is taken. Only a link the published entry did not have counts.
+  // A file an earlier save of this draft already uploaded. OEIS writes a %H
+  // line linking the stored copy -- renamed <stem>_<k>.txt when the name is
+  // taken -- for a b-file by itself and for an a-file from its link text.
+  // The link is looked for in the Link field and, on a page without one
+  // (the draft view a save lands on), anywhere on the page. Only a link the
+  // published entry did not have counts, and never the file an update
+  // replaces.
   function uploadedAs(u) {
-    if (u.kind !== 'b-file') return null;
     var stem = u.name.replace(/\.txt$/, ''), re = new RegExp(
       '/' + SEQ + '/(' + stem + '(_\\d+)?\\.txt)', 'g'), m;
-    var cur = read('Link') || '';
+    var cur = read('Link');
+    if (cur === null) {
+      cur = '';
+      var as = document.querySelectorAll ? document.querySelectorAll('a[href]')
+                                         : [];
+      for (var i = 0; i < as.length; i++)
+        cur += (as[i].getAttribute('href') || '') + '\n';
+    }
     while ((m = re.exec(cur)))
-      if (m[2] || !u.published) return m[1];
+      if ((m[2] || !u.published) && m[1] !== u.replaces) return m[1];
     return null;
   }
   function attach(u) {
@@ -191,10 +201,16 @@
         if (p.val) write(e.field, p.val);
       });
       var errs = {};
-      (draft.uploads || []).forEach(function (u, i) {
-        var r = attach(u);
+      // The form takes one upload per save, so attach the first file not
+      // yet uploaded -- the b-file comes first -- and leave the rest for the
+      // next save.
+      var ups = draft.uploads || [];
+      for (var i = 0; i < ups.length; i++) {
+        if (uploadedAs(ups[i])) continue;
+        var r = attach(ups[i]);
         if (r.err) errs[i] = r.err;
-      });
+        break;
+      }
       post({ type: 'ATTACHED', errs: errs });
       report();
     } else if (m.type === 'ATTACH') {

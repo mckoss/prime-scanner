@@ -43,6 +43,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b087770.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 41,
      "published": false,
@@ -53,6 +54,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "a-file",
      "name": "a087770.txt",
+     "replaces": null,
      "slot": 1,
      "rows": 41,
      "published": false,
@@ -110,6 +112,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b096265.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 72,
      "published": true,
@@ -120,6 +123,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "a-file",
      "name": "a096265.txt",
+     "replaces": null,
      "slot": 1,
      "rows": 72,
      "published": false,
@@ -159,6 +163,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b005669.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 85,
      "published": true,
@@ -186,6 +191,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b023187.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 61,
      "published": false,
@@ -225,6 +231,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b031132.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 71,
      "published": false,
@@ -252,6 +259,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b031133.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 71,
      "published": true,
@@ -279,6 +287,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b031134.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 71,
      "published": true,
@@ -306,6 +315,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b058868.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 34,
      "published": false,
@@ -333,6 +343,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "b-file",
      "name": "b107578.txt",
+     "replaces": null,
      "slot": 0,
      "rows": 85,
      "published": true,
@@ -428,6 +439,7 @@ window.OEIS_SUBMIT = {
     {
      "kind": "a-file",
      "name": "a023186.txt",
+     "replaces": "a023186_1.txt",
      "slot": 0,
      "rows": 61,
      "published": false,

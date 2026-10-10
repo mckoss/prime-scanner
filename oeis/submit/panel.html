@@ -129,11 +129,11 @@ function renderUploads(live){
   var ups = draft ? (draft.uploads||[]) : [], out = '';
   document.getElementById('uploads').hidden = !ups.length;
   if(!ups.length){ document.getElementById('note').textContent=''; return; }
-  out += '<ol class="steps"><li>Attach '+(ups.length>1?'each file':'the file')
-       + ' below (Fill all attaches '+(ups.length>1?'them':'it')+' too).</li>'
+  out += '<ol class="steps"><li>Attach '+(ups.length>1?'the first file not '
+         + 'yet uploaded':'the file')+' (Fill all does this).</li>'
        + '<li>Check the form, then Save Changes.</li>'
        + (ups.length>1 ? '<li>The form takes one file per save: reopen the '
-         + 'draft and attach the next.</li>' : '')
+         + 'draft and Fill all again for the next.</li>' : '')
        + '</ol>';
   ups.forEach(function(u,i){
     var at = (live[i]||{}).slot, up = (live[i]||{}).uploaded;

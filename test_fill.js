@@ -64,6 +64,10 @@ function makePage(fields, opts) {
     body: { style: {}, appendChild() {} },
     head: { appendChild() {} },
     getElementById(id) { return els[id] || null; },
+    querySelectorAll(sel) {
+      return sel === 'a[href]' ? (opts.anchors || []).map(h => ({
+        getAttribute: () => h })) : [];
+    },
     querySelector(sel) {
       const m = /input\[name=(\w+)\]/.exec(sel);
       if (!m) return null;
@@ -220,6 +224,9 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   p.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: files } });
   p.post({ type: 'FILL_ALL' });
   eq(p.uploads.upload_file0.files[0].name, 'b023186.txt', 'b-file in box 1');
+  eq(p.uploads.upload_file1.files, null,
+     'Fill all attaches one file per save, the b-file first');
+  p.post({ type: 'ATTACH', index: 1 });
   eq(p.uploads.upload_file1.files[0].name, 'a023186.txt', 'a-file in box 2');
   ok(p.els.upload_bfile0.checked && !p.els.upload_bfile1.checked,
      'only the b-file box is ticked as a b-file');
@@ -234,10 +241,45 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   q.run(SRC);
   q.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: files } });
   q.post({ type: 'FILL_ALL' });
+  q.post({ type: 'ATTACH', index: 1 });
   const att = q.sent.filter(m => m.type === 'ATTACHED').pop();
   ok(/Save Changes, reopen the draft, and attach a023186.txt/.test(att.errs[1]),
      'a full page names the file still to attach');
-  ok(!(0 in att.errs), 'the first file still attached');
+  eq(q.uploads.upload_file0.files[0].name, 'b023186.txt',
+     'the first file still attached');
+}
+
+// The draft view a save lands on has no Link field: the uploads are found
+// from the page's links instead, a-file included.
+{
+  const files = [
+    { kind: 'b-file', name: 'b087770.txt', slot: 0, content: '1 2\n' },
+    { kind: 'a-file', name: 'a087770.txt', slot: 1, content: '# a\n' }];
+  const p = makePage({}, { seq: 'A087770', pathname: '/draft/A087770',
+    anchors: ['/A087770/b087770_1.txt', '/A096265'] });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: { aid: 'A087770', edits: [], uploads: files } });
+  let st = p.sent.filter(m => m.type === 'STATE').pop();
+  eq(st.uploads[0].uploaded, 'b087770_1.txt', 'b-file found on the draft view');
+  eq(st.uploads[1].uploaded, null, 'a-file not yet uploaded');
+
+  const q = makePage({ Link: 'Mike Koss, <a href="/A087770/b087770_1.txt">T</a>\n' +
+                       'Mike Koss, <a href="/A087770/a087770_1.txt">A</a>' },
+                     { seq: 'A087770' });
+  q.run(SRC);
+  q.post({ type: 'READY', draft: { aid: 'A087770', edits: [], uploads: files } });
+  st = q.sent.filter(m => m.type === 'STATE').pop();
+  eq(st.uploads[1].uploaded, 'a087770_1.txt', 'a-file found once its save wrote the link');
+
+  // An update's own predecessor is not its upload.
+  const r = makePage({ Link: 'Mike Koss, <a href="/A023186/a023186_1.txt">A</a>' },
+                     { seq: 'A023186' });
+  r.run(SRC);
+  r.post({ type: 'READY', draft: { aid: 'A023186', edits: [], uploads: [
+    { kind: 'a-file', name: 'a023186.txt', slot: 0, content: '# a\n',
+      published: false, replaces: 'a023186_1.txt' }] } });
+  st = r.sent.filter(m => m.type === 'STATE').pop();
+  eq(st.uploads[0].uploaded, null, 'the replaced a-file is not the update');
 }
 
 // A b-file an earlier save uploaded: OEIS has pointed the link line at the
