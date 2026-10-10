@@ -1,7 +1,7 @@
 # A058868, 34 terms.
 #
-# Terms 1..30 as previously published.
-# Terms 31..34 are new.
+# Terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov.
+# Terms 30..33 are new.
 # Every term independently rederived by an exhaustive scan from 0,
 # as column 3 of its equidistant records.
 #

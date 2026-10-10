@@ -1,6 +1,6 @@
 # A031133, 71 terms.
 #
-# Terms 1..67 from <a href="/A031133/b031133.txt">Table of n, a(n) for n = 1..67</a>.
+# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.
 # Terms 68..71 are new.
 # Every term independently rederived by an exhaustive scan from 0,
 # as column 6 of its aloof records.

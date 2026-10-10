@@ -18,7 +18,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A058867/b058867_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 1..30 as previously published)"
+     "text": "Mike Koss, <a href=\"/A058867/b058867_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 1..20 from Harvey Dubner, terms 21..30 from Dmitry Petukhov)"
     },
     {
      "field": "Ext",
@@ -66,7 +66,7 @@ window.OEIS_SUBMIT = {
      "published": false,
      "purpose": "The b-file: 34 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A058867, 34 terms.\n#\n# Terms 1..30 as previously published.\n# Terms 31..34 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 5\n2 53\n3 211\n4 16787\n5 69623\n6 247141\n7 3565979\n8 4911311\n9 12012743\n10 23346809\n11 34346287\n12 36598607\n13 51042053\n14 383204683\n15 4470608101\n16 5007182863\n17 5558570491\n18 48287689717\n19 50284155289\n20 178796541817\n21 264860525507\n22 374787490919\n23 1521870804107\n24 2093308790851\n25 4228611064537\n26 6537587646671\n27 17432065861517\n28 22546768250359\n29 26923643849953\n30 187891466722913\n31 2422627449334097\n32 2848704456458411\n33 3955678819752329\n34 4685407635944059\n"
+     "content": "# A058867, 34 terms.\n#\n# Terms 1..20 from Harvey Dubner, terms 21..30 from Dmitry Petukhov.\n# Terms 31..34 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 5\n2 53\n3 211\n4 16787\n5 69623\n6 247141\n7 3565979\n8 4911311\n9 12012743\n10 23346809\n11 34346287\n12 36598607\n13 51042053\n14 383204683\n15 4470608101\n16 5007182863\n17 5558570491\n18 48287689717\n19 50284155289\n20 178796541817\n21 264860525507\n22 374787490919\n23 1521870804107\n24 2093308790851\n25 4228611064537\n26 6537587646671\n27 17432065861517\n28 22546768250359\n29 26923643849953\n30 187891466722913\n31 2422627449334097\n32 2848704456458411\n33 3955678819752329\n34 4685407635944059\n"
     },
     {
      "kind": "a-file",
@@ -91,7 +91,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A087770/b087770_k.txt\">Table of n, a(n) for n = 1..41</a> (terms 1..29 as previously published)"
+     "text": "Mike Koss, <a href=\"/A087770/b087770_k.txt\">Table of n, a(n) for n = 1..41</a> (terms 1..29 from Walter Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta)"
     },
     {
      "field": "Ext",
@@ -126,7 +126,7 @@ window.OEIS_SUBMIT = {
      "published": false,
      "purpose": "The b-file: 41 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A087770, 41 terms.\n#\n# Terms 1..29 as previously published.\n# Terms 30..41 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 7\n4 23\n5 89\n6 211\n7 1847\n8 2179\n9 14107\n10 33247\n11 38501\n12 58831\n13 268343\n14 1272749\n15 2198981\n16 10938023\n17 72546283\n18 162821917\n19 325737821\n20 2888688863\n21 6613941601\n22 11179888193\n23 24016237123\n24 96155166493\n25 179474021633\n26 215686840471\n27 633880576177\n28 1480975873513\n29 9156364643509\n30 26459479056379\n31 64293760159177\n32 201355244997631\n33 203521339456733\n34 366981966368659\n35 630279877844621\n36 1244134359040121\n37 1527008871568883\n38 2662972908869401\n39 4911417538051463\n40 10991084454046573\n41 23771684406473771\n"
+     "content": "# A087770, 41 terms.\n#\n# Terms 1..29 from Walter Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta.\n# Terms 30..41 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 7\n4 23\n5 89\n6 211\n7 1847\n8 2179\n9 14107\n10 33247\n11 38501\n12 58831\n13 268343\n14 1272749\n15 2198981\n16 10938023\n17 72546283\n18 162821917\n19 325737821\n20 2888688863\n21 6613941601\n22 11179888193\n23 24016237123\n24 96155166493\n25 179474021633\n26 215686840471\n27 633880576177\n28 1480975873513\n29 9156364643509\n30 26459479056379\n31 64293760159177\n32 201355244997631\n33 203521339456733\n34 366981966368659\n35 630279877844621\n36 1244134359040121\n37 1527008871568883\n38 2662972908869401\n39 4911417538051463\n40 10991084454046573\n41 23771684406473771\n"
     },
     {
      "kind": "a-file",
@@ -261,7 +261,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A023187/b023187_k.txt\">Table of n, a(n) for n = 1..61</a> (terms 1..56 as previously published)"
+     "text": "Mike Koss, <a href=\"/A023187/b023187_k.txt\">Table of n, a(n) for n = 1..61</a> (terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov)"
     }
    ],
    "uploads": [
@@ -273,7 +273,7 @@ window.OEIS_SUBMIT = {
      "published": false,
      "purpose": "The b-file: 61 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A023187, 61 terms.\n#\n# Terms 1..56 as previously published.\n# Terms 57..61 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its lonely records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 1\n2 2\n3 4\n4 6\n5 12\n6 14\n7 18\n8 20\n9 24\n10 30\n11 40\n12 42\n13 44\n14 48\n15 54\n16 62\n17 72\n18 76\n19 96\n20 98\n21 108\n22 116\n23 124\n24 136\n25 156\n26 160\n27 162\n28 168\n29 174\n30 176\n31 178\n32 180\n33 186\n34 194\n35 210\n36 214\n37 222\n38 242\n39 244\n40 246\n41 250\n42 258\n43 268\n44 284\n45 300\n46 324\n47 328\n48 340\n49 348\n50 352\n51 390\n52 396\n53 420\n54 432\n55 452\n56 480\n57 508\n58 510\n59 520\n60 546\n61 550\n"
+     "content": "# A023187, 61 terms.\n#\n# Terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov.\n# Terms 57..61 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its lonely records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 1\n2 2\n3 4\n4 6\n5 12\n6 14\n7 18\n8 20\n9 24\n10 30\n11 40\n12 42\n13 44\n14 48\n15 54\n16 62\n17 72\n18 76\n19 96\n20 98\n21 108\n22 116\n23 124\n24 136\n25 156\n26 160\n27 162\n28 168\n29 174\n30 176\n31 178\n32 180\n33 186\n34 194\n35 210\n36 214\n37 222\n38 242\n39 244\n40 246\n41 250\n42 258\n43 268\n44 284\n45 300\n46 324\n47 328\n48 340\n49 348\n50 352\n51 390\n52 396\n53 420\n54 432\n55 452\n56 480\n57 508\n58 510\n59 520\n60 546\n61 550\n"
     }
    ]
   },
@@ -288,7 +288,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A031132/b031132_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 as previously published)"
+     "text": "Mike Koss, <a href=\"/A031132/b031132_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
     },
     {
      "field": "Xref",
@@ -311,7 +311,7 @@ window.OEIS_SUBMIT = {
      "published": false,
      "purpose": "The b-file: 71 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A031132, 71 terms.\n#\n# Terms 1..67 as previously published.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 3\n2 4\n3 6\n4 10\n5 12\n6 14\n7 18\n8 24\n9 28\n10 40\n11 42\n12 44\n13 48\n14 50\n15 56\n16 58\n17 72\n18 76\n19 80\n20 82\n21 100\n22 114\n23 116\n24 126\n25 138\n26 140\n27 160\n28 190\n29 200\n30 234\n31 236\n32 246\n33 248\n34 270\n35 306\n36 328\n37 330\n38 336\n39 340\n40 372\n41 376\n42 410\n43 436\n44 438\n45 450\n46 476\n47 502\n48 506\n49 524\n50 540\n51 546\n52 594\n53 600\n54 624\n55 678\n56 690\n57 700\n58 760\n59 780\n60 838\n61 900\n62 944\n63 972\n64 1014\n65 1016\n66 1032\n67 1152\n68 1168\n69 1170\n70 1182\n71 1220\n"
+     "content": "# A031132, 71 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 3\n2 4\n3 6\n4 10\n5 12\n6 14\n7 18\n8 24\n9 28\n10 40\n11 42\n12 44\n13 48\n14 50\n15 56\n16 58\n17 72\n18 76\n19 80\n20 82\n21 100\n22 114\n23 116\n24 126\n25 138\n26 140\n27 160\n28 190\n29 200\n30 234\n31 236\n32 246\n33 248\n34 270\n35 306\n36 328\n37 330\n38 336\n39 340\n40 372\n41 376\n42 410\n43 436\n44 438\n45 450\n46 476\n47 502\n48 506\n49 524\n50 540\n51 546\n52 594\n53 600\n54 624\n55 678\n56 690\n57 700\n58 760\n59 780\n60 838\n61 900\n62 944\n63 972\n64 1014\n65 1016\n66 1032\n67 1152\n68 1168\n69 1170\n70 1182\n71 1220\n"
     }
    ]
   },
@@ -332,7 +332,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A031133/b031133_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from <a href=\"/A031133/b031133.txt\">Table of n, a(n) for n = 1..67</a>)"
+     "text": "Mike Koss, <a href=\"/A031133/b031133_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
     }
    ],
    "uploads": [
@@ -344,7 +344,7 @@ window.OEIS_SUBMIT = {
      "published": true,
      "purpose": "The b-file: 71 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A031133, 71 terms.\n#\n# Terms 1..67 from <a href=\"/A031133/b031133.txt\">Table of n, a(n) for n = 1..67</a>.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 6 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 5\n4 19\n5 47\n6 83\n7 109\n8 199\n9 1123\n10 1321\n11 2161\n12 2477\n13 5591\n14 9551\n15 14087\n16 19603\n17 19609\n18 31393\n19 31397\n20 38461\n21 58789\n22 155893\n23 360653\n24 370247\n25 396733\n26 1357193\n27 1561891\n28 4652317\n29 8917463\n30 20831299\n31 38089217\n32 70396343\n33 72546143\n34 102765577\n35 142414553\n36 325737649\n37 436272961\n38 476956801\n39 1346350651\n40 1453168061\n41 2949346891\n42 3367207667\n43 9085929037\n44 10726904659\n45 20678048297\n46 25056082067\n47 31587561139\n48 42652618301\n49 50949283109\n50 122787888679\n51 215686840157\n52 220578149899\n53 724200190201\n54 929156727013\n55 1032148488143\n56 3605572653481\n57 4079970755221\n58 5061226833427\n59 12772332382321\n60 19535748742639\n61 21185697626083\n62 117102787055687\n63 471911699384771\n64 528459528876289\n65 543684371469023\n66 811782668945159\n67 1693182318746351\n68 12099132127786609\n69 12568891238649583\n70 14878430907698447\n71 16020873778856279\n"
+     "content": "# A031133, 71 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 6 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 5\n4 19\n5 47\n6 83\n7 109\n8 199\n9 1123\n10 1321\n11 2161\n12 2477\n13 5591\n14 9551\n15 14087\n16 19603\n17 19609\n18 31393\n19 31397\n20 38461\n21 58789\n22 155893\n23 360653\n24 370247\n25 396733\n26 1357193\n27 1561891\n28 4652317\n29 8917463\n30 20831299\n31 38089217\n32 70396343\n33 72546143\n34 102765577\n35 142414553\n36 325737649\n37 436272961\n38 476956801\n39 1346350651\n40 1453168061\n41 2949346891\n42 3367207667\n43 9085929037\n44 10726904659\n45 20678048297\n46 25056082067\n47 31587561139\n48 42652618301\n49 50949283109\n50 122787888679\n51 215686840157\n52 220578149899\n53 724200190201\n54 929156727013\n55 1032148488143\n56 3605572653481\n57 4079970755221\n58 5061226833427\n59 12772332382321\n60 19535748742639\n61 21185697626083\n62 117102787055687\n63 471911699384771\n64 528459528876289\n65 543684371469023\n66 811782668945159\n67 1693182318746351\n68 12099132127786609\n69 12568891238649583\n70 14878430907698447\n71 16020873778856279\n"
     }
    ]
   },
@@ -365,7 +365,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A031134/b031134_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from <a href=\"/A031134/b031134.txt\">Table of n, a(n) for n = 1..67</a>)"
+     "text": "Mike Koss, <a href=\"/A031134/b031134_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
     }
    ],
    "uploads": [
@@ -377,7 +377,7 @@ window.OEIS_SUBMIT = {
      "published": true,
      "purpose": "The b-file: 71 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A031134, 71 terms.\n#\n# Terms 1..67 from <a href=\"/A031134/b031134.txt\">Table of n, a(n) for n = 1..67</a>.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 7 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 5\n2 7\n3 11\n4 29\n5 59\n6 97\n7 127\n8 223\n9 1151\n10 1361\n11 2203\n12 2521\n13 5639\n14 9601\n15 14143\n16 19661\n17 19681\n18 31469\n19 31477\n20 38543\n21 58889\n22 156007\n23 360769\n24 370373\n25 396871\n26 1357333\n27 1562051\n28 4652507\n29 8917663\n30 20831533\n31 38089453\n32 70396589\n33 72546391\n34 102765847\n35 142414859\n36 325737977\n37 436273291\n38 476957137\n39 1346350991\n40 1453168433\n41 2949347267\n42 3367208077\n43 9085929473\n44 10726905097\n45 20678048747\n46 25056082543\n47 31587561641\n48 42652618807\n49 50949283633\n50 122787889219\n51 215686840703\n52 220578150493\n53 724200190801\n54 929156727637\n55 1032148488821\n56 3605572654171\n57 4079970755921\n58 5061226834187\n59 12772332383101\n60 19535748743477\n61 21185697626983\n62 117102787056631\n63 471911699385743\n64 528459528877303\n65 543684371470039\n66 811782668946191\n67 1693182318747503\n68 12099132127787777\n69 12568891238650753\n70 14878430907699629\n71 16020873778857499\n"
+     "content": "# A031134, 71 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 7 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 5\n2 7\n3 11\n4 29\n5 59\n6 97\n7 127\n8 223\n9 1151\n10 1361\n11 2203\n12 2521\n13 5639\n14 9601\n15 14143\n16 19661\n17 19681\n18 31469\n19 31477\n20 38543\n21 58889\n22 156007\n23 360769\n24 370373\n25 396871\n26 1357333\n27 1562051\n28 4652507\n29 8917663\n30 20831533\n31 38089453\n32 70396589\n33 72546391\n34 102765847\n35 142414859\n36 325737977\n37 436273291\n38 476957137\n39 1346350991\n40 1453168433\n41 2949347267\n42 3367208077\n43 9085929473\n44 10726905097\n45 20678048747\n46 25056082543\n47 31587561641\n48 42652618807\n49 50949283633\n50 122787889219\n51 215686840703\n52 220578150493\n53 724200190801\n54 929156727637\n55 1032148488821\n56 3605572654171\n57 4079970755921\n58 5061226834187\n59 12772332383101\n60 19535748743477\n61 21185697626983\n62 117102787056631\n63 471911699385743\n64 528459528877303\n65 543684371470039\n66 811782668946191\n67 1693182318747503\n68 12099132127787777\n69 12568891238650753\n70 14878430907699629\n71 16020873778857499\n"
     }
    ]
   },
@@ -392,7 +392,7 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A058868/b058868_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 1..30 as previously published)"
+     "text": "Mike Koss, <a href=\"/A058868/b058868_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov)"
     }
    ],
    "uploads": [
@@ -404,7 +404,7 @@ window.OEIS_SUBMIT = {
      "published": false,
      "purpose": "The b-file: 34 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A058868, 34 terms.\n#\n# Terms 1..30 as previously published.\n# Terms 31..34 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its equidistant records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n0 2\n1 6\n2 12\n3 24\n4 30\n5 42\n6 48\n7 60\n8 66\n9 72\n10 84\n11 90\n12 96\n13 144\n14 150\n15 156\n16 168\n17 186\n18 198\n19 204\n20 210\n21 228\n22 240\n23 258\n24 276\n25 300\n26 306\n27 348\n28 390\n29 420\n30 426\n31 438\n32 468\n33 510\n"
+     "content": "# A058868, 34 terms.\n#\n# Terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov.\n# Terms 30..33 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its equidistant records.\n#\n# Mike Koss. Data as of 2026-10-06, when the scan last advanced.\n# Searched all below 26,099,160,246,699,733: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n0 2\n1 6\n2 12\n3 24\n4 30\n5 42\n6 48\n7 60\n8 66\n9 72\n10 84\n11 90\n12 96\n13 144\n14 150\n15 156\n16 168\n17 186\n18 198\n19 204\n20 210\n21 228\n22 240\n23 258\n24 276\n25 300\n26 306\n27 348\n28 390\n29 420\n30 426\n31 438\n32 468\n33 510\n"
     }
    ]
   },

@@ -1,6 +1,6 @@
 # A087770, 41 terms.
 #
-# Terms 1..29 as previously published.
+# Terms 1..29 from Walter Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta.
 # Terms 30..41 are new.
 # Every term independently rederived by an exhaustive scan from 0.
 #

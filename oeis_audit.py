@@ -1562,12 +1562,58 @@ def prior_credit(aid, n_pub, refresh):
     for line in entry(aid, refresh).get("link", []):
         if f"/b{aid[1:]}.txt" not in line:
             continue
+        if line.lstrip().startswith("<a"):
+            break                   # a link line crediting no one
         author = line.split(", <a", 1)[0].strip()
         note = line.split("</a>", 1)[-1].strip(" ,.()")
         return (credit_ranges(author, note, n_pub)
                 or f"terms 1..{n_pub} from {author}"
                    + (f"; {note}" if note else ""))
-    return f"terms 1..{n_pub} as previously published"
+    return (data_credit(entry(aid, refresh), n_pub)
+            or f"terms 1..{n_pub} as previously published")
+
+
+def entry_names(rec):
+    """Everyone the entry credits for terms: %A, then each %E, in order."""
+    a = rec.get("author") or ""
+    names = re.findall(r"_([^_]+)_", a) or [re.split(r"\s*[(,;]", a)[0].strip()]
+    for line in rec.get("ext") or []:
+        names += re.findall(r"_([^_]+)_", line)
+    return list(dict.fromkeys(n for n in names if n))
+
+
+def data_credit(rec, n_pub):
+    """Credit for published terms no b-file link credits, or None.
+
+    The %A author found the opening terms and each %E "a(21)-a(30) from
+    _Name_" line names who added a later run. When those runs account for
+    every term, each is credited with its range; otherwise everyone the
+    entry names is credited for the lot, rather than guess at ranges.
+    """
+    first = int(str(rec.get("offset", "1")).split(",")[0])
+    last = first + n_pub - 1
+    names = entry_names(rec)
+    if not names:
+        return None
+    ranges = []
+    for line in rec.get("ext") or []:
+        m = re.fullmatch(r"a\((\d+)\)(?:\s*-\s*a\((\d+)\))? from _([^_]+)_"
+                         r"(?:, \w+ \d+ \d{4})?", line.strip())
+        if not m:
+            ranges = None
+            break
+        lo = int(m.group(1))
+        ranges.append((lo, int(m.group(2) or lo), m.group(3)))
+    if ranges and ranges[0][0] > first:
+        ranges = sorted(ranges)
+        ranges.insert(0, (first, ranges[0][0] - 1, names[0]))
+        if (all(lo == hi + 1 for (_, hi, _), (lo, _, _)
+                in zip(ranges, ranges[1:])) and ranges[-1][1] == last):
+            return ", ".join(f"terms {lo}..{hi} from {who}"
+                             for lo, hi, who in ranges)
+    who = (names[0] if len(names) == 1 else
+           ", ".join(names[:-1]) + " and " + names[-1])
+    return f"terms {first}..{last} from {who}"
 
 
 def data_append_fits(rec, n_pub, new):
@@ -1747,7 +1793,7 @@ def build_sibling_bfile(aid, families, files, built, results, cov, check,
     files[name] = oeis_submit.bfile(
         aid, list(enumerate(vals, first)),
         [credit[0].upper() + credit[1:] + ".",
-         f"Terms {len(pub) + 1}..{len(vals)} are new.",
+         f"Terms {first + len(pub)}..{first + len(vals) - 1} are new.",
          f"Every term independently rederived by an exhaustive scan from 0,",
          f"as column {m['col']} of its {fam} records."],
         oeis_submit.scan_byline(data_date(results)), cov.get(fam, 0),

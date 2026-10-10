@@ -1,6 +1,6 @@
 # A031132, 71 terms.
 #
-# Terms 1..67 as previously published.
+# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.
 # Terms 68..71 are new.
 # Every term independently rederived by an exhaustive scan from 0,
 # as column 3 of its aloof records.

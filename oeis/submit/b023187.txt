@@ -1,6 +1,6 @@
 # A023187, 61 terms.
 #
-# Terms 1..56 as previously published.
+# Terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov.
 # Terms 57..61 are new.
 # Every term independently rederived by an exhaustive scan from 0,
 # as column 3 of its lonely records.
