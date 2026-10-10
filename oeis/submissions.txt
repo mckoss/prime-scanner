@@ -25,7 +25,7 @@ a-file:A000101  declined   2026-09-30  Same Beveridge table as a005250.txt (a000
 a-file:A107578  declined   2026-09-30  Same Beveridge table as a005250.txt; declined with it.
 draft:A005250   declined   2026-09-30  No open draft: rev 277 reverted at Mike's request, entry approved at rev 290.
 
-terms:equidistant     submitted  2026-10-10  A058867 b-file to 34 terms, a(31)-a(34) with %E credits and the A052187 link
+terms:equidistant     submitted  2026-10-10  A058867 proposed: b058867_1.txt 1..34 crediting Harvey Dubner (1..20) and Dmitry Petukhov (21..30); %E a(31)-a(34); no A052187 link
 bound:equidistant     skip       2026-10-10  Not added: the search bound is in the a-file header, not worth a comment on the entry
-a-file:equidistant    submitted  2026-10-10  A058867 a-file a058867.txt, 34 rows, same draft
+a-file:equidistant    submitted  2026-10-10  A058867 a-file stored as a058867.txt, linked "Table of the first 34 records with bounding primes and gap"
 b-file:A058867        submitted  2026-10-10  A058867 b-file, same draft

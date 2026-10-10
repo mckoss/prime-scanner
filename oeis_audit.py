@@ -1746,11 +1746,14 @@ def generate_files(families, results, cov, index, check):
     return files, built
 
 
-def afile_link_text(n):
+def afile_link_text(n, fam):
     """What goes in an a-file upload's link-text box. OEIS fills in the
-    <a>'s href itself, with the name it stores the file under."""
+    <a>'s href itself, with the name it stores the file under. An
+    equidistant record's two gaps are one gap."""
+    gaps = "gap" if fam == "equidistant" else "both gaps"
+    both = "" if fam == "equidistant" else "both "
     return (f"{oeis_submit.ATTRIB['name']}, <a>Table of the first {n} records "
-            f"with both bounding primes and both gaps</a>")
+            f"with {both}bounding primes and {gaps}</a>")
 
 
 def build_sibling_bfile(aid, families, files, built, results, cov, check,
@@ -1927,24 +1930,13 @@ def submission(items, families, results, refresh, check):
             # The b-file carries every extension, whether or not DATA does.
             credit = build_terms_bfile(fam)
             add_bfile(d, aid, *built[("b", aid)], credit)
+            # One %E line for the run, ending at "from": OEIS appends the
+            # name and date itself. A term an earlier table already had (an
+            # A052187 triple) is told to the editors, not added to the entry.
             prior = (oeis_sources.balanced_matches(new)
                      if fam == "equidistant" else {})
-            if prior:
-                for row in new:
-                    n = row[0]
-                    # An %E line ends at "from": OEIS appends the
-                    # submitter's name and date itself.
-                    text = (oeis_sources.balanced_credit(n, prior[n])
-                            if n in prior else f"a({n}) from")
-                    d["edits"].append(op("Ext", "add", text=text))
-                d["edits"].append(op("Link", "add", text=(
-                    'Jerry M. Lagrou and earlier contributors, '
-                    '<a href="/A052187/b052187.txt">First-occurrence balanced '
-                    'prime triples (lower endpoints)</a>.')))
-            else:
-                # Ends at "from": OEIS appends the name and date itself.
-                d["edits"].append(op("Ext", "add", text=(
-                    f"a({n_pub + 1})-a({n_pub + len(new)}) from")))
+            d["edits"].append(op("Ext", "add", text=(
+                f"a({n_pub + 1})-a({n_pub + len(new)}) from")))
             d["summary"] = (
                 f"Extend from {n_pub} to {n_pub + len(new)} terms from an "
                 f"exhaustive scan from 0, complete below "
@@ -2000,7 +1992,7 @@ def submission(items, families, results, refresh, check):
             if fam in oeis_submit.AFILE:
                 # The upload's own link-text box makes the %H line, with the
                 # href OEIS stores the file under filled in for us.
-                d["uploads"][-1]["desc"] = afile_link_text(n)
+                d["uploads"][-1]["desc"] = afile_link_text(n, fam)
                 d["summary"] = d["summary"] or (
                     f"Add an a-file giving each record's bounding primes and "
                     f"both gaps ({n} rows).")
@@ -2058,7 +2050,7 @@ def submission(items, families, results, refresh, check):
         if not upload(d, "a-file", name, n):
             continue
         d["uploads"][-1].update(minor=True, replaces=stored,
-                                desc=afile_link_text(n))
+                                desc=afile_link_text(n, fam))
         d["what"].append(f"a-file {n} rows (minor update)")
         # The upload writes the new file's %H line; the old one goes.
         d["edits"].append(op("Link", "remove", find=f'href="/{aid}/{stored}"'))

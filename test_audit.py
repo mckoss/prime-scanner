@@ -86,10 +86,12 @@ class PublishedSourcesTests(unittest.TestCase):
         body = [l.split() for l in files["b058867.txt"].splitlines()
                 if l and not l.startswith("#")]
         self.assertEqual([int(v) for _, v in body[30:]], [r[1] for r in rows[30:]])
+        # The entry gets one plain %E line, as A058867 was submitted; the
+        # earlier A052187 triple is told to the editors, not the entry.
         extensions = [e["text"] for e in draft["edits"] if e["field"] == "Ext"]
-        self.assertIn("A052187(72) + 426", extensions[0])
-        self.assertIn("Lagrou", extensions[0])
-        self.assertFalse(any("a(31)-a(34) from" in e for e in extensions))
+        self.assertEqual(extensions, ["a(31)-a(34) from"])
+        self.assertFalse(any("A052187" in (e.get("text") or "")
+                             for e in draft["edits"]))
         self.assertIn("already tabulated", draft["to_editors"])
         self.assertIn("A052187(72) + 426", files["a058867.txt"])
         with contextlib.redirect_stdout(io.StringIO()) as output:
