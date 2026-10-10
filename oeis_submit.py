@@ -813,6 +813,10 @@ INDEX_HTML = r"""<!doctype html>
  td.n{color:#999;width:2em;text-align:right}
  a{color:#0969da} code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
  .what{color:#555;font-size:13px}
+ .edit{display:inline-block;margin-left:6px;padding:0 8px;font-size:12px;
+       border:1px solid #0969da;border-radius:10px;text-decoration:none;
+       white-space:nowrap}
+ .edit:hover{background:#0969da;color:#fff}
  .name{color:#777;font-size:12px;white-space:nowrap}
  .bm{display:inline-block;padding:6px 14px;border:1px solid #0969da;
      border-radius:6px;color:#0969da;text-decoration:none;font-weight:600}
@@ -941,7 +945,8 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
             return ""
         out = (f'<a href="https://oeis.org/{aid}" target="_blank">{aid}</a>')
         if edit_url:
-            out += f' &middot; <a href="{edit_url}" target="_blank">edit</a>'
+            out += (f' <a class="edit" href="{edit_url}" target="_blank" '
+                    f'title="Open the OEIS edit form">&#9998; Edit</a>')
         if aid in names:
             out += f'<br><span class="name">{html.escape(names[aid])}</span>'
         return out
@@ -983,7 +988,8 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
     if new_seqs:
         extra += "<h2>New sequences</h2><table>" + "".join(
             f'<tr><td class="n">&mdash;</td>'
-            f'<td><a href="{n["url"]}" target="_blank">new</a></td>'
+            f'<td><a class="edit" href="{n["url"]}" target="_blank" '
+            f'title="Open the OEIS new-sequence form">&#9998; New</a></td>'
             f'<td class="what">{linked(n["role"])}</td><td></td>'
             f'<td class="warn">{n.get("status") or ""}</td></tr>'
             for n in new_seqs) + "</table>"
