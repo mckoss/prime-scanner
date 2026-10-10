@@ -1140,7 +1140,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
                 + (' &mdash; <span class="ok">up to date</span>' if current
                    else ""))
 
-    def seq_cell(aid, edit_url=None):
+    def seq_cell(aid, edit_url=None, views=()):
         """The A-number, linked to its public page, with its OEIS title, its
         friendly name and, for a draft, the edit form. Both open in a new tab, so the worklist
         stays put; the bookmarklet runs in whichever tab it is clicked."""
@@ -1150,6 +1150,17 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
         if edit_url:
             out += (f' <a class="edit" href="{edit_url}" target="_blank" '
                     f'title="Open the OEIS edit form">&#9998; Edit</a>')
+        # Read-only pages for an edit already sent: the open draft with its
+        # discussion, and the revision history. No form, so nothing to edit
+        # by accident.
+        for view in views:
+            url, label, tip = {
+                "draft": (f"https://oeis.org/draft/{aid}", "Draft",
+                          "The open draft and its discussion"),
+                "history": (f"https://oeis.org/history?seq={aid}", "History",
+                            "The entry's revision history")}[view]
+            out += (f' <a class="edit" href="{url}" target="_blank" '
+                    f'title="{tip}">{label}</a>')
         if aid in titles:
             out += f'<div class="title">{linked(titles[aid])}</div>'
         if aid in names:
@@ -1196,6 +1207,8 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
              "pending": ("warn", "&hellip;")}
     for r in other.get("done") or []:
         cls, mark = looks[r["state"]]
+        views = (("draft", "history") if r["state"] == "pending"
+                 else ("history",))
         done_files = "<br>".join(
             f'<a href="{html.escape(href)}"'
             + (' target="_blank"' if href.startswith("http") else "")
@@ -1206,7 +1219,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
                 x for x in (done_files, published_bfile(r["aid"])) if x)
         rows.append(
             f'<tr class="done"><td class="n {cls}">{mark}</td>'
-            f'<td>{seq_cell(r["aid"])}</td>'
+            f'<td>{seq_cell(r["aid"], views=views)}</td>'
             f'<td class="what"><code>{linked(r["id"])}</code> {linked(r["reason"])}</td>'
             f'<td>{done_files}</td>'
             f'<td class="{cls}">{r["state"]} {r["date"]}'
