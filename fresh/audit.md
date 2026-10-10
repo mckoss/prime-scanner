@@ -264,11 +264,8 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
    -. blocked  b-file:A122413
    -. review   review:A120384
    -. review   review:neighbours
-     in review  A058867  a-file:equidistant  2026-10-10
-     in review  A058867  b-file:A058867  2026-10-10
-     in review  A058867  terms:equidistant  2026-10-10
-   ✓ approved  A023186  a-file:lonely  2026-10-06
-   ✓ approved  A023186  terms:lonely  2026-10-06
+     in review  A058867  a-file:equidistant, b-file:A058867, terms:equidistant  2026-10-10
+   ✓ approved  A023186  a-file:lonely, terms:lonely  2026-10-06
    ✗ rejected  A000101  a-file:A000101  2026-09-30
    ✗ rejected  A005250  a-file:A005250  2026-09-30
    ✗ rejected  A107578  a-file:A107578  2026-09-30

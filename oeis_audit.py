@@ -1031,6 +1031,30 @@ def done_files(r, families, files):
     return [(name, name)] if name in files else []
 
 
+def merge_done(rows):
+    """One schedule row per OEIS edit, not per item.
+
+    A single edit often settles several items at once -- a b-file, its
+    a-file and the extended terms go up in one draft -- and each gets its own
+    line in submissions.txt. Rows for the same sequence, state and date are
+    that one edit, so they are shown together: ids and notes joined, files
+    listed once each.
+    """
+    out, seen = [], {}
+    for r in rows:
+        key = (r["aid"], r["state"], r["date"])
+        if key not in seen or not r["aid"]:
+            seen[key] = dict(r, files=list(r.get("files") or []))
+            out.append(seen[key])
+            continue
+        m = seen[key]
+        m["id"] += ", " + r["id"]
+        m["reason"] = "; ".join(x for x in (m["reason"], r["reason"]) if x)
+        labels = {l for l, _ in m["files"]}
+        m["files"] += [f for f in r.get("files") or [] if f[0] not in labels]
+    return out
+
+
 def data_lines(text):
     """A b-file's or a-file's rows, with comments and spacing set aside."""
     return [l.split() for l in text.splitlines()
@@ -2086,6 +2110,7 @@ def submission(items, families, results, refresh, check):
             d["summary"] = summarise(d)
     for r in other["done"]:
         r["files"] = done_files(r, families, files)
+    other["done"] = merge_done(other["done"])
 
     def priority(d):
         """Schedule order: a b-file for a family's named sequence -- the
