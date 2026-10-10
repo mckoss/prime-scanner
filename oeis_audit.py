@@ -1865,7 +1865,7 @@ def submission(items, families, results, refresh, check):
                                               for l in links)})
         return True
 
-    def add_bfile(d, aid, name, n, credit):
+    def add_bfile(d, aid, name, n, credit, prior):
         """The b-file upload, and the credit its link line needs afterwards.
 
         On upload OEIS rewrites the b-file link line itself, pointing it at
@@ -1873,10 +1873,11 @@ def submission(items, families, results, refresh, check):
         only the uploader, which drops everyone who computed the earlier
         terms. The stored name is unknown until then, so the edit carries a
         placeholder href that fill.js swaps for the name OEIS chose.
+        `prior` is how many terms OEIS has now, in its b-file or DATA.
         """
         if not upload(d, "b-file", name, n):
             return
-        d["what"].append(f"b-file {n} terms")
+        d["what"].append(f"b-file +{n - prior} terms ({prior} to {n})")
         d["edits"].append(op(
             "Link", "credit_bfile_link",
             text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/'
@@ -1959,7 +1960,8 @@ def submission(items, families, results, refresh, check):
                            for r in new]))
             # The b-file carries every extension, whether or not DATA does.
             credit = build_terms_bfile(fam)
-            add_bfile(d, aid, *built[("b", aid)], credit)
+            name, n = built[("b", aid)]
+            add_bfile(d, aid, name, n, credit, n - len(new))
             # One %E line for the run, ending at "from": OEIS appends the
             # name and date itself. A term an earlier table already had (an
             # A052187 triple) is told to the editors, not added to the entry.
@@ -1997,8 +1999,9 @@ def submission(items, families, results, refresh, check):
             famname, _, s = member_of(families, aid)
             d = draft(aid, s["m"]["role"] if s else aid)
             d["items"].append(iid)
-            add_bfile(d, aid, name, n, prior_credit(
-                aid, len(bfile_terms_list(aid, refresh)), refresh))
+            n_pub = len(bfile_terms_list(aid, refresh))
+            add_bfile(d, aid, name, n, prior_credit(aid, n_pub, refresh),
+                      n_pub)
 
         elif kind == "a-file":
             # `a-file:<family>` is one we would add; `a-file:<A-number>` is an
@@ -2018,7 +2021,12 @@ def submission(items, families, results, refresh, check):
             d["items"].append(iid)
             if not upload(d, "a-file", name, n):
                 continue
-            d["what"].append(f"a-file {n} rows")
+            # The a-files the entry links now, by the name OEIS stores them.
+            prior = [afile_url(l).rsplit("/", 1)[1]
+                     for l in (s or {}).get("af") or [] if afile_url(l)]
+            d["what"].append(f"a-file {n} rows ("
+                             + (f"prior {', '.join(prior)}" if prior
+                                else "no prior a-file") + ")")
             if fam in oeis_submit.AFILE:
                 # The upload's own link-text box makes the %H line, with the
                 # href OEIS stores the file under filled in for us.
@@ -2029,7 +2037,8 @@ def submission(items, families, results, refresh, check):
             else:
                 # Beveridge's file, linked from A005250 and A107578 already.
                 # Uploading a longer one changes the data, not the link.
-                d["what"][-1] = f"a-file {n} rows (update)"
+                d["what"][-1] = (f"a-file {n} rows (updates "
+                                 f"{', '.join(prior) or name})")
                 d["summary"] = d["summary"] or (
                     f"Update the existing a-file to {n} rows; its link text "
                     f"is unchanged.")
@@ -2081,7 +2090,7 @@ def submission(items, families, results, refresh, check):
             continue
         d["uploads"][-1].update(minor=True, replaces=stored,
                                 desc=afile_link_text(n, fam))
-        d["what"].append(f"a-file {n} rows (minor update)")
+        d["what"].append(f"a-file {n} rows (minor update of {stored})")
         # The upload writes the new file's %H line; the old one goes.
         d["edits"].append(op("Link", "remove", find=f'href="/{aid}/{stored}"'))
         d["summary"] = d["summary"] or (

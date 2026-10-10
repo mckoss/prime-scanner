@@ -10,7 +10,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A087770",
    "role": "the pairwise lonely prime",
-   "what": "b-file 41 terms, a-file 41 rows, Xref +A096265 (optional)",
+   "what": "b-file +12 terms (29 to 41), a-file 41 rows (no prior a-file), Xref +A096265 (optional)",
    "items": [
     "terms:pairwise",
     "a-file:pairwise",
@@ -73,7 +73,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A096265",
    "role": "the aloof prime",
-   "what": "b-file 72 terms, a-file 72 rows, Xref +A031133 (optional), Xref +A031134 (optional), Xref +A122412 (optional), Xref +A122413 (optional)",
+   "what": "b-file +16 terms (56 to 72), a-file 72 rows (no prior a-file), Xref +A031133 (optional), Xref +A031134 (optional), Xref +A122412 (optional), Xref +A122413 (optional)",
    "items": [
     "terms:aloof",
     "b-file:A096265",
@@ -151,7 +151,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A005669",
    "role": "index of the lower prime",
-   "what": "b-file 85 terms, Xref +A107578 (optional)",
+   "what": "b-file +3 terms (82 to 85), Xref +A107578 (optional)",
    "items": [
     "b-file:A005669",
     "xref:A005669:A107578"
@@ -195,7 +195,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A023187",
    "role": "distance to the nearer neighbour",
-   "what": "b-file 61 terms",
+   "what": "b-file +5 terms (56 to 61)",
    "items": [
     "b-file:A023187"
    ],
@@ -226,7 +226,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A031132",
    "role": "the span between them",
-   "what": "b-file 71 terms, Xref +A096265 (optional)",
+   "what": "b-file +4 terms (67 to 71), Xref +A096265 (optional)",
    "items": [
     "b-file:A031132",
     "xref:A031132:A096265"
@@ -270,7 +270,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A031133",
    "role": "the lower neighbour",
-   "what": "b-file 71 terms",
+   "what": "b-file +4 terms (67 to 71)",
    "items": [
     "b-file:A031133"
    ],
@@ -301,7 +301,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A031134",
    "role": "the upper neighbour",
-   "what": "b-file 71 terms",
+   "what": "b-file +4 terms (67 to 71)",
    "items": [
     "b-file:A031134"
    ],
@@ -332,7 +332,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A058868",
    "role": "the distance to each neighbour",
-   "what": "b-file 34 terms",
+   "what": "b-file +4 terms (30 to 34)",
    "items": [
     "b-file:A058868"
    ],
@@ -363,7 +363,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A107578",
    "role": "index of the upper prime",
-   "what": "b-file 85 terms",
+   "what": "b-file +5 terms (80 to 85)",
    "items": [
     "b-file:A107578"
    ],
@@ -454,7 +454,7 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A023186",
    "role": "the lonely prime",
-   "what": "Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update)",
+   "what": "Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update of a023186_1.txt)",
    "items": [
     "xref:A023186:A087770",
     "xref:A023186:A096265",
