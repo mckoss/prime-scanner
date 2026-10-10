@@ -946,6 +946,13 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
             out += f'<br><span class="name">{html.escape(names[aid])}</span>'
         return out
 
+    def linked(text):
+        """Plain text, escaped, with every A-number linked to its public page."""
+        return re.sub(r"\bA\d{6}\b",
+                      lambda m: f'<a href="https://oeis.org/{m[0]}" '
+                                f'target="_blank">{m[0]}</a>',
+                      html.escape(text or ""))
+
     rows = []
     for i, d in enumerate(drafts, 1):
         f = "<br>".join(
@@ -956,7 +963,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
         rows.append(
             f'<tr><td class="n">{i}</td>'
             f'<td>{seq_cell(d["aid"], d["url"])}</td>'
-            f'<td class="what">{d["what"]}</td>'
+            f'<td class="what">{linked(d["what"])}</td>'
             f'<td>{f}</td>'
             f'<td class="warn">{st}</td></tr>')
     # What has gone to OEIS: approved edits get a check, rejected ones a
@@ -969,7 +976,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
         rows.append(
             f'<tr class="done"><td class="n {cls}">{mark}</td>'
             f'<td>{seq_cell(r["aid"])}</td>'
-            f'<td class="what"><code>{r["id"]}</code> {html.escape(r["reason"])}</td>'
+            f'<td class="what"><code>{linked(r["id"])}</code> {linked(r["reason"])}</td>'
             f'<td></td>'
             f'<td class="{cls}">{r["state"]} {r["date"]}</td></tr>')
     extra = ""
@@ -977,15 +984,15 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
         extra += "<h2>New sequences</h2><table>" + "".join(
             f'<tr><td class="n">&mdash;</td>'
             f'<td><a href="{n["url"]}" target="_blank">new</a></td>'
-            f'<td class="what">{n["role"]}</td><td></td>'
+            f'<td class="what">{linked(n["role"])}</td><td></td>'
             f'<td class="warn">{n.get("status") or ""}</td></tr>'
             for n in new_seqs) + "</table>"
     for key, title, why in SECTIONS:
         if other.get(key):
             extra += (f"<h2>{title}</h2><p class=\"sub\">{why}</p><table>"
                       + "".join(
-                f'<tr><td class="n">&mdash;</td><td><code>{r["id"]}</code></td>'
-                f'<td class="what" colspan=3>{r["reason"]}</td></tr>'
+                f'<tr><td class="n">&mdash;</td><td><code>{linked(r["id"])}</code></td>'
+                f'<td class="what" colspan=3>{linked(r["reason"])}</td></tr>'
                 for r in other[key]) + "</table>")
 
     write(os.path.join(out_dir, "index.html"), INDEX_HTML % {
