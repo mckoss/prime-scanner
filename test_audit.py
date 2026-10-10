@@ -167,6 +167,31 @@ class ExtensionTests(unittest.TestCase):
         self.assertIn("Terms 57..61 are new.", files["b023186.txt"])
 
 
+class SubmissionsTests(unittest.TestCase):
+    def test_one_line_settles_every_id_it_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "submissions.txt")
+            with open(path, "w") as f:
+                f.write("# header\n"
+                        "terms:x,a-file:x,b-file:A000001  submitted  2026-10-10  one edit\n"
+                        "bound:x  skip  2026-10-10\n")
+            with patch.object(audit, "SUBMISSIONS", path):
+                status = audit.read_submissions()
+        self.assertEqual(sorted(status), ["a-file:x", "b-file:A000001", "bound:x", "terms:x"])
+        self.assertEqual(status["a-file:x"], ("submitted", "2026-10-10", "one edit"))
+
+    def test_one_edit_is_one_schedule_row(self):
+        rows = [{"id": i, "aid": "A000001", "state": "pending", "date": "2026-10-10",
+                 "reason": "one edit", "files": [("b000001.txt", "b000001.txt")]}
+                for i in ("a-file:x", "terms:x")]
+        rows.append({"id": "a-file:A000002", "aid": "A000002", "state": "pending",
+                     "date": "2026-10-10", "reason": "other", "files": []})
+        merged = audit.merge_done(rows)
+        self.assertEqual([r["id"] for r in merged], ["a-file:x, terms:x", "a-file:A000002"])
+        self.assertEqual(merged[0]["reason"], "one edit")
+        self.assertEqual(merged[0]["files"], [("b000001.txt", "b000001.txt")])
+
+
 class MarkdownTests(unittest.TestCase):
     def test_report_becomes_headings_prose_and_fenced_tables(self):
         text = "\n".join([

@@ -11,7 +11,9 @@
 # term of the run, or an a-file naming us that holds every record, shows as
 # approved in the schedule without a line here.
 #
-# The id is one of the `items:` entries under a draft in edits.yaml.
+# The id is one of the `items:` entries under a draft in edits.yaml. Items
+# that went to OEIS in one edit share a line, ids joined by commas with no
+# spaces: they are submitted, approved or declined together.
 #
 # `draft:<A-number>` is different: it records that the SEQUENCE has an open
 # draft on OEIS. Draft state is behind a login, so the audit cannot see it --
@@ -25,7 +27,5 @@ a-file:A000101  declined   2026-09-30  Same Beveridge table as a005250.txt (a000
 a-file:A107578  declined   2026-09-30  Same Beveridge table as a005250.txt; declined with it.
 draft:A005250   declined   2026-09-30  No open draft: rev 277 reverted at Mike's request, entry approved at rev 290.
 
-terms:equidistant     submitted  2026-10-10  A058867 proposed: b058867_1.txt 1..34 crediting Harvey Dubner (1..20) and Dmitry Petukhov (21..30); %E a(31)-a(34); no A052187 link
+terms:equidistant,a-file:equidistant,b-file:A058867  submitted  2026-10-10  A058867 proposed: b058867_1.txt 1..34 crediting Harvey Dubner (1..20) and Dmitry Petukhov (21..30); %E a(31)-a(34); no A052187 link; a-file stored as a058867.txt, linked "Table of the first 34 records with bounding primes and gap"
 bound:equidistant     skip       2026-10-10  Not added: the search bound is in the a-file header, not worth a comment on the entry
-a-file:equidistant    submitted  2026-10-10  A058867 a-file stored as a058867.txt, linked "Table of the first 34 records with bounding primes and gap"
-b-file:A058867        submitted  2026-10-10  A058867 b-file, same draft

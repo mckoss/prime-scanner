@@ -904,7 +904,11 @@ def item(group, id_, title, *detail):
 
 
 def read_submissions():
-    """{item id: (status, date, note)} from oeis/submissions.txt."""
+    """{item id: (status, date, note)} from oeis/submissions.txt.
+
+    A line may name several comma-separated ids -- the items one OEIS edit
+    settled together -- and each gets the line's status, date and note.
+    """
     status = {}
     if not os.path.exists(SUBMISSIONS):
         return status
@@ -917,8 +921,9 @@ def read_submissions():
             print(f"  ! {SUBMISSIONS}:{n}: expected '<id> <status> [date] "
                   f"[note]' with status one of {', '.join(STATUSES)}")
             continue
-        status[f[0]] = (f[1], f[2] if len(f) > 2 else "",
-                        f[3] if len(f) > 3 else "")
+        for iid in filter(None, f[0].split(",")):
+            status[iid] = (f[1], f[2] if len(f) > 2 else "",
+                           f[3] if len(f) > 3 else "")
     return status
 
 
@@ -1049,7 +1054,8 @@ def merge_done(rows):
             continue
         m = seen[key]
         m["id"] += ", " + r["id"]
-        m["reason"] = "; ".join(x for x in (m["reason"], r["reason"]) if x)
+        if r["reason"] and r["reason"] not in m["reason"].split("; "):
+            m["reason"] = "; ".join(x for x in (m["reason"], r["reason"]) if x)
         labels = {l for l, _ in m["files"]}
         m["files"] += [f for f in r.get("files") or [] if f[0] not in labels]
     return out
