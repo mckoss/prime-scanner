@@ -997,11 +997,11 @@ def done_items(status):
 def done_files(r, families, files):
     """[(label, href)] for the b-file or a-file a submitted item proposed.
 
-    An approved file is linked where OEIS publishes it, and only there: the
-    local build may have moved on since, and beside the published copy it
-    reads as a second upload. Otherwise -- a rejected item, whose file OEIS
-    no longer serves, or one in review -- the local copy is linked whenever
-    this run still builds it.
+    An approved file is linked where OEIS publishes it, and the local build
+    beside it only when its data differs -- an identical copy reads as a
+    second upload. Otherwise -- a rejected item, whose file OEIS no longer
+    serves, or one in review -- the local copy is linked whenever this run
+    still builds it.
     """
     kind, _, key = r["id"].partition(":")
     aid = r["aid"]
@@ -1018,8 +1018,23 @@ def done_files(r, families, files):
     else:
         return []
     if r["state"] == "approved" and url:
-        return [(f"{url.rsplit('/', 1)[1]} on OEIS", url)]
+        out = [(f"{url.rsplit('/', 1)[1]} on OEIS", url)]
+        if kind == "a-file":
+            path = os.path.join(CACHE, "afile", url.rsplit("/", 1)[1])
+        else:
+            path = bfile_path(aid, False)
+        if name in files and path and os.path.exists(path):
+            published = open(path, errors="replace").read()
+            if data_lines(files[name]) != data_lines(published):
+                out.append((f"{name} (ours, differs)", name))
+        return out
     return [(name, name)] if name in files else []
+
+
+def data_lines(text):
+    """A b-file's or a-file's rows, with comments and spacing set aside."""
+    return [l.split() for l in text.splitlines()
+            if l.strip() and not l.lstrip().startswith("#")]
 
 
 def bound_text(x):
