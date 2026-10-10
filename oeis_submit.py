@@ -316,7 +316,8 @@ def render_yaml(drafts, new_seqs, other, meta):
         for e in d["edits"]:
             o.append(f"  - field:  {e['field']}"
                      + (f"            # {e['code']}" if e["code"] else ""))
-            o.append(f"    action: {e['action']}")
+            o.append(f"    action: {e['action']}"
+                     + ("            # optional" if e.get("optional") else ""))
             if "add" in e:
                 o.append("    add:")
                 for aid, note in e["add"].items():
@@ -566,7 +567,7 @@ FILL_JS = r"""
     return draft.edits.map(function (e) {
       var p = plan(e);
       return { field: e.field, code: e.code, action: e.action,
-               done: !!p.done, err: p.err || null, wait: p.wait || null,
+               optional: !!e.optional, done: !!p.done, err: p.err || null, wait: p.wait || null,
                cur: read(e.field), next: p.val || null };
     });
   }
@@ -594,7 +595,10 @@ FILL_JS = r"""
       if (p.val) write(e.field, p.val);
       report();
     } else if (m.type === 'FILL_ALL') {
+      // Optional edits -- suggested cross-references -- are filled one by
+      // one, by choice, never in bulk.
       draft.edits.forEach(function (e) {
+        if (e.optional) return;
         var p = plan(e);
         if (p.val) write(e.field, p.val);
       });
@@ -660,6 +664,8 @@ PANEL_HTML = r"""<!doctype html>
        white-space:nowrap}
  .cur{background:#fffbe6}
  .st{margin-left:auto;flex:none;font-size:11px}
+ .opt{font-size:10px;color:#777;border:1px solid #ccc;border-radius:3px;
+      padding:0 4px}
  .done{color:var(--ok)} .part{color:var(--warn)} .err{color:var(--err)}
  .f{border:1px solid var(--line);border-radius:4px;padding:7px;margin:6px 0}
  .f b{font-family:ui-monospace,Menlo,monospace;font-size:12px}
@@ -727,6 +733,9 @@ function renderList(states){
   });
 }
 function liveState(states){
+  // A draft is saved once its required edits are; optional ones don't count.
+  var req = (states||[]).filter(function(s){return !s.optional});
+  if(req.length) states = req;
   if(!states||!states.length) return '';
   if(states.every(function(s){return s.done})) return 'saved';
   if(states.some(function(s){return s.done})) return 'filled';
@@ -740,7 +749,8 @@ function render(msg){
   if(draft){
     states.forEach(function(s,i){
       out += '<section class="f"><b>'+s.field+'</b> '
-           + '<span class="code">'+esc(s.code)+' · '+s.action+'</span>';
+           + '<span class="code">'+esc(s.code)+' · '+s.action+'</span>'
+           + (s.optional ? ' <span class="opt">optional</span>' : '');
       if(s.err) out += '<div class="err">'+esc(s.err)+'</div>';
       else if(s.wait) out += '<div class="why">Waits: '+esc(s.wait)+'</div>';
       else if(s.done) out += '<span class="st done"> ✓ applied</span>';

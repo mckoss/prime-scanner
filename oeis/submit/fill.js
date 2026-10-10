@@ -155,7 +155,7 @@
     return draft.edits.map(function (e) {
       var p = plan(e);
       return { field: e.field, code: e.code, action: e.action,
-               done: !!p.done, err: p.err || null, wait: p.wait || null,
+               optional: !!e.optional, done: !!p.done, err: p.err || null, wait: p.wait || null,
                cur: read(e.field), next: p.val || null };
     });
   }
@@ -183,7 +183,10 @@
       if (p.val) write(e.field, p.val);
       report();
     } else if (m.type === 'FILL_ALL') {
+      // Optional edits -- suggested cross-references -- are filled one by
+      // one, by choice, never in bulk.
       draft.edits.forEach(function (e) {
+        if (e.optional) return;
         var p = plan(e);
         if (p.val) write(e.field, p.val);
       });

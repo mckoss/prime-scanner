@@ -2023,10 +2023,12 @@ def submission(items, families, results, refresh, check):
                     e["add"][y] = note
                     break
             else:
-                d["edits"].append(op("Xref", "add", add={y: note}))
-            d["what"].append(f"Xref +{y}")
+                # A suggestion: the draft is complete without it.
+                d["edits"].append(op("Xref", "add", add={y: note},
+                                     optional=True))
+            d["what"].append(f"Xref +{y} (optional)")
             if not d["summary"]:
-                d["summary"] = "Add the reverse cross-reference."
+                d["summary"] = "Optionally add the reverse cross-reference."
 
     # An approved a-file of ours that today's build has moved past -- the
     # n = 1 row for p = 2 added after A023186's went in, say -- is offered as
@@ -2121,7 +2123,7 @@ def summarise(d):
         elif e["field"] == "Comment":
             bits.append("add a comment")
         elif e["field"] == "Xref":
-            bits.append("add cross-references to "
+            bits.append("optionally add cross-references to "
                         + ", ".join(sorted(e["add"])))
         elif e["action"] == "credit_bfile_link":
             continue

@@ -23,7 +23,7 @@ drafts:
   items: ["terms:pairwise", "a-file:pairwise", "xref:A087770:A096265", "b-file:A087770"]
   notes: true
   summary: >-
-    Extend the b-file to 41 terms; add cross-references to A096265.
+    Extend the b-file to 41 terms; optionally add cross-references to A096265.
   to_editors: >-
     Each new term is a record of the pairwise kind, rederived from zero rather
     than searched for: the scan is exhaustive to 26099160246699733 and
@@ -52,7 +52,7 @@ drafts:
     text: >-
       a(30)-a(41) from ~~~~
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A096265: the aloof prime
 
@@ -62,8 +62,8 @@ drafts:
   items: ["terms:aloof", "b-file:A096265", "a-file:aloof", "xref:A096265:A031133", "xref:A096265:A031134", "xref:A096265:A122412", "xref:A096265:A122413"]
   notes: true
   summary: >-
-    Extend the b-file to 72 terms; add cross-references to A031133, A031134,
-    A122412, A122413.
+    Extend the b-file to 72 terms; optionally add cross-references to A031133,
+    A031134, A122412, A122413.
   to_editors: >-
     Each new term is a record of the aloof kind, rederived from zero rather
     than searched for: the scan is exhaustive to 26099160246699733 and
@@ -92,7 +92,7 @@ drafts:
     text: >-
       a(57)-a(72) from ~~~~
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A031133: the lower neighbour
       A031134: the upper neighbour
@@ -105,7 +105,7 @@ drafts:
   items: ["b-file:A005669", "xref:A005669:A107578"]
   notes: true
   summary: >-
-    Extend the b-file to 85 terms; add cross-references to A107578.
+    Extend the b-file to 85 terms; optionally add cross-references to A107578.
   uploads:
   - kind: b-file
     path: oeis/submit/b005669.txt
@@ -119,7 +119,7 @@ drafts:
       1..85</a> (terms 1..77 from Charles R Greathouse IV, terms 78..82 from
       John W. Nicholson)
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A107578: index of the upper prime
 
@@ -147,7 +147,7 @@ drafts:
   url:   "https://oeis.org/edit?seq=A031132"
   items: ["b-file:A031132", "xref:A031132:A096265"]
   summary: >-
-    Extend the b-file to 71 terms; add cross-references to A096265.
+    Extend the b-file to 71 terms; optionally add cross-references to A096265.
   uploads:
   - kind: b-file
     path: oeis/submit/b031132.txt
@@ -162,7 +162,7 @@ drafts:
       Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov
       and Natalia Makarova)
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A096265: the aloof prime
 
@@ -251,10 +251,10 @@ drafts:
   url:   "https://oeis.org/edit?seq=A000101"
   items: ["xref:A000101:A053695"]
   summary: >-
-    Add the reverse cross-reference.
+    Optionally add the reverse cross-reference.
   edits:
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A053695: successive record-gap differences
 
@@ -263,10 +263,10 @@ drafts:
   url:   "https://oeis.org/edit?seq=A002386"
   items: ["xref:A002386:A053695", "xref:A002386:A087770", "xref:A002386:A107578"]
   summary: >-
-    Add cross-references to A053695, A087770, A107578.
+    Optionally add cross-references to A053695, A087770, A107578.
   edits:
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A053695: successive record-gap differences
       A087770: the pairwise lonely prime
@@ -277,8 +277,8 @@ drafts:
   url:   "https://oeis.org/edit?seq=A023186"
   items: ["xref:A023186:A087770", "xref:A023186:A096265", "a-file:update:lonely"]
   summary: >-
-    Add cross-references to A087770, A096265; add an a-file with the bounding
-    primes.
+    Optionally add cross-references to A087770, A096265; add an a-file with
+    the bounding primes.
   uploads:
   - kind: a-file
     path: oeis/submit/a023186.txt
@@ -287,7 +287,7 @@ drafts:
     link: "Mike Koss, <a>Table of the first 61 records with both bounding primes and both gaps</a>"
   edits:
   - field:  Xref            # %Y
-    action: add
+    action: add            # optional
     add:
       A087770: the pairwise lonely prime
       A096265: the aloof prime
