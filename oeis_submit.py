@@ -870,11 +870,12 @@ SECTIONS = (
 
 
 def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
-              titles=None):
+              titles=None, bfiles=None):
     """Write every generated file, and return the manifest.
 
-    `names` maps an A-number to the friendly name shown beside it, and
-    `titles` to its OEIS title.
+    `names` maps an A-number to the friendly name shown beside it, `titles`
+    to its OEIS title, and `bfiles` to (terms, current) for its published
+    b-file.
     """
     man = {}
     for name, text in sorted(files.items()):
@@ -938,7 +939,19 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
     write(os.path.join(out_dir, "fill.js"), FILL_JS % {"port": PORT}, man)
     write(os.path.join(out_dir, "panel.html"), PANEL_HTML, man)
 
-    names, titles = names or {}, titles or {}
+    names, titles, bfiles = names or {}, titles or {}, bfiles or {}
+
+    def published_bfile(aid):
+        """A line for a row that uploads no b-file: the one OEIS has, and
+        whether it already holds everything a scan could add."""
+        if aid not in bfiles:
+            return ""
+        n, current = bfiles[aid]
+        name = f"b{aid[1:]}.txt"
+        return (f'<a href="https://oeis.org/{aid}/{name}" target="_blank">'
+                f'<code>{name}</code></a> on OEIS, {n} terms'
+                + (' &mdash; <span class="ok">up to date</span>' if current
+                   else ""))
 
     def seq_cell(aid, edit_url=None):
         """The A-number, linked to its public page, with its OEIS title, its
@@ -969,6 +982,8 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
             f'<a href="{os.path.basename(u["path"])}"><code>'
             f'{os.path.basename(u["path"])}</code></a> {u["kind"]}'
             for u in d.get("uploads") or [])
+        if not any(u["kind"] == "b-file" for u in d.get("uploads") or []):
+            f = "<br>".join(x for x in (f, published_bfile(d["aid"])) if x)
         st = d.get("status") or ("blocked" if d.get("blocked_on") else "")
         rows.append(
             f'<tr><td class="n">{i}</td>'
@@ -988,6 +1003,9 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
             + (' target="_blank"' if href.startswith("http") else "")
             + f'><code>{html.escape(label)}</code></a>'
             for label, href in r.get("files") or [])
+        if not any(l.startswith("b") for l, _ in r.get("files") or []):
+            done_files = "<br>".join(
+                x for x in (done_files, published_bfile(r["aid"])) if x)
         rows.append(
             f'<tr class="done"><td class="n {cls}">{mark}</td>'
             f'<td>{seq_cell(r["aid"])}</td>'

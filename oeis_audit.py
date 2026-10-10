@@ -1457,8 +1457,17 @@ def run_audit(args):
         e = aid and entry(aid, args.refresh)
         if e and e.get("name"):
             titles[aid] = e["name"]
+    # {aid: (terms, current)} for each member's published b-file. Current
+    # means it reaches its family's deepest term and every term this run
+    # has, so there is nothing for a b-file of ours to add.
+    bfiles = {}
+    for f in families.values():
+        for s in f["seqs"]:
+            if not s["gone"] and s["b"]:
+                want = max(f["deepest"] + s["m"]["delta"], s["scan"] or 0)
+                bfiles[s["aid"]] = (s["b"], s["b"] >= want)
     man = oeis_submit.write_all(SUBMIT, drafts, new_seqs, other, meta, files,
-                                 NAME_OF, titles)
+                                 NAME_OF, titles, bfiles)
     print(f"  wrote {len(man)} files to {os.path.relpath(SUBMIT)}/")
     print(f"  open  http://localhost:{oeis_submit.PORT}/  "
           f"(make submit)\n")
