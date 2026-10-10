@@ -16,9 +16,9 @@ appear in three of them for different reasons:
 
 | | what it is | edited by |
 |---|---|---|
-| `*.txt` here | our committed snapshot of a **published** b-file, in `n a(n)` form. `check_oeis.py` diffs the scan against these | `check_oeis.py --refresh`, when OEIS gains terms |
+| `*.txt` here | our committed snapshot of a **published** b-file, in `n a(n)` form. `check_oeis.py` diffs the scan against these | `make oeis-refresh`, when OEIS gains terms |
 | `andersen-luhn-index.txt` | a committed, parsed copy of a **third-party** table: the prime indices no scan here produces | `oeis_audit.py --refresh-index` |
-| `audit/` | the fetch cache -- raw OEIS JSON, published b-files and a-files, the cross-reference crawl. Gitignored | `oeis_audit.py --refresh` |
+| `audit/` | the fetch cache -- raw OEIS JSON, published b-files and a-files, the cross-reference crawl. Not the b-files committed above. Gitignored | `make audit-refresh` |
 | `submit/` | everything **we would send to OEIS**: the edit script, the b-files and a-files to upload, and the browser tooling that fills the edit form | `oeis_audit.py --results fresh` |
 
 So `lonely.txt`, `audit/b023186.txt` and `submit/a023186.txt` are three
@@ -230,14 +230,17 @@ lower: A096265 carries an extra a(1) = 2 with no lower neighbour, so family
 term k is A096265 term k+1. Checking A096265 alone once made published records
 look like discoveries, so the check reads the family.
 
-`audit/` holds `oeis_audit.py`'s working copies of the wider set of entries it
-inspects, and is not committed.
+`oeis_audit.py` reads these same files rather than fetching its own copies,
+so the audit, the check and the README always agree on what is published.
+`audit/` holds its working copies of the wider set of entries it inspects, and
+is not committed.
 
 To update, with or without checking a run:
 
 ```
-python3 check_oeis.py --refresh             # just update these files
+make oeis-refresh                           # just update these files
 python3 check_oeis.py fresh --refresh       # update, then check a run
+make audit-refresh                          # update, then refetch and rerun the audit
 ```
 
 It reports what moved and names any new terms, since a newly published term

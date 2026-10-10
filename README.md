@@ -150,7 +150,8 @@ published b-files, position by position, and re-tests every record prime with
 a deterministic Miller-Rabin independent of the sieve. `oeis_audit.py` reports
 which family members lag their siblings, which lack b-files or a-files, and
 where the frontier stands against each family. Both read cached copies in
-[`oeis/`](oeis/README.md); add `--refresh` to refetch.
+[`oeis/`](oeis/README.md); `make oeis-refresh` refetches the committed
+b-files, and `make audit-refresh` refetches those and everything the audit reads.
 
 Use `--jobs` equal to the free *performance* cores. Wall time on an M1 Max
 with 8 workers, from the measured rate curve:

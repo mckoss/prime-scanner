@@ -19,7 +19,7 @@ LDLIBS := -lm
 BIN := sieve
 REF := reference/mod30
 
-.PHONY: all test test-slow test-widths test-submit bench reference clean audit oeis-readme submit pgaps graph
+.PHONY: all test test-slow test-widths test-submit bench reference clean audit audit-refresh oeis-refresh oeis-readme submit pgaps graph
 
 all: $(BIN)
 
@@ -83,6 +83,17 @@ bench: $(BIN) $(REF)
 # is kept beside the run it audits, in fresh/audit.md.
 audit:
 	python3 -u oeis_audit.py --results fresh --markdown fresh/audit.md
+	python3 oeis_readme.py
+
+# Refetch the committed b-file snapshots in oeis/*.txt from OEIS. Review and
+# commit the diff: a newly published term is one a scan can no longer claim.
+oeis-refresh:
+	python3 check_oeis.py --refresh
+
+# The audit, after refetching everything it reads from OEIS: the snapshots
+# above, then entries, other b-files, a-files and citing searches.
+audit-refresh: oeis-refresh
+	python3 -u oeis_audit.py --refresh --results fresh --markdown fresh/audit.md
 	python3 oeis_readme.py
 
 # Refresh just the scan-dependent parts of oeis/README.md from local files.

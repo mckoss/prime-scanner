@@ -82,10 +82,16 @@ for name in sorted(os.listdir(SUBMIT)):
 
 # --- the b-files agree with what OEIS already publishes --------------------
 CACHE = os.path.join(HERE, "oeis", "audit")
+sys.path.insert(0, HERE)
+from oeis_audit import SNAPSHOT_OF  # noqa: E402
 
 
 def published(stem):
-    p = os.path.join(CACHE, stem)
+    # A b-file we commit a snapshot of is read from there, as the audit does;
+    # the rest come from the audit's cache.
+    snap = SNAPSHOT_OF.get("A" + stem[1:7])
+    p = (os.path.join(HERE, "oeis", f"{snap}.txt") if snap
+         else os.path.join(CACHE, stem))
     if not os.path.exists(p):
         return {}
     out = {}

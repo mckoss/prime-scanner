@@ -83,7 +83,8 @@ Two tools, different jobs — neither replaces the other:
                                    # their siblings, which lack a-files, and where
                                    # the frontier stands against each family
 
-Add `--refresh` to either to refetch from OEIS.
+`make oeis-refresh` refetches the committed b-files both read;
+`make audit-refresh` refetches those and the rest of what the audit reads.
 
 ## Status 2026-09-14: publishing checkpoint reached
 

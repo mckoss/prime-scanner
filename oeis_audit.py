@@ -151,6 +151,10 @@ FAMILIES = {
     },
 }
 
+# {A-number: stem} for the members whose b-file is committed under oeis/.
+SNAPSHOT_OF = {aid: m["local"] for f in FAMILIES.values()
+               for aid, m in f["members"].items() if m["local"]}
+
 
 # NEIGHBOURS: sequences outside the families that a family member cites, or
 # that cite one. A087770 -- a stale second definition of lonely primes -- sat
@@ -235,8 +239,15 @@ NOT_TRACKED = {
 }
 
 
+# Paths already fetched in this run. --refresh means "once per run", not once
+# per call: the survey, neighbour scan, a-file coverage and frontier report
+# all ask for the same entries and b-files, and refetching each time nearly
+# doubled the requests sent to OEIS.
+_fetched = set()
+
+
 def fetch(url, path, refresh):
-    if os.path.exists(path) and not refresh:
+    if os.path.exists(path) and (not refresh or path in _fetched):
         return True
     os.makedirs(os.path.dirname(path), exist_ok=True)
     r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", path],
@@ -247,6 +258,7 @@ def fetch(url, path, refresh):
         if os.path.exists(path):
             os.remove(path)
         return False
+    _fetched.add(path)
     return True
 
 
@@ -393,14 +405,31 @@ def entry(aid, refresh):
     return d[0] if isinstance(d, list) else d["results"][0]
 
 
+def bfile_path(aid, refresh):
+    """Where aid's b-file is, or None if it could not be fetched.
+
+    A b-file we keep a committed snapshot of is read from oeis/ and never
+    fetched here: check_oeis.py --refresh (make oeis-refresh) is what updates
+    those, so the audit, check_oeis.py and oeis_readme.py all see one copy.
+    """
+    stem = SNAPSHOT_OF.get(aid)
+    if stem:
+        path = os.path.join(SNAPSHOTS, f"{stem}.txt")
+        return path if os.path.exists(path) else None
+    path = os.path.join(CACHE, f"b{aid[1:]}.txt")
+    if not fetch(f"https://oeis.org/{aid}/b{aid[1:]}.txt", path, refresh):
+        return None
+    return path
+
+
 def bfile_terms(aid, refresh):
     """Number of terms in the b-file, or None if the sequence has none.
 
     OEIS synthesizes a b-file from the DATA section when none was uploaded, so
     a b-file that merely echoes DATA counts as missing.
     """
-    path = os.path.join(CACHE, f"b{aid[1:]}.txt")
-    if not fetch(f"https://oeis.org/{aid}/b{aid[1:]}.txt", path, refresh):
+    path = bfile_path(aid, refresh)
+    if not path:
         return None, False
     text = open(path, errors="replace").read()
     synth = "synthesized" in text.split("\n")[0].lower()
@@ -476,8 +505,8 @@ def scan_days(lo, hi):
 
 
 def bfile_terms_list(aid, refresh):
-    path = os.path.join(CACHE, f"b{aid[1:]}.txt")
-    if not fetch(f"https://oeis.org/{aid}/b{aid[1:]}.txt", path, refresh):
+    path = bfile_path(aid, refresh)
+    if not path:
         return []
     terms = []
     for l in open(path, errors="replace"):
