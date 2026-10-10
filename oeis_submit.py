@@ -319,6 +319,8 @@ def render_yaml(drafts, new_seqs, other, meta):
                 o.append("    add:")
                 for aid, note in e["add"].items():
                     o.append(f"      {aid}: {q(note)}")
+            if "find" in e:
+                o.append(f"    find:   {q(e['find'])}")
             if "text" in e:
                 o.append(f"    text: {block(e['text'], 6)}")
             if "terms" in e:
@@ -468,6 +470,20 @@ FILL_JS = r"""
     throw 'no link line for ' + up;
   }
 
+  // Swap the one line containing `find` -- the link to a file being
+  // replaced -- for `text`.
+  function replaceLine(cur, find, text) {
+    var lines = (cur || '').split('\n');
+    for (var i = 0; i < lines.length; i++)
+      if (lines[i].trim() === text.trim()) return null;
+    for (i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf(find) < 0) continue;
+      lines[i] = text;
+      return lines.join('\n');
+    }
+    throw 'no line containing ' + find;
+  }
+
   function addLine(cur, text) {
     var probe = text.replace(/\s+/g, ' ').slice(0, 45);
     if ((cur || '').replace(/\s+/g, ' ').indexOf(probe) >= 0) return null;
@@ -488,6 +504,8 @@ FILL_JS = r"""
         v = appendData(cur, e.after_n_term, e.terms);
       else if (e.action === 'add')
         v = addLine(cur, e.text);
+      else if (e.action === 'replace')
+        v = replaceLine(cur, e.find, e.text);
       else if (e.action === 'credit_bfile_link') {
         var u = (draft.uploads || []).filter(function (x) {
           return x.kind === 'b-file'; })[0];
@@ -909,6 +927,11 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
                     f"box ticked. OEIS then rewrites the b-file %H line to "
                     f"credit only you; once saved, the Link card puts the "
                     f"earlier contributors back.")
+        if u.get("replaces"):
+            return (f"The a-file update: {u['rows']} rows, replacing "
+                    f"{u['replaces']}. The Link card swaps that file's %H line "
+                    f"for one linking {name}; if OEIS stores it under another "
+                    f"name, such as {name[:-4]}_2.txt, make the link match.")
         linked = any(name in (e.get("text") or "") for e in d["edits"])
         return (f"The a-file: {u['rows']} rows, each record with its "
                 f"bounding primes and gaps. "

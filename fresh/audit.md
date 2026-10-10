@@ -243,26 +243,27 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
       Extend the b-file to 72 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A031133, A031134, A122412, A122413.
    4. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file to 85 terms; add cross-references to A107578.
-   5. A107578  b-file 85 terms
+   5. A023187  b-file 61 terms
+      Extend the b-file to 61 terms.
+   6. A031132  b-file 71 terms, Xref +A096265
+      Extend the b-file to 71 terms; add cross-references to A096265.
+   7. A031133  bound comment, b-file 71 terms
+      Extend the b-file to 71 terms; add a search-bound comment.
+   8. A031134  bound comment, b-file 71 terms
+      Extend the b-file to 71 terms; add a search-bound comment.
+   9. A058868  b-file 34 terms
+      Extend the b-file to 34 terms.
+  10. A107578  b-file 85 terms
       Extend the b-file to 85 terms.
-   6. A000101  Xref +A053695
+  11. A000101  Xref +A053695
       Add the reverse cross-reference.
-   7. A002386  Xref +A053695, Xref +A087770, Xref +A107578
+  12. A002386  Xref +A053695, Xref +A087770, Xref +A107578
       Add cross-references to A053695, A087770, A107578.
-   8. A023186  bound comment, Xref +A087770, Xref +A096265
-      Add a search-bound comment; add cross-references to A087770, A096265.
-   9. A031132  Xref +A096265
-      Add the reverse cross-reference.
-  10. A031133  bound comment
-      Add a search-bound comment: no further term below 2.6*10^16.
-  11. A031134  bound comment
-      Add a search-bound comment: no further term below 2.6*10^16.
+  13. A023186  bound comment, Xref +A087770, Xref +A096265, a-file 61 rows (minor update)
+      Add a search-bound comment; add cross-references to A087770, A096265; add an a-file with the bounding primes.
    -. new       balanced-lonely primes
-   -. blocked  b-file:A023187
    -. blocked  b-file:A122412
    -. blocked  b-file:A122413
-   -. pending  b-file:A031132
-   -. pending  b-file:A058868
    -. review   review:A120384
    -. review   review:neighbours
    ✓ approved  A023186  a-file:lonely  2026-10-06
@@ -273,6 +274,6 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
 
 ```
-  wrote 15 files to oeis/submit/
+  wrote 20 files to oeis/submit/
   open  http://localhost:8017/  (make submit)
 ```

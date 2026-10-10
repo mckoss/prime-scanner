@@ -1,0 +1,74 @@
+# A023187, 61 terms.
+#
+# Terms 1..56 as previously published.
+# Terms 57..61 are new.
+# Every term independently rederived by an exhaustive scan from 0,
+# as column 3 of its lonely records.
+#
+# Mike Koss. Data as of 2026-10-06, when the scan last advanced.
+# Searched all below 26,099,160,246,699,733: every record up to that
+# bound is present, and there is no further one below it.
+# Independently confirmed by an exhaustive scan; check_oeis.py passes.
+# Source: https://github.com/mckoss/prime-scanner
+# OEIS data CC BY-SA 4.0
+1 1
+2 2
+3 4
+4 6
+5 12
+6 14
+7 18
+8 20
+9 24
+10 30
+11 40
+12 42
+13 44
+14 48
+15 54
+16 62
+17 72
+18 76
+19 96
+20 98
+21 108
+22 116
+23 124
+24 136
+25 156
+26 160
+27 162
+28 168
+29 174
+30 176
+31 178
+32 180
+33 186
+34 194
+35 210
+36 214
+37 222
+38 242
+39 244
+40 246
+41 250
+42 258
+43 268
+44 284
+45 300
+46 324
+47 328
+48 340
+49 348
+50 352
+51 390
+52 396
+53 420
+54 432
+55 452
+56 480
+57 508
+58 510
+59 520
+60 546
+61 550

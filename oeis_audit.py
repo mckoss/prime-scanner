@@ -1174,6 +1174,17 @@ def contributions(families, results, candidates, refresh, check):
                     group = "compute"
                 items.append(item(group, f"b-file:{s['aid']}",
                                   f"b-file for {s['aid']} ({m['role'].split(' (')[0]})", *detail))
+            elif (m["col"] not in (None, 2) and m["delta"] == 0
+                  and (s["scan"] or 0) > s["terms"]):
+                # The scan has run past the whole family. The terms:<family>
+                # item extends the member listing the primes; this extends
+                # each sibling the records also hold -- neighbours, spans,
+                # distances -- so the family moves forward together.
+                items.append(item("bfile", f"b-file:{s['aid']}",
+                                  f"b-file for {s['aid']} ({m['role'].split(' (')[0]})",
+                                  f"{s['terms']} terms published; the scan "
+                                  f"holds {s['scan']}",
+                                  f"source: `{run}/{fam}.txt` column {m['col']}"))
             elif s["b"] is None:
                 items.append(item("low", f"b-file:{s['aid']}",
                                   f"b-file for {s['aid']} ({m['role'].split(' (')[0]})",
@@ -1697,6 +1708,48 @@ def generate_files(families, results, cov, index, check):
     return files, built
 
 
+def build_sibling_bfile(aid, families, files, built, results, cov, check,
+                        refresh):
+    """Build aid's b-file from the scan's records; None, or why it cannot.
+
+    For a member whose terms are a column of the records -- a neighbour, a
+    span, a distance -- rather than the record prime. A record lacking a
+    neighbour the member needs (p = 2 has no lower one) is no term of it, so
+    the terms are renumbered, from the entry's offset, over the records that
+    count. The file is
+    offered only if it reproduces every published term.
+    """
+    fam, f, s = member_of(families, aid)
+    if not s or s["gone"]:
+        return "not in a family"
+    m = s["m"]
+    if m["col"] in (None, 2) or m["delta"]:
+        return None if m["col"] is None else "not a plain column of the records"
+    vals = [r[m["col"] - 1] for r in f["rows"]
+            if r[m["col"] - 1] and not (m["needs_both"] and r[5] == 0)]
+    pub = bfile_terms_list(aid, refresh)
+    if len(vals) <= len(pub):
+        return f"the scan holds {len(vals)} terms, no more than published"
+    if vals[:len(pub)] != pub:
+        n = next(i for i, (a, b) in enumerate(zip(vals, pub), 1) if a != b)
+        return f"the scan's a({n}) = {vals[n - 1]} differs from OEIS's {pub[n - 1]}"
+    # Number from the entry's offset, as its published b-file does.
+    first = int(str(entry(aid, refresh).get("offset", "1")).split(",")[0])
+    name = f"b{aid[1:]}.txt"
+    credit = prior_credit(aid, len(pub), refresh)
+    files[name] = oeis_submit.bfile(
+        aid, list(enumerate(vals, first)),
+        [credit[0].upper() + credit[1:] + ".",
+         f"Terms {len(pub) + 1}..{len(vals)} are new.",
+         f"Every term independently rederived by an exhaustive scan from 0,",
+         f"as column {m['col']} of its {fam} records."],
+        oeis_submit.scan_byline(data_date(results)), cov.get(fam, 0),
+        "Independently confirmed by an exhaustive scan; "
+        "check_oeis.py passes." if check[0] else None)
+    built[("b", aid)] = (name, len(vals))
+    return None
+
+
 def submission(items, families, results, refresh, check):
     """({aid: draft}, new_sequences, other) -- the drafts, and what is not one."""
     cov, hi = read_frontier(results)
@@ -1867,9 +1920,12 @@ def submission(items, families, results, refresh, check):
             aid = fam
             key = ("b", aid)
             if key not in built:
-                other["blocked"].append(
-                    {"id": iid, "reason": "; ".join(it["detail"])})
-                continue
+                why = build_sibling_bfile(aid, families, files, built, results,
+                                          cov, check, refresh)
+                if why:
+                    other["blocked"].append(
+                        {"id": iid, "reason": "; ".join(it["detail"] + [why])})
+                    continue
             name, n = built[key]
             famname, _, s = member_of(families, aid)
             d = draft(aid, s["m"]["role"] if s else aid)
@@ -1930,6 +1986,42 @@ def submission(items, families, results, refresh, check):
             if not d["summary"]:
                 d["summary"] = "Add the reverse cross-reference."
 
+    # An approved a-file of ours that today's build has moved past -- the
+    # n = 1 row for p = 2 added after A023186's went in, say -- is offered as
+    # a minor update: worth doing alongside other edits, never on its own
+    # ahead of them.
+    for fam, spec in oeis_submit.AFILE.items():
+        iid = f"a-file:update:{fam}"
+        name = f"a{spec['aid'][1:]}.txt"
+        st = status.get(iid)
+        if (st and st[0] in REVIEW_STATUSES + CLOSED_STATUSES
+                or name not in files):
+            continue
+        aid = spec["aid"]
+        _, _, s = member_of(families, aid)
+        url = afile_url(s["af"][0]) if s and s.get("af") else None
+        if not url or oeis_submit.ATTRIB["name"] not in (s["af"][0] or ""):
+            continue
+        stored = url.rsplit("/", 1)[1]
+        path = os.path.join(CACHE, "afile", stored)
+        if not os.path.exists(path) or data_lines(files[name]) == data_lines(
+                open(path, errors="replace").read()):
+            continue
+        n = len(data_lines(files[name]))
+        d = draft(aid, s["m"]["role"])
+        d["items"].append(iid)
+        if not upload(d, "a-file", name, n):
+            continue
+        d["uploads"][-1].update(minor=True, replaces=stored)
+        d["what"].append(f"a-file {n} rows (minor update)")
+        d["edits"].append(op(
+            "Link", "replace", find=f'href="/{aid}/{stored}"',
+            text=f'{oeis_submit.ATTRIB["name"]}, <a href="/{aid}/{name}">'
+                 f'Table of the first {n} records with both bounding '
+                 f'primes and both gaps</a>'))
+        d["summary"] = d["summary"] or (
+            f"Replace the a-file {stored} with a {n}-row update.")
+
     # A sequence with no uploaded b-file is a low-priority "pending" item --
     # until its extension builds one, which settles it inside that draft.
     for r in list(other["pending"]):
@@ -1960,8 +2052,11 @@ def submission(items, families, results, refresh, check):
     def priority(d):
         """Schedule order: a b-file for a family's named sequence -- the
         record primes themselves -- then other b-files, then a-files, then
-        drafts that only add comments or cross-references."""
-        kinds = {u["kind"] for u in d["uploads"]}
+        drafts that only add comments or cross-references, then a draft
+        holding nothing but a minor a-file update."""
+        kinds = {u["kind"] for u in d["uploads"] if not u.get("minor")}
+        if not kinds and all(e["action"] == "replace" for e in d["edits"]):
+            return 4, d["aid"]
         _, _, s = member_of(families, d["aid"])
         if "b-file" in kinds:
             tier = 0 if s and s["m"]["col"] == 2 else 1
