@@ -33,16 +33,22 @@ follows direct family links. A052187 uses lower endpoints and is linked
 through A054342, so that heuristic missed it. The new source comparison
 explicitly transforms endpoints and checks complete triples.
 
-## A005250 submitted for review
+## A005250 a-file extension declined
 
 `a-file:A005250` was submitted as revision 277 (OEIS date September 26,
-2026; September 25 Pacific). The upload became `a005250_1.txt`; the original
-`a005250.txt` and its link remain intact. The new link credits Alex Beveridge
-and Mike Koss and identifies the range 1..85. The discussion includes the
-added data rows and corrected-note diff for reviewers. The b-file and
-A107578 were not changed.
+2026): the Beveridge table extended from 75 to 85 rows, uploaded as
+`a005250_1.txt` with its own link. Hugo Pfoertner declined it: the community
+treats N. Luhn's maintained record-gap tables as the standard reference, and
+OEIS should link them rather than carry secondary copies that go stale. Mike
+asked for the submission to be reverted. Rev 281 removed the link, revs
+282-289 added a link to the Andersen-Luhn table, and rev 290 was approved on
+September 30.
 
-[Review and discussion](https://oeis.org/draft/A005250).
+So the Beveridge table -- `a005250.txt`, and its identical copies on A000101
+(`a000101_1.txt`) and A107578 -- is not to be extended. `submissions.txt`
+marks all three `a-file:` items declined so the audit stops proposing them.
+
+[History](https://oeis.org/history?seq=A005250).
 
 ## Extension attachments
 
