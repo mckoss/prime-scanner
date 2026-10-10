@@ -997,9 +997,11 @@ def done_items(status):
 def done_files(r, families, files):
     """[(label, href)] for the b-file or a-file a submitted item proposed.
 
-    The local copy is linked whenever this run still builds it -- including
-    for a rejected item, whose file OEIS no longer serves -- and an approved
-    file is also linked where OEIS publishes it.
+    An approved file is linked where OEIS publishes it, and only there: the
+    local build may have moved on since, and beside the published copy it
+    reads as a second upload. Otherwise -- a rejected item, whose file OEIS
+    no longer serves, or one in review -- the local copy is linked whenever
+    this run still builds it.
     """
     kind, _, key = r["id"].partition(":")
     aid = r["aid"]
@@ -1015,10 +1017,9 @@ def done_files(r, families, files):
         url = afile_url(s["af"][0]) if s and s.get("af") else None
     else:
         return []
-    out = [(name, name)] if name in files else []
     if r["state"] == "approved" and url:
-        out.append((f"{url.rsplit('/', 1)[1]} on OEIS", url))
-    return out
+        return [(f"{url.rsplit('/', 1)[1]} on OEIS", url)]
+    return [(name, name)] if name in files else []
 
 
 def bound_text(x):
