@@ -1133,16 +1133,8 @@ def contributions(families, results, candidates, refresh, check):
                         *[f"{fam}({r[0]}) = {r[1]}  (gaps {r[3]}, {r[4]}; "
                           f"{r[5]} < p < {r[6]})" for r in new[:6]],
                         f"complete below {bound_text(reach)}; {gate}"))
-                # Every member listing the primes themselves states the same
-                # bound: the record prime, and its neighbours where published.
-                targets = sorted({s["aid"] for s in f["seqs"]
-                                  if s["m"]["col"] in (2, 6, 7)} | {aid})
-                items.append(item(
-                    "bound", f"bound:{fam}",
-                    f"Comment on {', '.join(targets)}: no further terms below "
-                    f"{bound_text(reach)}",
-                    f"last published term {extent:,}; the scan covers "
-                    f"{reach / extent:.1f}x past it"))
+                # The search bound lives in the a-file's header, not in a
+                # comment on the entry: an editor reads it as noise there.
             elif extent <= ULONG_MAX:
                 d = scan_days(max(reach, 1), extent)
                 when = ("unknown time" if d is None else
@@ -1509,8 +1501,8 @@ def run_audit(args):
 # SUBMISSION -- the items, regrouped into one draft per sequence
 #
 # contributions() lists what can be contributed, keyed by kind. OEIS takes one
-# draft per SEQUENCE, so A096265's b-file, its bound comment and its two
-# cross-references are one submission, not four. The item ids already say what
+# draft per SEQUENCE, so A096265's b-file, its a-file and its
+# cross-references are one submission, not several. The item ids already say what
 # each targets, so the regrouping reads them rather than threading a second
 # structure through contributions().
 # ---------------------------------------------------------------------------
@@ -1968,21 +1960,6 @@ def submission(items, families, results, refresh, check):
                     oeis_sources.balanced_credit(n, source)
                     for n, source in prior.items())
 
-        elif kind == "bound":
-            bt = bound_text(cov.get(fam, 0))
-            targets = re.findall(r"A\d{6}", it["title"])
-            for aid in targets:
-                _, _, s = member_of(families, aid)
-                d = draft(aid, s["m"]["role"] if s else fam)
-                d["items"].append(iid)
-                d["what"].append("bound comment")
-                d["edits"].append(op("Comment", "add", text=signed(
-                    f"There is no further term below {bt}: an exhaustive scan "
-                    f"from 0 to {cov.get(fam, 0)} finds none.")))
-                if not d["summary"]:
-                    d["summary"] = (f"Add a search-bound comment: no further "
-                                    f"term below {bt}.")
-
         elif kind == "b-file":
             aid = fam
             key = ("b", aid)
@@ -2142,7 +2119,7 @@ def summarise(d):
         if e["field"] == "Data":
             bits.append(f"extend DATA by {len(e['terms'])} terms")
         elif e["field"] == "Comment":
-            bits.append("add a search-bound comment")
+            bits.append("add a comment")
         elif e["field"] == "Xref":
             bits.append("add cross-references to "
                         + ", ".join(sorted(e["add"])))

@@ -13,7 +13,7 @@ things you actually hand to OEIS:
     oeis/submit/payload.js     the drafts and the file contents, as JS
 
 A draft is per SEQUENCE, not per contribution: every change to A096265 --
-its b-file, its bound comment, its two cross-references -- is one OEIS
+its b-file, its a-file, its cross-references -- is one OEIS
 submission, so they are grouped that way here.
 
 Nothing in this module talks to oeis.org. The generated files are read by a

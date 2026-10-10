@@ -137,7 +137,7 @@ Do **not** pass `--to` to the running scan; it is open-ended and should stay so.
 1. **B1 — A096265 b-file.** Ready; every term now confirmed here.
 2. **D — A031133/A031134 reverse link to A096265.** Goes with B1.
 3. **A — balanced lonely primes.** Refresh the bound, then submit.
-4. **E — search-bound comments** on A023186, A058867 and A031133.
+4. ~~**E — search-bound comments**~~ dropped 2026-10-10; see E.
 5. **B5/B6, C — A058867/A058868 b-files and a-files, lonely/aloof a-files.**
    Built from `fresh/`; no longer blocked.
 6. B2/B3 (A005669, A107578) from Andersen–Luhn — independent of this scan.
@@ -337,6 +337,11 @@ Items: `xref:A096265:A031133`, `xref:A096265:A031134`
 ## E. Search-bound comments
 
 Items: `bound:lonely`, `bound:aloof`, `bound:equidistant`
+
+**Dropped 2026-10-10.** The completeness bound is stated in each a-file's
+header, which is where it belongs; as a comment in the entry body it is not
+relevant information. The audit no longer offers these. Kept below for the
+record.
 
 The scan's completeness bounds exist nowhere in OEIS except as a line in the
 new sequence (A). Each family whose published terms the scan has passed can

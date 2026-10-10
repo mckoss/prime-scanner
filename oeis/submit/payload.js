@@ -10,8 +10,8 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A087770",
    "role": "the pairwise lonely prime",
-   "what": "b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265",
-   "summary": "Extend the b-file to 41 terms; add a search-bound comment; add cross-references to A096265.",
+   "what": "b-file 41 terms, a-file 41 rows, Xref +A096265",
+   "summary": "Extend the b-file to 41 terms; add cross-references to A096265.",
    "blocked_on": null,
    "edits": [
     {
@@ -25,12 +25,6 @@ window.OEIS_SUBMIT = {
      "code": "%E",
      "action": "add",
      "text": "a(30)-a(41) from ~~~~"
-    },
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
     },
     {
      "field": "Xref",
@@ -70,8 +64,8 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A096265",
    "role": "the aloof prime",
-   "what": "b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413",
-   "summary": "Extend the b-file to 72 terms; add a search-bound comment; add cross-references to A031133, A031134, A122412, A122413.",
+   "what": "b-file 72 terms, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413",
+   "summary": "Extend the b-file to 72 terms; add cross-references to A031133, A031134, A122412, A122413.",
    "blocked_on": null,
    "edits": [
     {
@@ -85,12 +79,6 @@ window.OEIS_SUBMIT = {
      "code": "%E",
      "action": "add",
      "text": "a(57)-a(72) from ~~~~"
-    },
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
     },
     {
      "field": "Xref",
@@ -245,16 +233,10 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A031133",
    "role": "the lower neighbour",
-   "what": "bound comment, b-file 71 terms",
-   "summary": "Extend the b-file to 71 terms; add a search-bound comment.",
+   "what": "b-file 71 terms",
+   "summary": "Extend the b-file to 71 terms.",
    "blocked_on": null,
    "edits": [
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
-    },
     {
      "field": "Link",
      "code": "%H",
@@ -278,16 +260,10 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A031134",
    "role": "the upper neighbour",
-   "what": "bound comment, b-file 71 terms",
-   "summary": "Extend the b-file to 71 terms; add a search-bound comment.",
+   "what": "b-file 71 terms",
+   "summary": "Extend the b-file to 71 terms.",
    "blocked_on": null,
    "edits": [
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
-    },
     {
      "field": "Link",
      "code": "%H",
@@ -415,16 +391,10 @@ window.OEIS_SUBMIT = {
   {
    "aid": "A023186",
    "role": "the lonely prime",
-   "what": "bound comment, Xref +A087770, Xref +A096265, a-file 61 rows (minor update)",
-   "summary": "Add a search-bound comment; add cross-references to A087770, A096265; add an a-file with the bounding primes.",
+   "what": "Xref +A087770, Xref +A096265, a-file 61 rows (minor update)",
+   "summary": "Add cross-references to A087770, A096265; add an a-file with the bounding primes.",
    "blocked_on": null,
    "edits": [
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
-    },
     {
      "field": "Xref",
      "code": "%Y",
