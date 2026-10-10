@@ -978,11 +978,16 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
              "pending": ("warn", "&hellip;")}
     for r in other.get("done") or []:
         cls, mark = looks[r["state"]]
+        done_files = "<br>".join(
+            f'<a href="{html.escape(href)}"'
+            + (' target="_blank"' if href.startswith("http") else "")
+            + f'><code>{html.escape(label)}</code></a>'
+            for label, href in r.get("files") or [])
         rows.append(
             f'<tr class="done"><td class="n {cls}">{mark}</td>'
             f'<td>{seq_cell(r["aid"])}</td>'
             f'<td class="what"><code>{linked(r["id"])}</code> {linked(r["reason"])}</td>'
-            f'<td></td>'
+            f'<td>{done_files}</td>'
             f'<td class="{cls}">{r["state"]} {r["date"]}</td></tr>')
     extra = ""
     if new_seqs:

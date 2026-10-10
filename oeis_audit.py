@@ -994,6 +994,33 @@ def done_items(status):
                                       r["id"]))
 
 
+def done_files(r, families, files):
+    """[(label, href)] for the b-file or a-file a submitted item proposed.
+
+    The local copy is linked whenever this run still builds it -- including
+    for a rejected item, whose file OEIS no longer serves -- and an approved
+    file is also linked where OEIS publishes it.
+    """
+    kind, _, key = r["id"].partition(":")
+    aid = r["aid"]
+    if kind in ("b-file", "terms") and aid:
+        name = f"b{aid[1:]}.txt"
+        url = f"https://oeis.org/{aid}/{name}"
+    elif kind == "a-file":
+        # `a-file:<family>` is our own a-file; `a-file:<A-number>` is the
+        # shared gap table, built once as a005250.txt.
+        spec = oeis_submit.AFILE.get(key)
+        name = f"a{spec['aid'][1:]}.txt" if spec else "a005250.txt"
+        _, _, s = member_of(families, aid)
+        url = afile_url(s["af"][0]) if s and s.get("af") else None
+    else:
+        return []
+    out = [(name, name)] if name in files else []
+    if r["state"] == "approved" and url:
+        out.append((f"{url.rsplit('/', 1)[1]} on OEIS", url))
+    return out
+
+
 def bound_text(x):
     """x rounded DOWN to two significant figures, in OEIS's 2.1*10^15 style.
 
@@ -1652,6 +1679,8 @@ def submission(items, families, results, refresh, check):
     detected = detect_approved(families, refresh)
     other = {"blocked": [], "pending": [], "review": [],
              "done": done_items({**status, **detected})}
+    for r in other["done"]:
+        r["files"] = done_files(r, families, files)
 
     def draft(aid, role):
         role = role.split(" (")[0]
