@@ -50,6 +50,7 @@ $(REF): reference/mod30.c reference/prime-check.h Makefile
 
 test: $(BIN) test-submit
 	python3 test_audit.py
+	python3 test_serve.py
 	python3 test_oeis_readme.py
 	python3 test_sieve.py
 
@@ -102,10 +103,11 @@ oeis-readme:
 	python3 oeis_readme.py
 
 # Serve oeis/submit/ so the bookmarklet can load the panel and payload. Open
-# http://localhost:8017/ for the numbered worklist.
+# http://localhost:8017/ for the numbered worklist. Saving a draft from the
+# panel, or the worklist's buttons, records progress in oeis/submissions.txt
+# and reruns the audit.
 submit: audit
-	@echo "  open http://localhost:8017/"
-	python3 -m http.server 8017 -d oeis/submit
+	python3 oeis_serve.py
 
 clean:
 	rm -f $(BIN) $(REF) sieve-w8 sieve-w16 sieve-w32 sieve-w64

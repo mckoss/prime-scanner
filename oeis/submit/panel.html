@@ -37,6 +37,7 @@
  .up .why,.f .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
  .up a{font-size:11px;color:#0969da;margin-left:6px}
  .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
+ #track .why{color:var(--dim);font-size:11px;margin:0 0 6px;word-break:break-word}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
@@ -48,6 +49,11 @@
   <button class="p" id="all">Fill all</button>
   <button id="re">Rescan</button>
 </div>
+<section id="track" hidden><h2>Tracker</h2>
+  <div class="why" id="trackst">Save Changes records this draft in
+   submissions.txt once it completes the draft.</div>
+  <button id="rec">Record in tracker</button>
+</section>
 <section><h2>Batch</h2><div id="list"></div></section>
 <div class="note" id="note"></div>
 <script src="payload.js"></script>
@@ -71,7 +77,8 @@ function renderList(states){
   var p = progress(), out = '';
   P.drafts.forEach(function(d,i){
     var st = d.aid===SEQ ? liveState(states) : (p[d.aid]||'');
-    var mark = st==='saved' ? '<span class="st done">● saved</span>'
+    var mark = st==='recorded' ? '<span class="st done">✓ recorded</span>'
+             : st==='saved' ? '<span class="st done">● saved</span>'
              : st==='filled' ? '<span class="st part">◐ filled</span>'
              : d.blocked_on ? '<span class="st err">⊘ blocked</span>'
              : '<span class="st" style="color:#aaa">○</span>';
@@ -118,7 +125,9 @@ function render(msg){
   [].forEach.call(document.querySelectorAll('#fields button[data-i]'),
     function(b){ b.onclick=function(){ send({type:'FILL',index:+b.dataset.i}) }});
   renderUploads(msg.uploads||[]);
-  if(draft) remember(draft.aid, msg.saved ? 'saved' : liveState(states));
+  last = msg;
+  if(draft && progress()[draft.aid]!=='recorded')
+    remember(draft.aid, msg.saved ? 'saved' : liveState(states));
   renderList(states);
 }
 
@@ -167,6 +176,64 @@ window.addEventListener('message', function(ev){
     else delete attachErr[m.index];
     for(var k in (m.errs||{})) attachErr[k] = m.errs[k];
   }
+});
+// The tracker: oeis/submissions.txt, written by the server that serves this
+// panel. A draft's items go on one line -- they are one OEIS edit -- except
+// a suggested cross-reference left out of the form, which stays open. Leaving
+// one out also records the sequence's open draft, so the audit does not offer
+// it as a second edit stacked on this one.
+var last = null;
+function syncIds(msg){
+  var x = (msg&&msg.xref)||'';
+  var ids = (draft.items||[]).filter(function(i){
+    var m = /^xref:[^:]+:(A\d{6})$/.exec(i);
+    return !m || new RegExp('\\b'+m[1]+'\\b').test(x);
+  });
+  if(ids.length < (draft.items||[]).length) ids.push('draft:'+draft.aid);
+  return ids;
+}
+// This save completes the draft: every required edit is in the form and
+// every file is uploaded or attached to go up with it.
+function complete(msg){
+  var req = (msg.states||[]).filter(function(s){return !s.optional});
+  return req.every(function(s){return s.done})
+      && (msg.uploads||[]).every(function(u){return u.uploaded || u.slot>=0});
+}
+function note(ids){
+  var left = (draft.items||[]).filter(function(i){return ids.indexOf(i)<0});
+  return draft.aid+' '+draft.what.split(', ').filter(function(w){
+    return !left.some(function(i){return w.indexOf(i.split(':')[2])>=0}) })
+    .join(', ').replace(/ \(optional\)/g, '');
+}
+function track(ids, wait, done){
+  var st = document.getElementById('trackst');
+  st.textContent = 'Recording '+ids.join(', ')+' …';
+  fetch('/submissions', {method:'POST', keepalive:true,
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ids:ids, status:'submitted', aid:draft.aid,
+                          note:note(ids), wait:wait})})
+  .then(function(r){ return r.json() })
+  .then(function(j){
+    if(j.ok){ remember(draft.aid,'recorded');
+              st.innerHTML = '<span class="done">✓ Recorded:</span> '
+                + esc(j.line); renderList(last&&last.states) }
+    else st.innerHTML = '<span class="err">'+esc(j.error)+'</span>';
+  })
+  .catch(function(e){ st.innerHTML = '<span class="err">Not recorded: '
+    + esc(e)+' -- is make submit running?</span>' })
+  .then(function(){ if(done) done() });
+}
+document.getElementById('track').hidden = !draft;
+document.getElementById('rec').onclick=function(){
+  var ids = syncIds(last);
+  if(confirm('Record as submitted in submissions.txt?\n\n'+ids.join('\n')))
+    track(ids, true);
+};
+window.addEventListener('message', function(ev){
+  if(ev.origin!==OEIS || (ev.data||{}).type!=='SAVING') return;
+  var go = function(){ send({type:'SAVE_GO'}) };
+  if(draft && complete(ev.data)) track(syncIds(ev.data), false, go);
+  else go();
 });
 document.getElementById('all').onclick=function(){ send({type:'FILL_ALL'}) };
 document.getElementById('re').onclick =function(){ send({type:'RESCAN'}) };

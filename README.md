@@ -143,7 +143,9 @@ as one draft per sequence, plus the files to upload and a bookmarklet that
 fills the OEIS edit form
 -- new terms, completeness bounds, stale b-files and a-files, one-way
 cross-references -- with progress read from `oeis/submissions.txt`. The file
-is generated, so it is never edited by hand.
+is generated, so it is never edited by hand. `make submit` serves it to the
+bookmarklet and records progress back into `oeis/submissions.txt` as drafts
+are saved, approved or declined.
 
 `check_oeis.py` diffs every term below the run's frontier against the
 published b-files, position by position, and re-tests every record prime with

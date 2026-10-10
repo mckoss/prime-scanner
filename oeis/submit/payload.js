@@ -11,6 +11,12 @@ window.OEIS_SUBMIT = {
    "aid": "A087770",
    "role": "the pairwise lonely prime",
    "what": "b-file 41 terms, a-file 41 rows, Xref +A096265 (optional)",
+   "items": [
+    "terms:pairwise",
+    "a-file:pairwise",
+    "xref:A087770:A096265",
+    "b-file:A087770"
+   ],
    "summary": "Extend the b-file to 41 terms; optionally add cross-references to A096265.",
    "blocked_on": null,
    "edits": [
@@ -68,6 +74,15 @@ window.OEIS_SUBMIT = {
    "aid": "A096265",
    "role": "the aloof prime",
    "what": "b-file 72 terms, a-file 72 rows, Xref +A031133 (optional), Xref +A031134 (optional), Xref +A122412 (optional), Xref +A122413 (optional)",
+   "items": [
+    "terms:aloof",
+    "b-file:A096265",
+    "a-file:aloof",
+    "xref:A096265:A031133",
+    "xref:A096265:A031134",
+    "xref:A096265:A122412",
+    "xref:A096265:A122413"
+   ],
    "summary": "Extend the b-file to 72 terms; optionally add cross-references to A031133, A031134, A122412, A122413.",
    "blocked_on": null,
    "edits": [
@@ -137,6 +152,10 @@ window.OEIS_SUBMIT = {
    "aid": "A005669",
    "role": "index of the lower prime",
    "what": "b-file 85 terms, Xref +A107578 (optional)",
+   "items": [
+    "b-file:A005669",
+    "xref:A005669:A107578"
+   ],
    "summary": "Extend the b-file to 85 terms; optionally add cross-references to A107578.",
    "blocked_on": null,
    "edits": [
@@ -177,6 +196,9 @@ window.OEIS_SUBMIT = {
    "aid": "A023187",
    "role": "distance to the nearer neighbour",
    "what": "b-file 61 terms",
+   "items": [
+    "b-file:A023187"
+   ],
    "summary": "Extend the b-file to 61 terms.",
    "blocked_on": null,
    "edits": [
@@ -205,6 +227,10 @@ window.OEIS_SUBMIT = {
    "aid": "A031132",
    "role": "the span between them",
    "what": "b-file 71 terms, Xref +A096265 (optional)",
+   "items": [
+    "b-file:A031132",
+    "xref:A031132:A096265"
+   ],
    "summary": "Extend the b-file to 71 terms; optionally add cross-references to A096265.",
    "blocked_on": null,
    "edits": [
@@ -245,6 +271,9 @@ window.OEIS_SUBMIT = {
    "aid": "A031133",
    "role": "the lower neighbour",
    "what": "b-file 71 terms",
+   "items": [
+    "b-file:A031133"
+   ],
    "summary": "Extend the b-file to 71 terms.",
    "blocked_on": null,
    "edits": [
@@ -273,6 +302,9 @@ window.OEIS_SUBMIT = {
    "aid": "A031134",
    "role": "the upper neighbour",
    "what": "b-file 71 terms",
+   "items": [
+    "b-file:A031134"
+   ],
    "summary": "Extend the b-file to 71 terms.",
    "blocked_on": null,
    "edits": [
@@ -301,6 +333,9 @@ window.OEIS_SUBMIT = {
    "aid": "A058868",
    "role": "the distance to each neighbour",
    "what": "b-file 34 terms",
+   "items": [
+    "b-file:A058868"
+   ],
    "summary": "Extend the b-file to 34 terms.",
    "blocked_on": null,
    "edits": [
@@ -329,6 +364,9 @@ window.OEIS_SUBMIT = {
    "aid": "A107578",
    "role": "index of the upper prime",
    "what": "b-file 85 terms",
+   "items": [
+    "b-file:A107578"
+   ],
    "summary": "Extend the b-file to 85 terms.",
    "blocked_on": null,
    "edits": [
@@ -357,6 +395,9 @@ window.OEIS_SUBMIT = {
    "aid": "A000101",
    "role": "prime at the upper end",
    "what": "Xref +A053695 (optional)",
+   "items": [
+    "xref:A000101:A053695"
+   ],
    "summary": "Optionally add the reverse cross-reference.",
    "blocked_on": null,
    "edits": [
@@ -379,6 +420,11 @@ window.OEIS_SUBMIT = {
    "aid": "A002386",
    "role": "prime at the lower end",
    "what": "Xref +A053695 (optional), Xref +A087770 (optional), Xref +A107578 (optional)",
+   "items": [
+    "xref:A002386:A053695",
+    "xref:A002386:A087770",
+    "xref:A002386:A107578"
+   ],
    "summary": "Optionally add cross-references to A053695, A087770, A107578.",
    "blocked_on": null,
    "edits": [
@@ -409,6 +455,11 @@ window.OEIS_SUBMIT = {
    "aid": "A023186",
    "role": "the lonely prime",
    "what": "Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update)",
+   "items": [
+    "xref:A023186:A087770",
+    "xref:A023186:A096265",
+    "a-file:update:lonely"
+   ],
    "summary": "Optionally add cross-references to A087770, A096265; add an a-file with the bounding primes.",
    "blocked_on": null,
    "edits": [
