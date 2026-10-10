@@ -135,7 +135,6 @@ drafts:
   role:  the aloof prime
   url:   "https://oeis.org/edit?seq=A096265"
   items: ["terms:aloof", "bound:aloof", "b-file:A096265", "a-file:aloof", "xref:A096265:A031133", "xref:A096265:A031134", "xref:A096265:A122412", "xref:A096265:A122413"]
-  status: drafted
   notes: true
   summary: >-
     Extend the b-file to 72 terms; add a search-bound comment; add an a-file
@@ -319,7 +318,6 @@ new_sequences:
 - id:     "new:balanced"
   role:   balanced-lonely primes
   url:    "https://oeis.org/edit"
-  status: drafted
   notes: true
   summary: >-
     New sequence: the intersection of A023186 (lonely primes) with A006562

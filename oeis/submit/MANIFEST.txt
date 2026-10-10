@@ -10,8 +10,8 @@ d5ccd37575ca84e9  a087770.txt
 df42e008a3907131  b087770.txt
 7f14f8a3f2d8583a  b096265.txt
 05525eb4b9a19b23  b107578.txt
-74f2c6fe9f42882f  edits.yaml
+529ab56586a429b6  edits.yaml
 2653e4311a1ccfd1  fill.js
-4f6d3b74f01a6761  index.html
+f5e7b6582fe82586  index.html
 df198646e039c095  panel.html
 26c6377a2c5ba69b  payload.js

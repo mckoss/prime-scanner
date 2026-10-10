@@ -239,7 +239,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
       Extend the b-file to 34 terms; credit the prior A052187 table; add a search-bound comment; add an a-file with the bounding primes.
    2. A087770  b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265
       Extend the b-file to 41 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A096265.
-   3. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
+   3. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413
       Extend the b-file to 72 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A031133, A031134, A122412, A122413.
    4. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file to 85 terms; add cross-references to A107578.
@@ -257,7 +257,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
       Add a search-bound comment: no further term below 2.6*10^16.
   11. A031134  bound comment
       Add a search-bound comment: no further term below 2.6*10^16.
-   -. new       balanced-lonely primes  [drafted]
+   -. new       balanced-lonely primes
    -. blocked  b-file:A023187
    -. blocked  b-file:A122412
    -. blocked  b-file:A122413

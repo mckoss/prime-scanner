@@ -883,12 +883,11 @@ SUBMISSIONS = os.path.join(SNAPSHOTS, "submissions.txt")
 ITEM_ID_RE = re.compile(r"`((?:terms|bound|new|b-file|a-file|xref|scan|review):"
                         r"[A-Za-z0-9:]+)`")
 
-# drafted: work exists but is not submitted -- the item stays in its group.
+# An item with no line is open: every draft the audit builds is ready to edit.
 # submitted: waiting on an editor.  The rest close the item.
-OPEN_STATUSES = ("drafted",)
 REVIEW_STATUSES = ("submitted",)
 CLOSED_STATUSES = ("approved", "declined", "skip")
-STATUSES = OPEN_STATUSES + REVIEW_STATUSES + CLOSED_STATUSES
+STATUSES = REVIEW_STATUSES + CLOSED_STATUSES
 
 # Where a b-file for a sequence no scan can produce comes from. A member not
 # listed here with col=None needs real compute to extend.
