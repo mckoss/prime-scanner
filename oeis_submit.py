@@ -21,6 +21,7 @@ browser you drive yourself; the tool fills forms and never submits one.
 """
 
 import hashlib
+import html
 import json
 import os
 import re
@@ -817,6 +818,8 @@ INDEX_HTML = r"""<!doctype html>
  .box{background:#f6f8fa;border:1px solid #e3e6ea;border-radius:6px;
       padding:12px 16px;margin:1.2em 0}
  .warn{color:#9a6700}
+ .ok{color:#1a7f37;font-weight:600}
+ tr.done td{color:#777}
 </style>
 <h1>OEIS submissions</h1>
 <p class="sub">%(n)d drafts &middot; generated %(date)s from <code>%(run)s/</code>
@@ -923,6 +926,20 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
             f'<td class="what">{d["what"]}</td>'
             f'<td>{f}</td>'
             f'<td class="warn">{st}</td></tr>')
+    # What has gone to OEIS: approved edits get a check, ones still with an
+    # editor say pending. Both sit under the open drafts, numbered apart.
+    for r in other.get("done") or []:
+        ok = r["state"] == "approved"
+        seq = (f'<a href="https://oeis.org/{r["aid"]}">{r["aid"]}</a>'
+               if r["aid"] else "")
+        rows.append(
+            f'<tr class="done"><td class="n {"ok" if ok else "warn"}">'
+            f'{"&#10003;" if ok else "&hellip;"}</td>'
+            f'<td>{seq}</td>'
+            f'<td class="what"><code>{r["id"]}</code> {html.escape(r["reason"])}</td>'
+            f'<td></td>'
+            f'<td class="{"ok" if ok else "warn"}">'
+            f'{"approved" if ok else "pending"} {r["date"]}</td></tr>')
     extra = ""
     if new_seqs:
         extra += "<h2>New sequences</h2><table>" + "".join(

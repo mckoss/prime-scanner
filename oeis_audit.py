@@ -890,6 +890,32 @@ def read_submissions():
     return status
 
 
+def done_items(status):
+    """Items submitted to OEIS, approved or still in review, for the schedule.
+
+    The audit drops these from the drafts -- an approved edit is published,
+    a submitted one is in an editor's hands -- so without this list the
+    schedule shows only what is left to do, never what has landed. A
+    `draft:<A-number>` line marks an open review, not an edit, and is left out.
+    """
+    out = []
+    for iid, (st, date, note) in status.items():
+        if st not in ("approved",) + REVIEW_STATUSES or iid.startswith("draft:"):
+            continue
+        m = re.search(r"A\d{6}", iid)
+        if m:
+            aid = m.group(0)
+        else:
+            fam = FAMILIES.get(iid.split(":")[1] if ":" in iid else "", {})
+            aid = next((a for a, mm in fam.get("members", {}).items()
+                        if mm["col"] == 2), None)
+        out.append({"id": iid, "aid": aid, "date": date, "reason": note,
+                    "state": "approved" if st == "approved" else "pending"})
+    # Pending first: those still need watching.
+    return sorted(out, key=lambda r: (r["state"] == "approved", r["aid"] or "",
+                                      r["id"]))
+
+
 def bound_text(x):
     """x rounded DOWN to two significant figures, in OEIS's 2.1*10^15 style.
 
@@ -1308,6 +1334,9 @@ def run_audit(args):
     for key in ("blocked", "pending", "review"):
         for r in other[key]:
             print(f"   -. {key:<8} {r['id']}")
+    for r in other["done"]:
+        mark = "\u2713 approved" if r["state"] == "approved" else "  in review"
+        print(f"   {mark}  {r['aid'] or '':<8} {r['id']}  {r['date']}")
     print()
 
     if args.no_write:
@@ -1538,7 +1567,8 @@ def submission(items, families, results, refresh, check):
     status = read_submissions()
     notes = noted_ids()
     drafts, new_seqs = {}, []
-    other = {"blocked": [], "pending": [], "review": []}
+    other = {"blocked": [], "pending": [], "review": [],
+             "done": done_items(status)}
 
     def draft(aid, role):
         role = role.split(" (")[0]

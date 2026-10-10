@@ -265,6 +265,8 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
    -. pending  b-file:A058868
    -. review   review:A120384
    -. review   review:neighbours
+   ✓ approved  A023186  a-file:lonely  2026-10-06
+   ✓ approved  A023186  terms:lonely  2026-10-06
 ```
 
 ```

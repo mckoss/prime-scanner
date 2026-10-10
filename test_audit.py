@@ -140,7 +140,8 @@ class ExtensionTests(unittest.TestCase):
                         'Table of n, a(n) for n = 1..56</a>']}
         with patch.object(audit, "bfile_terms_list",
                           return_value=[r[1] for r in rows[:56]]), \
-             patch.object(audit, "entry", return_value=rec):
+             patch.object(audit, "entry", return_value=rec), \
+             patch.object(audit, "read_submissions", return_value={}):
             drafts, _, _, files, _, _ = audit.submission(
                 items, families, "fresh", False, (True, []))
         d = drafts[0]
