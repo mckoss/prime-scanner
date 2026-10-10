@@ -12,6 +12,6 @@ df42e008a3907131  b087770.txt
 05525eb4b9a19b23  b107578.txt
 9a2234c9ca31d884  edits.yaml
 2653e4311a1ccfd1  fill.js
-36aef22b12c77aa0  index.html
+2accefdef71cba06  index.html
 df198646e039c095  panel.html
 a52feb5548f6b3e4  payload.js

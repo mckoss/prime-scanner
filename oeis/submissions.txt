@@ -6,6 +6,10 @@
 #         submitted  waiting on an OEIS editor (item leaves the script)
 #         approved | declined | skip   closes the item
 #
+# Approval is also detected: a b-file whose link credits us and holds every
+# term of the run, or an a-file naming us that holds every record, shows as
+# approved in the schedule without a line here.
+#
 # The id is one of the `items:` entries under a draft in edits.yaml.
 #
 # `draft:<A-number>` is different: it records that the SEQUENCE has an open
@@ -16,9 +20,6 @@
 comment:A023186:balanced  skip  2026-09-20  Abandoned balanced-primes comment; removed by Sean A. Irvine in rev 60, then the entry was approved in rev 61. No open draft remains; the separate balanced-lonely sequence is still drafted.
 b-file:A096265  drafted    2026-09-14  generated to submit/b096265.txt; all 68 terms confirmed by the scan
 new:balanced    drafted    2026-09-14  generated to submit/edits.yaml under new_sequences
-
-terms:lonely    approved   2026-10-06  A023186 b-file extended to 61 terms (rev 67 proposed; approved by Michael De Vlieger, rev 69).
-a-file:lonely   approved   2026-10-06  A023186 a-file a023186_1.txt, bounding primes and gaps for 60 records (approved with the b-file, rev 69).
 
 a-file:A005250  declined   2026-09-30  Rev 277 rejected: Hugo Pfoertner prefers linking N. Luhn's maintained table to extending a secondary copy. Link to a005250_1.txt removed in rev 281; Luhn link added; approved rev 290.
 a-file:A000101  declined   2026-09-30  Same Beveridge table as a005250.txt (a000101_1.txt, identical); declined with it.

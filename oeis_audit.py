@@ -890,6 +890,47 @@ def read_submissions():
     return status
 
 
+def detect_approved(families, refresh):
+    """{item id: (status, date, note)} for our edits OEIS has published.
+
+    A b-file counts once its link credits us and it holds every term this run
+    has; an a-file once its header names us and it holds every record prime.
+    Anything less is someone else's work, or ours from an earlier frontier
+    that a newer run has passed. The date is the entry's last revision, the
+    nearest the JSON gets to the approval itself.
+    """
+    name = oeis_submit.ATTRIB["name"]
+    found = {}
+    for fam, f in families.items():
+        primes = {str(r[1]) for r in f["rows"]}
+        for s in f["seqs"]:
+            if s.get("gone") or "rec" not in s:
+                continue
+            aid, rec, m = s["aid"], s["rec"], s["m"]
+            date = (rec.get("time") or "")[:10]
+            own_b = re.compile(rf"/{aid}/b{aid[1:]}\.txt")
+            if s["b"] and s["scan"] and s["b"] >= s["scan"] and any(
+                    l.startswith(name) and own_b.search(l)
+                    for l in rec.get("link") or []):
+                iid = f"terms:{fam}" if m["col"] == 2 else f"b-file:{aid}"
+                found[iid] = ("approved", date,
+                              f"{aid} b-file of {s['b']} terms credits {name}")
+            url = afile_url(s["af"][0]) if s["af"] else None
+            if not url or not primes:
+                continue
+            path = os.path.join(CACHE, "afile", url.rsplit("/", 1)[1])
+            if not fetch(url, path, refresh):
+                continue
+            text = open(path, errors="replace").read()
+            head = "".join(l for l in text.splitlines(True) if l.startswith("#"))
+            if name in head and primes <= set(re.findall(r"\d+", text)):
+                found[f"a-file:{fam}"] = (
+                    "approved", date,
+                    f"{aid} a-file {url.rsplit('/', 1)[1]} holds all "
+                    f"{len(primes)} records")
+    return found
+
+
 def done_items(status):
     """Items submitted to OEIS, approved or still in review, for the schedule.
 
@@ -1567,8 +1608,11 @@ def submission(items, families, results, refresh, check):
     status = read_submissions()
     notes = noted_ids()
     drafts, new_seqs = {}, []
+    # What OEIS has published outright beats a hand-kept line: an item left
+    # at `submitted` turns approved as soon as the files show it.
+    detected = detect_approved(families, refresh)
     other = {"blocked": [], "pending": [], "review": [],
-             "done": done_items(status)}
+             "done": done_items({**status, **detected})}
 
     def draft(aid, role):
         role = role.split(" (")[0]
