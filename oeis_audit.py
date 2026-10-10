@@ -259,17 +259,33 @@ def fetch(url, path, refresh):
         sys.stderr.write(f"\r\033[K  fetching {len(_fetched) + 1}: "
                          f"{url.removeprefix('https://')}"[:100])
         sys.stderr.flush()
-    r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", path],
-                       stderr=subprocess.DEVNULL)
-    # The crawl makes dozens of requests; space them out for OEIS's sake.
-    time.sleep(0.4)
+    # b-files and a-files carry Last-Modified, so ask for the file only if it
+    # changed since our copy (-z takes the copy's mtime, -R sets it from the
+    # server's). Searches carry no validator and always come back whole.
+    tmp = path + ".new"
+    cmd = ["curl", "-sSfLR", "-A", "Mozilla/5.0", "-w", "%{http_code}",
+           "-o", tmp, url]
+    if os.path.exists(path):
+        cmd[1:1] = ["-z", path]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    unchanged = r.returncode == 0 and r.stdout.strip() == "304"
+    # The crawl makes dozens of requests; space them out for OEIS's sake. A
+    # 304 costs it next to nothing, so that one needs no pause.
+    if not unchanged:
+        time.sleep(0.4)
     if tty:
         sys.stderr.write("\r\033[K")
         sys.stderr.flush()
-    if r.returncode != 0:
-        if os.path.exists(path):
-            os.remove(path)
+    if unchanged:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+    elif r.returncode != 0:
+        for f in (tmp, path):
+            if os.path.exists(f):
+                os.remove(f)
         return False
+    else:
+        os.replace(tmp, path)
     _fetched.add(path)
     return True
 
