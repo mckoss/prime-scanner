@@ -250,10 +250,22 @@ def fetch(url, path, refresh):
     if os.path.exists(path) and (not refresh or path in _fetched):
         return True
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # A refreshed crawl is a minute or more of requests between sections of
+    # the report; say which one is in flight, on a line that is cleared after
+    # it, so the terminal shows progress and the report itself stays clean.
+    tty = sys.stderr.isatty()
+    if tty:
+        sys.stdout.flush()
+        sys.stderr.write(f"\r\033[K  fetching {len(_fetched) + 1}: "
+                         f"{url.removeprefix('https://')}"[:100])
+        sys.stderr.flush()
     r = subprocess.run(["curl", "-sSfL", "-A", "Mozilla/5.0", url, "-o", path],
                        stderr=subprocess.DEVNULL)
     # The crawl makes dozens of requests; space them out for OEIS's sake.
     time.sleep(0.4)
+    if tty:
+        sys.stderr.write("\r\033[K")
+        sys.stderr.flush()
     if r.returncode != 0:
         if os.path.exists(path):
             os.remove(path)
