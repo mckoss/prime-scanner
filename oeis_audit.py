@@ -443,7 +443,8 @@ def afile(rec, aid):
     Entries often link another sequence's a-file, which says nothing about
     whether this one has documented its bounding primes.
     """
-    own = re.compile(rf"/{aid}/a{aid[1:]}\.(txt|pdf)")
+    # OEIS suffixes later uploads: A023186's is a023186_1.txt.
+    own = re.compile(rf"/{aid}/a{aid[1:]}(_\d+)?\.(txt|pdf)")
     return [l for l in (rec.get("link") or []) if own.search(l)]
 
 
@@ -903,7 +904,7 @@ def bound_text(x):
 
 
 def afile_url(link):
-    m = re.search(r'href="(/A\d{6}/a\d{6}\.txt)"', link)
+    m = re.search(r'href="(/A\d{6}/a\d{6}(?:_\d+)?\.txt)"', link)
     return f"https://oeis.org{m.group(1)}" if m else None
 
 

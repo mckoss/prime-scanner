@@ -45,7 +45,7 @@ Published counts come from the committed snapshots in this directory.
 | family | published | published to | ours | shared terms | scan frontier |
 |--------|----------:|-------------:|-----:|-------------:|--------------:|
 | gap, [A002386](https://oeis.org/A002386) | 85 | 1.014e+20 | 64 | 64 | 26,099,160,246,699,733 |
-| lonely, [A023186](https://oeis.org/A023186) | 56 | 9.411e+14 | 61 | 56 | 26,099,160,246,699,733 |
+| lonely, [A023186](https://oeis.org/A023186) | 61 | 2.377e+16 | 61 | 61 | 26,099,160,246,699,733 |
 | aloof, [A031133](https://oeis.org/A031133)/[4](https://oeis.org/A031134)/[2](https://oeis.org/A031132) | 68 | 1.693e+15 | 72 | 68 | 26,099,160,246,699,733 |
 | aloof, [A096265](https://oeis.org/A096265) | 55 | 9.292e+11 | 72 | 55 | 26,099,160,246,699,733 |
 | equidistant, [A058867](https://oeis.org/A058867) | 30 | 1.879e+14 | 34 | 30 | 26,099,160,246,699,733 |
@@ -59,7 +59,6 @@ A096265 indices 2–68; the table counts its extra first term.
 the aloof lower/upper/span family, and each record's bounding primes.
 The generated summary is written only after that check passes.
 
-- **lonely:** 5 record(s) beyond the deepest committed OEIS sequence; latest lonely(61) = 23,771,684,406,473,771 (value 550).
 - **aloof:** 4 record(s) beyond the deepest committed OEIS sequence; latest aloof(72) = 16,020,873,778,857,163 (value 1,220).
 - **equidistant:** 4 record(s) beyond the deepest committed OEIS sequence; latest equidistant(34) = 4,685,407,635,944,059 (value 510).
 - **pairwise:** 12 record(s) beyond the deepest committed OEIS sequence; latest pairwise(41) = 23,771,684,406,473,771 (value 550).
@@ -118,7 +117,7 @@ reviewed; the [snapshot table](#the-cached-b-files) lists committed b-files.
 | [A000101](https://oeis.org/A000101) | gap | upper prime of a record gap | yes | 85 | 64 |
 | [A005250](https://oeis.org/A005250) | gap | the record gap size | yes | 85 | 64 |
 | [A053695](https://oeis.org/A053695) | gap | differences between record gaps | — | 84 | 63 |
-| [A023186](https://oeis.org/A023186) | **lonely** | record min(gap below, gap above) | — | 56 | 61 |
+| [A023186](https://oeis.org/A023186) | **lonely** | record min(gap below, gap above) | — | 61 | 61 |
 | [A023187](https://oeis.org/A023187) | lonely | that distance | — | DATA 56 | 61 |
 | [A096265](https://oeis.org/A096265) | **aloof** | record nextprime(p) − prevprime(p) | — | 55 | 72 |
 | [A031133](https://oeis.org/A031133) | aloof | lower neighbour, indexed one lower | — | 67 | 71 |

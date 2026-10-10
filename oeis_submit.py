@@ -851,6 +851,11 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
     man = {}
     for name, text in sorted(files.items()):
         write(os.path.join(out_dir, name), text, man)
+    # An upload from an earlier run that is no longer built -- its data is now
+    # published -- would otherwise linger and look like work still to do.
+    for name in os.listdir(out_dir):
+        if re.fullmatch(r"[ab]\d{6}\.txt", name) and name not in files:
+            os.remove(os.path.join(out_dir, name))
 
     # edits.yaml keeps `add` as a mapping, which reads better there. fill.js
     # wants ordered [aid, note] pairs -- it splices them into the Cf. line in

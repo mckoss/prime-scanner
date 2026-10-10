@@ -6,13 +6,12 @@ b6e7762d02042b8c  a058867.txt
 d5ccd37575ca84e9  a087770.txt
 9dc85e53605b6352  a096265.txt
 019b6f8d78a2e979  b005669.txt
-7b53ba60dd93b45e  b023186.txt
 4082c47baaab3ab5  b058867.txt
 df42e008a3907131  b087770.txt
 7f14f8a3f2d8583a  b096265.txt
 05525eb4b9a19b23  b107578.txt
-cfd13f9b02fa5e8b  edits.yaml
+b3ff2db2ada1d305  edits.yaml
 2653e4311a1ccfd1  fill.js
-4280b8b4a7e4152e  index.html
+b2bca01aa99ca29b  index.html
 df198646e039c095  panel.html
-1d2a36a8f5f8e43f  payload.js
+eb97ca400c5cfda1  payload.js

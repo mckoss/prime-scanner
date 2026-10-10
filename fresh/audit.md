@@ -36,10 +36,10 @@ siblings already carry have not been written down in that place.
 
 ```
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-  A023186      38      56       -     56      61  the lonely prime
+  A023186      38      61     yes     61      61  the lonely prime
 ! A023187      56       -       -      -      61  distance to the nearer neighbour
 ----------------------------------------------------------------------------------
-  deepest member: 56 terms
+  deepest member: 61 terms.  behind: A023187 -5
 ```
 
 ### aloof -- aloof primes -- record nextprime(p) - prevprime(p)
@@ -197,7 +197,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
   family       ours   published to   terms  via       what is left
   gap            64   1.0141e+20        85  A002386   21 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
-  lonely         61   9.4111e+14        56  A023186   5 term(s) beyond A023186  <-- SUBMITTABLE
+  lonely         61   2.3772e+16        61  A023186   all 61 published terms, none new yet
   aloof          72   1.6932e+15        68  A031134   4 term(s) beyond A031134  <-- SUBMITTABLE
   equidistant    34   1.8789e+14        30  A058867   4 term(s) beyond A058867  <-- SUBMITTABLE; 1 already tabulated in A052187
   pairwise       41   9.1564e+12        29  A087770   12 term(s) beyond A087770  <-- SUBMITTABLE
@@ -243,8 +243,8 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
       Update the existing a-file to 85 rows; its link text is unchanged.
    4. A005669  b-file 85 terms, Xref +A107578
       Extend the b-file to 85 terms; add cross-references to A107578.
-   5. A023186  b-file 61 terms, bound comment, a-file 61 rows, Xref +A087770, Xref +A096265
-      Extend the b-file to 61 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A087770, A096265.
+   5. A023186  bound comment, Xref +A087770, Xref +A096265
+      Add a search-bound comment; add cross-references to A087770, A096265.
    6. A031132  Xref +A096265
       Add the reverse cross-reference.
    7. A031133  bound comment
@@ -260,9 +260,9 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
   12. A107578  b-file 85 terms
       Extend the b-file to 85 terms.
    -. new       balanced-lonely primes  [drafted]
+   -. blocked  b-file:A023187
    -. blocked  b-file:A122412
    -. blocked  b-file:A122413
-   -. pending  b-file:A023187
    -. pending  b-file:A031132
    -. pending  b-file:A058868
    -. review   review:A120384
@@ -270,6 +270,6 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
 
 ```
-  wrote 16 files to oeis/submit/
+  wrote 15 files to oeis/submit/
   open  http://localhost:8017/  (make submit)
 ```
