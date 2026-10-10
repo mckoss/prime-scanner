@@ -348,14 +348,14 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
 // each is filled only by its own Fill button.
 {
   const edits = [
-    { field: 'Ext', action: 'add', text: 'a(30) from ~~~~' },
+    { field: 'Ext', action: 'add', text: 'a(30) from' },
     { field: 'Xref', action: 'add', add: [['A096265', 'aloof']],
       optional: true }];
   const p = makePage({ Ext: '', Xref: 'Cf. A000001.' }, { seq: 'A087770' });
   p.run(SRC);
   p.post({ type: 'READY', draft: { aid: 'A087770', edits } });
   p.post({ type: 'FILL_ALL' });
-  eq(p.field('Ext'), 'a(30) from ~~~~', 'Fill all fills the required edit');
+  eq(p.field('Ext'), 'a(30) from', 'Fill all fills the required edit');
   eq(p.field('Xref'), 'Cf. A000001.', 'Fill all skips the optional edit');
   const st = p.sent.filter(m => m.type === 'STATE').pop();
   ok(st.states[1].optional && !st.states[0].optional, 'state marks optional');

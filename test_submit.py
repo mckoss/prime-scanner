@@ -14,6 +14,7 @@ unquoted scalar carrying a comma, would both change what a real parser reads.
 """
 
 import hashlib
+import json
 import os
 import re
 import sys
@@ -200,6 +201,18 @@ check(re.search(r"^check_oeis: pass$", y, re.M),
       "edits.yaml: check_oeis is not passing")
 check(re.search(r"^  signature: \"~~~~\"", y, re.M),
       "edits.yaml: signature is not the OEIS four-tilde shortcut")
+
+# An %E line names no one: OEIS appends the submitter's name and date to it
+# itself, so "a(30)-a(41) from" ends at "from".
+payload = json.loads(re.sub(r"^window\.OEIS_SUBMIT = |;\s*$", "",
+                            open(os.path.join(SUBMIT, "payload.js")).read()))
+for d in payload["drafts"]:
+    for e in d["edits"]:
+        if e["field"] == "Ext":
+            check("~~~~" not in e["text"] and "Koss" not in e["text"],
+                  f"{d['aid']}: %E line carries a name or signature: {e['text']}")
+            check(" from " not in e["text"] + " " or e["text"].endswith(" from"),
+                  f"{d['aid']}: %E line runs past 'from': {e['text']}")
 
 # `order` lists every draft's A-number, once, in the order the drafts appear
 # -- the schedule's priority order, not A-number order.

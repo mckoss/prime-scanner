@@ -24,7 +24,7 @@ window.OEIS_SUBMIT = {
      "field": "Ext",
      "code": "%E",
      "action": "add",
-     "text": "a(30)-a(41) from ~~~~"
+     "text": "a(30)-a(41) from"
     },
     {
      "field": "Xref",
@@ -81,7 +81,7 @@ window.OEIS_SUBMIT = {
      "field": "Ext",
      "code": "%E",
      "action": "add",
-     "text": "a(57)-a(72) from ~~~~"
+     "text": "a(57)-a(72) from"
     },
     {
      "field": "Xref",

@@ -1932,18 +1932,19 @@ def submission(items, families, results, refresh, check):
             if prior:
                 for row in new:
                     n = row[0]
-                    text = (oeis_sources.balanced_credit(n, prior[n]) + " "
-                            + oeis_submit.ATTRIB["signature"] if n in prior else
-                            f"a({n}) from {oeis_submit.ATTRIB['signature']}")
+                    # An %E line ends at "from": OEIS appends the
+                    # submitter's name and date itself.
+                    text = (oeis_sources.balanced_credit(n, prior[n])
+                            if n in prior else f"a({n}) from")
                     d["edits"].append(op("Ext", "add", text=text))
                 d["edits"].append(op("Link", "add", text=(
                     'Jerry M. Lagrou and earlier contributors, '
                     '<a href="/A052187/b052187.txt">First-occurrence balanced '
                     'prime triples (lower endpoints)</a>.')))
             else:
+                # Ends at "from": OEIS appends the name and date itself.
                 d["edits"].append(op("Ext", "add", text=(
-                    f"a({n_pub + 1})-a({n_pub + len(new)}) from "
-                    f"{oeis_submit.ATTRIB['signature']}")))
+                    f"a({n_pub + 1})-a({n_pub + len(new)}) from")))
             d["summary"] = (
                 f"Extend from {n_pub} to {n_pub + len(new)} terms from an "
                 f"exhaustive scan from 0, complete below "
