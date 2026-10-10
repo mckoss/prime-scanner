@@ -174,11 +174,21 @@
     if (panel && panel.contentWindow)
       panel.contentWindow.postMessage(msg, ORIGIN);
   }
+  function uploadStates() {
+    return draft ? (draft.uploads || []).map(function (u) {
+      return { name: u.name, slot: holder(u.name),
+               uploaded: uploadedAs(u) }; }) : [];
+  }
+  // The cross-references as they stand: the Xref field on the form, or on a
+  // page without one -- the draft view a save lands on -- the page's text.
+  function xrefText() {
+    var x = read('Xref');
+    if (x !== null) return x;
+    return (document.body && document.body.innerText) || '';
+  }
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
-           uploads: draft ? (draft.uploads || []).map(function (u) {
-             return { name: u.name, slot: holder(u.name),
-                      uploaded: uploadedAs(u) }; }) : [],
+           uploads: uploadStates(), xref: xrefText(),
            saved: /\/draft\//.test(location.pathname) });
   }
 
@@ -222,11 +232,40 @@
       location.href = m.url;
     } else if (m.type === 'RESCAN') {
       report();
+    } else if (m.type === 'SAVE_GO') {
+      go();
     } else if (m.type === 'WIDTH') {
       panel.style.width = m.px + 'px';
       document.body.style.marginRight = m.px + 'px';
     }
   });
+
+  // Save Changes is held for a moment so the panel can record the draft in
+  // the tracker before the page goes away. The panel answers SAVE_GO, and if
+  // it never does the save goes ahead anyway. Only a save is held: any other
+  // button on the form submits as usual.
+  var going = false, held = null;
+  function go() {
+    if (!held) return;
+    var h = held;
+    held = null;
+    going = true;
+    try {
+      if (h.form.requestSubmit) h.form.requestSubmit(h.submitter || undefined);
+      else h.form.submit();
+    } catch (err) { h.form.submit(); }
+  }
+  if (document.addEventListener)
+    document.addEventListener('submit', function (ev) {
+      if (going || !draft) return;
+      var b = ev.submitter;
+      if (b && !/save/i.test(b.value || b.textContent || '')) return;
+      ev.preventDefault();
+      held = { form: ev.target, submitter: b };
+      post({ type: 'SAVING', seq: SEQ, states: states(),
+             uploads: uploadStates(), xref: xrefText() });
+      setTimeout(go, 4000);
+    }, true);
 
   panel = document.createElement('iframe');
   panel.src = ORIGIN + '/panel.html#' + encodeURIComponent(SEQ || '');

@@ -4,6 +4,10 @@
 #
 # An item with no line here is open: its draft is generated and ready to edit.
 #
+# `make submit` writes this file for you: Save Changes on a draft the panel
+# shows complete records its items as submitted, and the worklist's buttons
+# record submitted, approved or declined. Edit by hand for anything else.
+#
 # status: submitted  waiting on an OEIS editor (item leaves the script)
 #         approved | declined | skip   closes the item
 #

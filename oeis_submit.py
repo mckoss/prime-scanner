@@ -586,11 +586,21 @@ FILL_JS = r"""
     if (panel && panel.contentWindow)
       panel.contentWindow.postMessage(msg, ORIGIN);
   }
+  function uploadStates() {
+    return draft ? (draft.uploads || []).map(function (u) {
+      return { name: u.name, slot: holder(u.name),
+               uploaded: uploadedAs(u) }; }) : [];
+  }
+  // The cross-references as they stand: the Xref field on the form, or on a
+  // page without one -- the draft view a save lands on -- the page's text.
+  function xrefText() {
+    var x = read('Xref');
+    if (x !== null) return x;
+    return (document.body && document.body.innerText) || '';
+  }
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
-           uploads: draft ? (draft.uploads || []).map(function (u) {
-             return { name: u.name, slot: holder(u.name),
-                      uploaded: uploadedAs(u) }; }) : [],
+           uploads: uploadStates(), xref: xrefText(),
            saved: /\/draft\//.test(location.pathname) });
   }
 
@@ -634,11 +644,40 @@ FILL_JS = r"""
       location.href = m.url;
     } else if (m.type === 'RESCAN') {
       report();
+    } else if (m.type === 'SAVE_GO') {
+      go();
     } else if (m.type === 'WIDTH') {
       panel.style.width = m.px + 'px';
       document.body.style.marginRight = m.px + 'px';
     }
   });
+
+  // Save Changes is held for a moment so the panel can record the draft in
+  // the tracker before the page goes away. The panel answers SAVE_GO, and if
+  // it never does the save goes ahead anyway. Only a save is held: any other
+  // button on the form submits as usual.
+  var going = false, held = null;
+  function go() {
+    if (!held) return;
+    var h = held;
+    held = null;
+    going = true;
+    try {
+      if (h.form.requestSubmit) h.form.requestSubmit(h.submitter || undefined);
+      else h.form.submit();
+    } catch (err) { h.form.submit(); }
+  }
+  if (document.addEventListener)
+    document.addEventListener('submit', function (ev) {
+      if (going || !draft) return;
+      var b = ev.submitter;
+      if (b && !/save/i.test(b.value || b.textContent || '')) return;
+      ev.preventDefault();
+      held = { form: ev.target, submitter: b };
+      post({ type: 'SAVING', seq: SEQ, states: states(),
+             uploads: uploadStates(), xref: xrefText() });
+      setTimeout(go, 4000);
+    }, true);
 
   panel = document.createElement('iframe');
   panel.src = ORIGIN + '/panel.html#' + encodeURIComponent(SEQ || '');
@@ -699,6 +738,7 @@ PANEL_HTML = r"""<!doctype html>
  .up .why,.f .why{color:var(--dim);font-size:11px;margin:3px 0 5px}
  .up a{font-size:11px;color:#0969da;margin-left:6px}
  .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
+ #track .why{color:var(--dim);font-size:11px;margin:0 0 6px;word-break:break-word}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
@@ -710,6 +750,11 @@ PANEL_HTML = r"""<!doctype html>
   <button class="p" id="all">Fill all</button>
   <button id="re">Rescan</button>
 </div>
+<section id="track" hidden><h2>Tracker</h2>
+  <div class="why" id="trackst">Save Changes records this draft in
+   submissions.txt once it completes the draft.</div>
+  <button id="rec">Record in tracker</button>
+</section>
 <section><h2>Batch</h2><div id="list"></div></section>
 <div class="note" id="note"></div>
 <script src="payload.js"></script>
@@ -733,7 +778,8 @@ function renderList(states){
   var p = progress(), out = '';
   P.drafts.forEach(function(d,i){
     var st = d.aid===SEQ ? liveState(states) : (p[d.aid]||'');
-    var mark = st==='saved' ? '<span class="st done">● saved</span>'
+    var mark = st==='recorded' ? '<span class="st done">✓ recorded</span>'
+             : st==='saved' ? '<span class="st done">● saved</span>'
              : st==='filled' ? '<span class="st part">◐ filled</span>'
              : d.blocked_on ? '<span class="st err">⊘ blocked</span>'
              : '<span class="st" style="color:#aaa">○</span>';
@@ -780,7 +826,9 @@ function render(msg){
   [].forEach.call(document.querySelectorAll('#fields button[data-i]'),
     function(b){ b.onclick=function(){ send({type:'FILL',index:+b.dataset.i}) }});
   renderUploads(msg.uploads||[]);
-  if(draft) remember(draft.aid, msg.saved ? 'saved' : liveState(states));
+  last = msg;
+  if(draft && progress()[draft.aid]!=='recorded')
+    remember(draft.aid, msg.saved ? 'saved' : liveState(states));
   renderList(states);
 }
 
@@ -830,6 +878,64 @@ window.addEventListener('message', function(ev){
     for(var k in (m.errs||{})) attachErr[k] = m.errs[k];
   }
 });
+// The tracker: oeis/submissions.txt, written by the server that serves this
+// panel. A draft's items go on one line -- they are one OEIS edit -- except
+// a suggested cross-reference left out of the form, which stays open. Leaving
+// one out also records the sequence's open draft, so the audit does not offer
+// it as a second edit stacked on this one.
+var last = null;
+function syncIds(msg){
+  var x = (msg&&msg.xref)||'';
+  var ids = (draft.items||[]).filter(function(i){
+    var m = /^xref:[^:]+:(A\d{6})$/.exec(i);
+    return !m || new RegExp('\\b'+m[1]+'\\b').test(x);
+  });
+  if(ids.length < (draft.items||[]).length) ids.push('draft:'+draft.aid);
+  return ids;
+}
+// This save completes the draft: every required edit is in the form and
+// every file is uploaded or attached to go up with it.
+function complete(msg){
+  var req = (msg.states||[]).filter(function(s){return !s.optional});
+  return req.every(function(s){return s.done})
+      && (msg.uploads||[]).every(function(u){return u.uploaded || u.slot>=0});
+}
+function note(ids){
+  var left = (draft.items||[]).filter(function(i){return ids.indexOf(i)<0});
+  return draft.aid+' '+draft.what.split(', ').filter(function(w){
+    return !left.some(function(i){return w.indexOf(i.split(':')[2])>=0}) })
+    .join(', ').replace(/ \(optional\)/g, '');
+}
+function track(ids, wait, done){
+  var st = document.getElementById('trackst');
+  st.textContent = 'Recording '+ids.join(', ')+' …';
+  fetch('/submissions', {method:'POST', keepalive:true,
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ids:ids, status:'submitted', aid:draft.aid,
+                          note:note(ids), wait:wait})})
+  .then(function(r){ return r.json() })
+  .then(function(j){
+    if(j.ok){ remember(draft.aid,'recorded');
+              st.innerHTML = '<span class="done">✓ Recorded:</span> '
+                + esc(j.line); renderList(last&&last.states) }
+    else st.innerHTML = '<span class="err">'+esc(j.error)+'</span>';
+  })
+  .catch(function(e){ st.innerHTML = '<span class="err">Not recorded: '
+    + esc(e)+' -- is make submit running?</span>' })
+  .then(function(){ if(done) done() });
+}
+document.getElementById('track').hidden = !draft;
+document.getElementById('rec').onclick=function(){
+  var ids = syncIds(last);
+  if(confirm('Record as submitted in submissions.txt?\n\n'+ids.join('\n')))
+    track(ids, true);
+};
+window.addEventListener('message', function(ev){
+  if(ev.origin!==OEIS || (ev.data||{}).type!=='SAVING') return;
+  var go = function(){ send({type:'SAVE_GO'}) };
+  if(draft && complete(ev.data)) track(syncIds(ev.data), false, go);
+  else go();
+});
 document.getElementById('all').onclick=function(){ send({type:'FILL_ALL'}) };
 document.getElementById('re').onclick =function(){ send({type:'RESCAN'}) };
 renderList([]);
@@ -867,6 +973,10 @@ INDEX_HTML = r"""<!doctype html>
  .ok{color:#1a7f37;font-weight:600}
  .err{color:#cf222e;font-weight:600}
  tr.done td{color:#777}
+ .track{margin-top:4px;white-space:nowrap}
+ .track button{font:inherit;font-size:11px;padding:1px 8px;margin-right:4px;
+      border:1px solid #bbb;border-radius:4px;background:#fff;cursor:pointer}
+ .track button:hover{background:#f0f0f0}
 </style>
 <h1>OEIS submissions</h1>
 <p class="sub">%(n)d drafts &middot; generated %(date)s from <code>%(run)s/</code>
@@ -880,7 +990,9 @@ INDEX_HTML = r"""<!doctype html>
   <p style="margin:.8em 0 0;color:#777;font-size:12px">Needs this server
    running: <code>make submit</code> (serves this directory on
    localhost:%(port)d). The bookmarklet loads everything fresh, so
-   regenerating the audit needs no re-drag.</p>
+   regenerating the audit needs no re-drag. Save Changes on a draft the panel
+   has completed, and the buttons below, record progress in
+   <code>oeis/submissions.txt</code> and rerun the audit.</p>
 </div>
 
 <h2>Drafts</h2>
@@ -889,6 +1001,35 @@ INDEX_HTML = r"""<!doctype html>
 %(rows)s
 </table>
 %(extra)s
+<script>
+// Each button records its items on one line of oeis/submissions.txt, through
+// the server that serves this page, which then reruns the audit.
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('.track button');
+  if (!b) return;
+  var ids = b.dataset.ids.split(','), st = b.dataset.status;
+  var note = prompt('Record ' + ids.join(', ') + ' as ' + st +
+                    '.\nNote for submissions.txt (optional):', '');
+  if (note === null) return;
+  b.disabled = true;
+  b.textContent = 'Recording…';
+  fetch('/submissions', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ids: ids, status: st, aid: b.dataset.aid,
+                          note: note})})
+  .then(function (r) { return r.json(); })
+  .then(function (j) {
+    if (!j.ok) throw j.error;
+    if (!j.audit_ok) alert('Recorded, but the audit failed:\n' + j.audit);
+    location.reload();
+  })
+  .catch(function (e) {
+    alert('Not recorded: ' + e + '\nIs make submit running?');
+    b.disabled = false;
+    b.textContent = st;
+  });
+});
+</script>
 <p style="color:#777;font-size:12px;margin-top:2em">Nothing here submits
  anything. The panel fills fields and attaches files; you review the form and
  click Save Changes. Saving makes a draft <code>editing</code> &mdash; it
@@ -965,6 +1106,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
         "meta": meta,
         "drafts": [{
             "aid": d["aid"], "role": d["role"], "what": d["what"],
+            "items": d["items"],
             "summary": d["summary"],
             "blocked_on": d.get("blocked_on") or None,
             "edits": for_js(d["edits"]),
@@ -1021,6 +1163,14 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
                                 f'target="_blank">{m[0]}</a>',
                       html.escape(text or ""))
 
+    def track_buttons(ids, aid, statuses):
+        """Buttons that record `ids` in submissions.txt, one per status."""
+        return '<div class="track">' + "".join(
+            f'<button data-ids="{html.escape(",".join(ids))}" '
+            f'data-aid="{aid or ""}" data-status="{st}">'
+            f'{"Mark submitted" if st == "submitted" else st.title()}'
+            f'</button>' for st in statuses) + '</div>'
+
     rows = []
     for i, d in enumerate(drafts, 1):
         f = "<br>".join(
@@ -1035,7 +1185,10 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
             f'<td>{seq_cell(d["aid"], d["url"])}</td>'
             f'<td class="what">{linked(d["what"])}</td>'
             f'<td>{f}</td>'
-            f'<td class="warn">{st}</td></tr>')
+            f'<td class="warn">{st}'
+            + ("" if st else track_buttons(d["items"], d["aid"],
+                                           ("submitted",)))
+            + '</td></tr>')
     # What has gone to OEIS: approved edits get a check, rejected ones a
     # cross, ones still with an editor an ellipsis. All sit under the open
     # drafts, numbered apart.
@@ -1056,7 +1209,11 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
             f'<td>{seq_cell(r["aid"])}</td>'
             f'<td class="what"><code>{linked(r["id"])}</code> {linked(r["reason"])}</td>'
             f'<td>{done_files}</td>'
-            f'<td class="{cls}">{r["state"]} {r["date"]}</td></tr>')
+            f'<td class="{cls}">{r["state"]} {r["date"]}'
+            + (track_buttons(r["id"].split(", "), r["aid"],
+                             ("approved", "declined"))
+               if r["state"] == "pending" else "")
+            + '</td></tr>')
     extra = ""
     if new_seqs:
         extra += "<h2>New sequences</h2><table>" + "".join(

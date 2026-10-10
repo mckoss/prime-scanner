@@ -64,6 +64,7 @@ function makePage(fields, opts) {
     body: { style: {}, appendChild() {} },
     head: { appendChild() {} },
     getElementById(id) { return els[id] || null; },
+    addEventListener(t, fn) { if (t === 'submit') page.submit = fn; },
     querySelectorAll(sel) {
       return sel === 'a[href]' ? (opts.anchors || []).map(h => ({
         getAttribute: () => h })) : [];
@@ -96,14 +97,16 @@ function makePage(fields, opts) {
     get() { return ''; }, set(u) { page.navigated = u; } });
   page.run = function (src) {
     const fn = new Function('document', 'window', 'location',
-                            'DataTransfer', 'File', 'Event', src);
+                            'DataTransfer', 'File', 'Event', 'setTimeout', src);
     fn(doc, win, loc,
        function () { this.items = { add: (f) => { this._f = f; } };
                      Object.defineProperty(this, 'files',
                        { get: () => [this._f] }); },
        function (parts, name) { this.parts = parts; this.name = name; },
-       function (t) { this.type = t; });
+       function (t) { this.type = t; },
+       function (f) { page.timers.push(f); });
   };
+  page.timers = [];
   page.post = function (msg) {
     page.handler({ origin: 'http://localhost:8017', data: msg });
   };
@@ -377,6 +380,47 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
      'remove drops the old file\'s line only');
   const st = p.sent.filter(m => m.type === 'STATE').pop();
   ok(st.states[0].done, 'remove reported as applied');
+}
+
+// --- Save Changes waits for the panel to record the draft ----------------
+{
+  const p = makePage({ Ext: '' }, { seq: 'A000001' });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: { aid: 'A000001', edits: [
+    { field: 'Ext', action: 'add', text: 'a(5)-a(9) from' }] } });
+  let sent = 0, held = false;
+  const form = { requestSubmit(b) { sent++; this.by = b; } };
+  const save = { value: 'Save Changes' };
+  p.submit({ target: form, submitter: save,
+             preventDefault() { held = true; } });
+  ok(held, 'Save Changes is held');
+  eq(p.last().type, 'SAVING', 'the panel is told a save is coming');
+  eq(p.last().states[0].done, false, 'with the form as it stands');
+  eq(sent, 0, 'nothing is submitted before the panel answers');
+  p.post({ type: 'SAVE_GO' });
+  eq(sent, 1, 'SAVE_GO lets the save through');
+  eq(form.by, save, 'as the button that was clicked');
+  let again = false;
+  p.submit({ target: form, submitter: save,
+             preventDefault() { again = true; } });
+  ok(!again, 'the released save is not held a second time');
+  p.post({ type: 'SAVE_GO' });
+  p.timers.forEach(f => f());
+  eq(sent, 1, 'a late SAVE_GO or timeout submits nothing more');
+}
+{
+  const p = makePage({ Ext: '' }, { seq: 'A000001' });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: { aid: 'A000001', edits: [] } });
+  let sent = 0, held = false;
+  const form = { requestSubmit() { sent++; } };
+  p.submit({ target: form, submitter: { value: 'Preview' },
+             preventDefault() { held = true; } });
+  ok(!held, 'another button submits as usual');
+  p.submit({ target: form, submitter: { value: 'Save Changes' },
+             preventDefault() {} });
+  p.timers.forEach(f => f());
+  eq(sent, 1, 'with no answer from the panel the save goes ahead anyway');
 }
 
 // --- navigation goes through the shim, never the iframe ------------------
