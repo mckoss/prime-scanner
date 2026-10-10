@@ -17,6 +17,6 @@ da4a2361a655d1c3  b031134.txt
 05525eb4b9a19b23  b107578.txt
 a9144175916657f8  edits.yaml
 e962300852006361  fill.js
-4bc164eefe18a7bf  index.html
+a20000d9688e435f  index.html
 f0bdc8f7c65cf4a5  panel.html
 a810f682662795dc  payload.js
