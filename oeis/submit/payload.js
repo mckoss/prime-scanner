@@ -27,12 +27,6 @@ window.OEIS_SUBMIT = {
      "text": "Mike Koss, <a href=\"/A087770/b087770_k.txt\">Table of n, a(n) for n = 1..41</a> (terms 1..29 from Walter Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta)"
     },
     {
-     "field": "Ext",
-     "code": "%E",
-     "action": "add",
-     "text": "a(30)-a(41) from"
-    },
-    {
      "field": "Xref",
      "code": "%Y",
      "action": "add",
@@ -91,12 +85,6 @@ window.OEIS_SUBMIT = {
      "code": "%H",
      "action": "credit_bfile_link",
      "text": "Mike Koss, <a href=\"/A096265/b096265_k.txt\">Table of n, a(n) for n = 1..72</a> (terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner)"
-    },
-    {
-     "field": "Ext",
-     "code": "%E",
-     "action": "add",
-     "text": "a(57)-a(72) from"
     },
     {
      "field": "Xref",

@@ -86,10 +86,10 @@ class PublishedSourcesTests(unittest.TestCase):
         body = [l.split() for l in files["b058867.txt"].splitlines()
                 if l and not l.startswith("#")]
         self.assertEqual([int(v) for _, v in body[30:]], [r[1] for r in rows[30:]])
-        # The entry gets one plain %E line, as A058867 was submitted; the
-        # earlier A052187 triple is told to the editors, not the entry.
-        extensions = [e["text"] for e in draft["edits"] if e["field"] == "Ext"]
-        self.assertEqual(extensions, ["a(31)-a(34) from"])
+        # Terms in the b-file alone get no %E line, as an editor asked on
+        # A058867; the earlier A052187 triple is told to the editors, not
+        # the entry.
+        self.assertFalse(any(e["field"] == "Ext" for e in draft["edits"]))
         self.assertFalse(any("A052187" in (e.get("text") or "")
                              for e in draft["edits"]))
         self.assertIn("already tabulated", draft["to_editors"])
@@ -151,6 +151,7 @@ class ExtensionTests(unittest.TestCase):
                 items, families, "fresh", False, (True, []))
         d = drafts[0]
         self.assertFalse(any(e["field"] == "Data" for e in d["edits"]))
+        self.assertFalse(any(e["field"] == "Ext" for e in d["edits"]))
         self.assertEqual([(u["kind"], u["rows"]) for u in d["uploads"]],
                          [("b-file", 61), ("a-file", 61)])
         # OEIS rewrites the b-file link on upload, crediting only the

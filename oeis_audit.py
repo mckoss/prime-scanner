@@ -1958,17 +1958,20 @@ def submission(items, families, results, refresh, check):
                     "Data", "append", after_n=n_pub, after_n_term=pub[-1],
                     terms=[[r[1], f"gaps {r[3]}, {r[4]}; {r[5]} < p < {r[6]}"]
                            for r in new]))
+                # One %E line for terms added to DATA, ending at "from":
+                # OEIS appends the name and date itself. Terms that go only
+                # into the b-file get none -- an editor (Michel Marcus, on
+                # A058867) asks for no extension line when adding a b-file.
+                d["edits"].append(op("Ext", "add", text=(
+                    f"a({n_pub + 1})-a({n_pub + len(new)}) from")))
             # The b-file carries every extension, whether or not DATA does.
             credit = build_terms_bfile(fam)
             name, n = built[("b", aid)]
             add_bfile(d, aid, name, n, credit, n - len(new))
-            # One %E line for the run, ending at "from": OEIS appends the
-            # name and date itself. A term an earlier table already had (an
-            # A052187 triple) is told to the editors, not added to the entry.
+            # A term an earlier table already had (an A052187 triple) is
+            # told to the editors, not added to the entry.
             prior = (oeis_sources.balanced_matches(new)
                      if fam == "equidistant" else {})
-            d["edits"].append(op("Ext", "add", text=(
-                f"a({n_pub + 1})-a({n_pub + len(new)}) from")))
             d["summary"] = (
                 f"Extend from {n_pub} to {n_pub + len(new)} terms from an "
                 f"exhaustive scan from 0, complete below "
