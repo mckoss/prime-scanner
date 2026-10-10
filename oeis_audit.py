@@ -1451,8 +1451,14 @@ def run_audit(args):
             "run": os.path.basename(os.path.normpath(args.results)),
             "frontier": hi, "check": check[0],
             "check_note": "" if check[0] else (check[1][0] if check[1] else "")}
+    # Each listed sequence's OEIS title, from the cached entry.
+    titles = {}
+    for aid in [d["aid"] for d in drafts] + [r["aid"] for r in other["done"]]:
+        e = aid and entry(aid, args.refresh)
+        if e and e.get("name"):
+            titles[aid] = e["name"]
     man = oeis_submit.write_all(SUBMIT, drafts, new_seqs, other, meta, files,
-                                 NAME_OF)
+                                 NAME_OF, titles)
     print(f"  wrote {len(man)} files to {os.path.relpath(SUBMIT)}/")
     print(f"  open  http://localhost:{oeis_submit.PORT}/  "
           f"(make submit)\n")

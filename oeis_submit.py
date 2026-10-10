@@ -817,6 +817,7 @@ INDEX_HTML = r"""<!doctype html>
        border:1px solid #0969da;border-radius:10px;text-decoration:none;
        white-space:nowrap}
  .edit:hover{background:#0969da;color:#fff}
+ .title{font-size:13px;max-width:22em}
  .name{color:#777;font-size:12px;white-space:nowrap}
  .bm{display:inline-block;padding:6px 14px;border:1px solid #0969da;
      border-radius:6px;color:#0969da;text-decoration:none;font-weight:600}
@@ -868,10 +869,12 @@ SECTIONS = (
 )
 
 
-def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
+def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
+              titles=None):
     """Write every generated file, and return the manifest.
 
-    `names` maps an A-number to the friendly name shown beside it.
+    `names` maps an A-number to the friendly name shown beside it, and
+    `titles` to its OEIS title.
     """
     man = {}
     for name, text in sorted(files.items()):
@@ -935,11 +938,11 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
     write(os.path.join(out_dir, "fill.js"), FILL_JS % {"port": PORT}, man)
     write(os.path.join(out_dir, "panel.html"), PANEL_HTML, man)
 
-    names = names or {}
+    names, titles = names or {}, titles or {}
 
     def seq_cell(aid, edit_url=None):
-        """The A-number, linked to its public page, with its friendly name and,
-        for a draft, the edit form. Both open in a new tab, so the worklist
+        """The A-number, linked to its public page, with its OEIS title, its
+        friendly name and, for a draft, the edit form. Both open in a new tab, so the worklist
         stays put; the bookmarklet runs in whichever tab it is clicked."""
         if not aid:
             return ""
@@ -947,8 +950,10 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
         if edit_url:
             out += (f' <a class="edit" href="{edit_url}" target="_blank" '
                     f'title="Open the OEIS edit form">&#9998; Edit</a>')
+        if aid in titles:
+            out += f'<div class="title">{linked(titles[aid])}</div>'
         if aid in names:
-            out += f'<br><span class="name">{html.escape(names[aid])}</span>'
+            out += f'<div class="name">{html.escape(names[aid])}</div>'
         return out
 
     def linked(text):
