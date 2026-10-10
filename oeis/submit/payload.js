@@ -8,178 +8,6 @@ window.OEIS_SUBMIT = {
  },
  "drafts": [
   {
-   "aid": "A000101",
-   "role": "prime at the upper end",
-   "what": "Xref +A053695",
-   "summary": "Add the reverse cross-reference.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Xref",
-     "code": "%Y",
-     "action": "add",
-     "add": [
-      [
-       "A053695",
-       "successive record-gap differences"
-      ]
-     ]
-    }
-   ],
-   "uploads": []
-  },
-  {
-   "aid": "A002386",
-   "role": "prime at the lower end",
-   "what": "Xref +A053695, Xref +A087770, Xref +A107578",
-   "summary": "Add cross-references to A053695, A087770, A107578.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Xref",
-     "code": "%Y",
-     "action": "add",
-     "add": [
-      [
-       "A053695",
-       "successive record-gap differences"
-      ],
-      [
-       "A087770",
-       "the pairwise lonely prime"
-      ],
-      [
-       "A107578",
-       "index of the upper prime"
-      ]
-     ]
-    }
-   ],
-   "uploads": []
-  },
-  {
-   "aid": "A005669",
-   "role": "index of the lower prime",
-   "what": "b-file 85 terms, Xref +A107578",
-   "summary": "Extend the b-file to 85 terms; add cross-references to A107578.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Link",
-     "code": "%H",
-     "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A005669/b005669_k.txt\">Table of n, a(n) for n = 1..85</a> (terms 1..77 from Charles R Greathouse IV, terms 78..82 from John W. Nicholson)"
-    },
-    {
-     "field": "Xref",
-     "code": "%Y",
-     "action": "add",
-     "add": [
-      [
-       "A107578",
-       "index of the upper prime"
-      ]
-     ]
-    }
-   ],
-   "uploads": [
-    {
-     "kind": "b-file",
-     "name": "b005669.txt",
-     "slot": 0,
-     "rows": 85,
-     "published": true,
-     "purpose": "The b-file: 85 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
-     "desc": "",
-     "content": "# A005669, 85 terms.\n#\n# pi(p) for the prime at the lower end of the n-th maximal gap.\n# From the committed copy of Andersen and Luhn's table; see\n# oeis/andersen-luhn-index.txt, which records how it was checked\n# against the published b-files of A002386, A005250 and A005669.\n#\n# Mike Koss. From Andersen and Luhn's table, retrieved 2026-09-16.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 1\n2 2\n3 4\n4 9\n5 24\n6 30\n7 99\n8 154\n9 189\n10 217\n11 1183\n12 1831\n13 2225\n14 3385\n15 14357\n16 30802\n17 31545\n18 40933\n19 103520\n20 104071\n21 149689\n22 325852\n23 1094421\n24 1319945\n25 2850174\n26 6957876\n27 10539432\n28 10655462\n29 20684332\n30 23163298\n31 64955634\n32 72507380\n33 112228683\n34 182837804\n35 203615628\n36 486570087\n37 910774004\n38 981765347\n39 1094330259\n40 1820471368\n41 5217031687\n42 7322882472\n43 9583057667\n44 11723859927\n45 11945986786\n46 11992433550\n47 16202238656\n48 17883926781\n49 23541455083\n50 28106444830\n51 50070452577\n52 52302956123\n53 72178455400\n54 94906079600\n55 251265078335\n56 473258870471\n57 662221289043\n58 1411461642343\n59 2921439731020\n60 5394763455325\n61 6822667965940\n62 35315870460455\n63 49573167413483\n64 49749629143526\n65 1175661926421598\n66 1475067052906945\n67 2133658100875638\n68 5253374014230870\n69 5605544222945291\n70 7784313111002702\n71 8952449214971382\n72 10160960128667332\n73 10570355884548334\n74 20004097201301079\n75 34952141021660495\n76 135962332505694894\n77 160332893561542066\n78 360701908268316580\n79 408333670434942092\n80 423731791997205041\n81 426181820436140029\n82 428472240920394477\n83 477141032543986017\n84 1524717378371224128\n85 2251483061895611799\n"
-    }
-   ]
-  },
-  {
-   "aid": "A023186",
-   "role": "the lonely prime",
-   "what": "bound comment, Xref +A087770, Xref +A096265",
-   "summary": "Add a search-bound comment; add cross-references to A087770, A096265.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
-    },
-    {
-     "field": "Xref",
-     "code": "%Y",
-     "action": "add",
-     "add": [
-      [
-       "A087770",
-       "the pairwise lonely prime"
-      ],
-      [
-       "A096265",
-       "the aloof prime"
-      ]
-     ]
-    }
-   ],
-   "uploads": []
-  },
-  {
-   "aid": "A031132",
-   "role": "the span between them",
-   "what": "Xref +A096265",
-   "summary": "Add the reverse cross-reference.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Xref",
-     "code": "%Y",
-     "action": "add",
-     "add": [
-      [
-       "A096265",
-       "the aloof prime"
-      ]
-     ]
-    }
-   ],
-   "uploads": []
-  },
-  {
-   "aid": "A031133",
-   "role": "the lower neighbour",
-   "what": "bound comment",
-   "summary": "Add a search-bound comment: no further term below 2.6*10^16.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
-    }
-   ],
-   "uploads": []
-  },
-  {
-   "aid": "A031134",
-   "role": "the upper neighbour",
-   "what": "bound comment",
-   "summary": "Add a search-bound comment: no further term below 2.6*10^16.",
-   "blocked_on": null,
-   "edits": [
-    {
-     "field": "Comment",
-     "code": "%C",
-     "action": "add",
-     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
-    }
-   ],
-   "uploads": []
-  },
-  {
    "aid": "A058867",
    "role": "the balanced prime",
    "what": "b-file 34 terms, bound comment, a-file 34 rows",
@@ -403,6 +231,44 @@ window.OEIS_SUBMIT = {
    ]
   },
   {
+   "aid": "A005669",
+   "role": "index of the lower prime",
+   "what": "b-file 85 terms, Xref +A107578",
+   "summary": "Extend the b-file to 85 terms; add cross-references to A107578.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A005669/b005669_k.txt\">Table of n, a(n) for n = 1..85</a> (terms 1..77 from Charles R Greathouse IV, terms 78..82 from John W. Nicholson)"
+    },
+    {
+     "field": "Xref",
+     "code": "%Y",
+     "action": "add",
+     "add": [
+      [
+       "A107578",
+       "index of the upper prime"
+      ]
+     ]
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b005669.txt",
+     "slot": 0,
+     "rows": 85,
+     "published": true,
+     "purpose": "The b-file: 85 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "desc": "",
+     "content": "# A005669, 85 terms.\n#\n# pi(p) for the prime at the lower end of the n-th maximal gap.\n# From the committed copy of Andersen and Luhn's table; see\n# oeis/andersen-luhn-index.txt, which records how it was checked\n# against the published b-files of A002386, A005250 and A005669.\n#\n# Mike Koss. From Andersen and Luhn's table, retrieved 2026-09-16.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 1\n2 2\n3 4\n4 9\n5 24\n6 30\n7 99\n8 154\n9 189\n10 217\n11 1183\n12 1831\n13 2225\n14 3385\n15 14357\n16 30802\n17 31545\n18 40933\n19 103520\n20 104071\n21 149689\n22 325852\n23 1094421\n24 1319945\n25 2850174\n26 6957876\n27 10539432\n28 10655462\n29 20684332\n30 23163298\n31 64955634\n32 72507380\n33 112228683\n34 182837804\n35 203615628\n36 486570087\n37 910774004\n38 981765347\n39 1094330259\n40 1820471368\n41 5217031687\n42 7322882472\n43 9583057667\n44 11723859927\n45 11945986786\n46 11992433550\n47 16202238656\n48 17883926781\n49 23541455083\n50 28106444830\n51 50070452577\n52 52302956123\n53 72178455400\n54 94906079600\n55 251265078335\n56 473258870471\n57 662221289043\n58 1411461642343\n59 2921439731020\n60 5394763455325\n61 6822667965940\n62 35315870460455\n63 49573167413483\n64 49749629143526\n65 1175661926421598\n66 1475067052906945\n67 2133658100875638\n68 5253374014230870\n69 5605544222945291\n70 7784313111002702\n71 8952449214971382\n72 10160960128667332\n73 10570355884548334\n74 20004097201301079\n75 34952141021660495\n76 135962332505694894\n77 160332893561542066\n78 360701908268316580\n79 408333670434942092\n80 423731791997205041\n81 426181820436140029\n82 428472240920394477\n83 477141032543986017\n84 1524717378371224128\n85 2251483061895611799\n"
+    }
+   ]
+  },
+  {
    "aid": "A107578",
    "role": "index of the upper prime",
    "what": "b-file 85 terms",
@@ -428,6 +294,140 @@ window.OEIS_SUBMIT = {
      "content": "# A107578, 85 terms.\n#\n# pi(q) for the prime at the upper end of the n-th maximal gap.\n# A107578(n) = A005669(n) + 1, which holds at all 80 terms both\n# sequences publish today.\n#\n# Mike Koss. From Andersen and Luhn's table, retrieved 2026-09-16.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 5\n4 10\n5 25\n6 31\n7 100\n8 155\n9 190\n10 218\n11 1184\n12 1832\n13 2226\n14 3386\n15 14358\n16 30803\n17 31546\n18 40934\n19 103521\n20 104072\n21 149690\n22 325853\n23 1094422\n24 1319946\n25 2850175\n26 6957877\n27 10539433\n28 10655463\n29 20684333\n30 23163299\n31 64955635\n32 72507381\n33 112228684\n34 182837805\n35 203615629\n36 486570088\n37 910774005\n38 981765348\n39 1094330260\n40 1820471369\n41 5217031688\n42 7322882473\n43 9583057668\n44 11723859928\n45 11945986787\n46 11992433551\n47 16202238657\n48 17883926782\n49 23541455084\n50 28106444831\n51 50070452578\n52 52302956124\n53 72178455401\n54 94906079601\n55 251265078336\n56 473258870472\n57 662221289044\n58 1411461642344\n59 2921439731021\n60 5394763455326\n61 6822667965941\n62 35315870460456\n63 49573167413484\n64 49749629143527\n65 1175661926421599\n66 1475067052906946\n67 2133658100875639\n68 5253374014230871\n69 5605544222945292\n70 7784313111002703\n71 8952449214971383\n72 10160960128667333\n73 10570355884548335\n74 20004097201301080\n75 34952141021660496\n76 135962332505694895\n77 160332893561542067\n78 360701908268316581\n79 408333670434942093\n80 423731791997205042\n81 426181820436140030\n82 428472240920394478\n83 477141032543986018\n84 1524717378371224129\n85 2251483061895611800\n"
     }
    ]
+  },
+  {
+   "aid": "A000101",
+   "role": "prime at the upper end",
+   "what": "Xref +A053695",
+   "summary": "Add the reverse cross-reference.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Xref",
+     "code": "%Y",
+     "action": "add",
+     "add": [
+      [
+       "A053695",
+       "successive record-gap differences"
+      ]
+     ]
+    }
+   ],
+   "uploads": []
+  },
+  {
+   "aid": "A002386",
+   "role": "prime at the lower end",
+   "what": "Xref +A053695, Xref +A087770, Xref +A107578",
+   "summary": "Add cross-references to A053695, A087770, A107578.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Xref",
+     "code": "%Y",
+     "action": "add",
+     "add": [
+      [
+       "A053695",
+       "successive record-gap differences"
+      ],
+      [
+       "A087770",
+       "the pairwise lonely prime"
+      ],
+      [
+       "A107578",
+       "index of the upper prime"
+      ]
+     ]
+    }
+   ],
+   "uploads": []
+  },
+  {
+   "aid": "A023186",
+   "role": "the lonely prime",
+   "what": "bound comment, Xref +A087770, Xref +A096265",
+   "summary": "Add a search-bound comment; add cross-references to A087770, A096265.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Comment",
+     "code": "%C",
+     "action": "add",
+     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
+    },
+    {
+     "field": "Xref",
+     "code": "%Y",
+     "action": "add",
+     "add": [
+      [
+       "A087770",
+       "the pairwise lonely prime"
+      ],
+      [
+       "A096265",
+       "the aloof prime"
+      ]
+     ]
+    }
+   ],
+   "uploads": []
+  },
+  {
+   "aid": "A031132",
+   "role": "the span between them",
+   "what": "Xref +A096265",
+   "summary": "Add the reverse cross-reference.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Xref",
+     "code": "%Y",
+     "action": "add",
+     "add": [
+      [
+       "A096265",
+       "the aloof prime"
+      ]
+     ]
+    }
+   ],
+   "uploads": []
+  },
+  {
+   "aid": "A031133",
+   "role": "the lower neighbour",
+   "what": "bound comment",
+   "summary": "Add a search-bound comment: no further term below 2.6*10^16.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Comment",
+     "code": "%C",
+     "action": "add",
+     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
+    }
+   ],
+   "uploads": []
+  },
+  {
+   "aid": "A031134",
+   "role": "the upper neighbour",
+   "what": "bound comment",
+   "summary": "Add a search-bound comment: no further term below 2.6*10^16.",
+   "blocked_on": null,
+   "edits": [
+    {
+     "field": "Comment",
+     "code": "%C",
+     "action": "add",
+     "text": "There is no further term below 2.6*10^16: an exhaustive scan from 0 to 26099160246699733 finds none. - ~~~~"
+    }
+   ],
+   "uploads": []
   }
  ]
 };

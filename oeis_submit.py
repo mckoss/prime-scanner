@@ -4,7 +4,7 @@
 oeis_audit.py decides WHAT can be contributed. This turns that into the
 things you actually hand to OEIS:
 
-    oeis/submit/edits.yaml     one entry per draft, ordered by A-number
+    oeis/submit/edits.yaml     one entry per draft, in schedule order
     oeis/submit/b*.txt         b-files, ready to upload
     oeis/submit/a*.txt         a-files, ready to upload
     oeis/submit/index.html     the numbered worklist, with the bookmarklet
@@ -820,6 +820,7 @@ INDEX_HTML = r"""<!doctype html>
       padding:12px 16px;margin:1.2em 0}
  .warn{color:#9a6700}
  .ok{color:#1a7f37;font-weight:600}
+ .err{color:#cf222e;font-weight:600}
  tr.done td{color:#777}
 </style>
 <h1>OEIS submissions</h1>
@@ -848,6 +849,19 @@ INDEX_HTML = r"""<!doctype html>
  click Save Changes. Saving makes a draft <code>editing</code> &mdash; it
  reaches editors only when you set it to <code>proposed</code>.</p>
 """
+
+
+# The non-draft lists under the worklist: (key in `other`, heading, gloss).
+SECTIONS = (
+    ("blocked", "Needs data",
+     "b-files short of their family that no scan can extend: their terms need "
+     "pi(p), the prime's index, which takes a prime-counting program."),
+    ("pending", "Low priority",
+     "Nothing to upload yet: the entry's DATA already holds every term, or the "
+     "scan has not reached the end of the published data."),
+    ("review", "To review",
+     "Related sequences found by the crawl that a person has not yet judged."),
+)
 
 
 def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
@@ -945,19 +959,19 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
             f'<td class="what">{d["what"]}</td>'
             f'<td>{f}</td>'
             f'<td class="warn">{st}</td></tr>')
-    # What has gone to OEIS: approved edits get a check, ones still with an
-    # editor say pending. Both sit under the open drafts, numbered apart.
+    # What has gone to OEIS: approved edits get a check, rejected ones a
+    # cross, ones still with an editor an ellipsis. All sit under the open
+    # drafts, numbered apart.
+    looks = {"approved": ("ok", "&#10003;"), "rejected": ("err", "&#10007;"),
+             "pending": ("warn", "&hellip;")}
     for r in other.get("done") or []:
-        ok = r["state"] == "approved"
-        seq = seq_cell(r["aid"])
+        cls, mark = looks[r["state"]]
         rows.append(
-            f'<tr class="done"><td class="n {"ok" if ok else "warn"}">'
-            f'{"&#10003;" if ok else "&hellip;"}</td>'
-            f'<td>{seq}</td>'
+            f'<tr class="done"><td class="n {cls}">{mark}</td>'
+            f'<td>{seq_cell(r["aid"])}</td>'
             f'<td class="what"><code>{r["id"]}</code> {html.escape(r["reason"])}</td>'
             f'<td></td>'
-            f'<td class="{"ok" if ok else "warn"}">'
-            f'{"approved" if ok else "pending"} {r["date"]}</td></tr>')
+            f'<td class="{cls}">{r["state"]} {r["date"]}</td></tr>')
     extra = ""
     if new_seqs:
         extra += "<h2>New sequences</h2><table>" + "".join(
@@ -966,12 +980,13 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
             f'<td class="what">{n["role"]}</td><td></td>'
             f'<td class="warn">{n.get("status") or ""}</td></tr>'
             for n in new_seqs) + "</table>"
-    for key in ("blocked", "pending", "review"):
+    for key, title, why in SECTIONS:
         if other.get(key):
-            extra += f"<h2>{key}</h2><table>" + "".join(
+            extra += (f"<h2>{title}</h2><p class=\"sub\">{why}</p><table>"
+                      + "".join(
                 f'<tr><td class="n">&mdash;</td><td><code>{r["id"]}</code></td>'
                 f'<td class="what" colspan=3>{r["reason"]}</td></tr>'
-                for r in other[key]) + "</table>"
+                for r in other[key]) + "</table>")
 
     write(os.path.join(out_dir, "index.html"), INDEX_HTML % {
         "n": len(drafts), "date": meta["date"], "run": meta["run"],

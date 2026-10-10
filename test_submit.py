@@ -201,14 +201,15 @@ check(re.search(r"^check_oeis: pass$", y, re.M),
 check(re.search(r"^  signature: \"~~~~\"", y, re.M),
       "edits.yaml: signature is not the OEIS four-tilde shortcut")
 
-# Every A-number a draft targets must appear in `order`, and vice versa.
+# `order` lists every draft's A-number, once, in the order the drafts appear
+# -- the schedule's priority order, not A-number order.
 order = re.search(r"^order: \[(.*)\]$", y, re.M)
 check(order, "edits.yaml: no order list")
 if order:
     listed = order.group(1).replace(" ", "").split(",")
     aids = re.findall(r"^- aid:\s+(A\d{6})$", y, re.M)
-    check(listed == sorted(aids),
-          f"edits.yaml: order {listed} != drafts {sorted(aids)}")
+    check(listed == aids and len(set(aids)) == len(aids),
+          f"edits.yaml: order {listed} != drafts {aids}")
 
 # --- the manifest describes what is actually there -------------------------
 man = {}

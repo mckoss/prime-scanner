@@ -235,28 +235,28 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## SUBMISSION  --  one draft per sequence
 
 ```
-   1. A000101  Xref +A053695
-      Add the reverse cross-reference.
-   2. A002386  Xref +A053695, Xref +A087770, Xref +A107578
-      Add cross-references to A053695, A087770, A107578.
-   3. A005669  b-file 85 terms, Xref +A107578
-      Extend the b-file to 85 terms; add cross-references to A107578.
-   4. A023186  bound comment, Xref +A087770, Xref +A096265
-      Add a search-bound comment; add cross-references to A087770, A096265.
-   5. A031132  Xref +A096265
-      Add the reverse cross-reference.
-   6. A031133  bound comment
-      Add a search-bound comment: no further term below 2.6*10^16.
-   7. A031134  bound comment
-      Add a search-bound comment: no further term below 2.6*10^16.
-   8. A058867  b-file 34 terms, bound comment, a-file 34 rows
+   1. A058867  b-file 34 terms, bound comment, a-file 34 rows
       Extend the b-file to 34 terms; credit the prior A052187 table; add a search-bound comment; add an a-file with the bounding primes.
-   9. A087770  b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265
+   2. A087770  b-file 41 terms, bound comment, a-file 41 rows, Xref +A096265
       Extend the b-file to 41 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A096265.
-  10. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
+   3. A096265  b-file 72 terms, bound comment, a-file 72 rows, Xref +A031133, Xref +A031134, Xref +A122412, Xref +A122413  [drafted]
       Extend the b-file to 72 terms; add a search-bound comment; add an a-file with the bounding primes; add cross-references to A031133, A031134, A122412, A122413.
-  11. A107578  b-file 85 terms
+   4. A005669  b-file 85 terms, Xref +A107578
+      Extend the b-file to 85 terms; add cross-references to A107578.
+   5. A107578  b-file 85 terms
       Extend the b-file to 85 terms.
+   6. A000101  Xref +A053695
+      Add the reverse cross-reference.
+   7. A002386  Xref +A053695, Xref +A087770, Xref +A107578
+      Add cross-references to A053695, A087770, A107578.
+   8. A023186  bound comment, Xref +A087770, Xref +A096265
+      Add a search-bound comment; add cross-references to A087770, A096265.
+   9. A031132  Xref +A096265
+      Add the reverse cross-reference.
+  10. A031133  bound comment
+      Add a search-bound comment: no further term below 2.6*10^16.
+  11. A031134  bound comment
+      Add a search-bound comment: no further term below 2.6*10^16.
    -. new       balanced-lonely primes  [drafted]
    -. blocked  b-file:A023187
    -. blocked  b-file:A122412
@@ -267,6 +267,9 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
    -. review   review:neighbours
    ✓ approved  A023186  a-file:lonely  2026-10-06
    ✓ approved  A023186  terms:lonely  2026-10-06
+   ✗ rejected  A000101  a-file:A000101  2026-09-30
+   ✗ rejected  A005250  a-file:A005250  2026-09-30
+   ✗ rejected  A107578  a-file:A107578  2026-09-30
 ```
 
 ```

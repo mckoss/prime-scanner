@@ -965,16 +965,20 @@ def detect_approved(families, refresh):
 
 
 def done_items(status):
-    """Items submitted to OEIS, approved or still in review, for the schedule.
+    """Items submitted to OEIS -- in review, approved or declined -- for the
+    schedule.
 
     The audit drops these from the drafts -- an approved edit is published,
-    a submitted one is in an editor's hands -- so without this list the
-    schedule shows only what is left to do, never what has landed. A
-    `draft:<A-number>` line marks an open review, not an edit, and is left out.
+    a submitted one is in an editor's hands, a declined one is settled -- so
+    without this list the schedule shows only what is left to do, never what
+    has landed or been turned down. A `draft:<A-number>` line marks an open
+    review, not an edit, and is left out.
     """
+    state = {"approved": "approved", "declined": "rejected"}
     out = []
     for iid, (st, date, note) in status.items():
-        if st not in ("approved",) + REVIEW_STATUSES or iid.startswith("draft:"):
+        if (st not in ("approved", "declined") + REVIEW_STATUSES
+                or iid.startswith("draft:")):
             continue
         m = re.search(r"A\d{6}", iid)
         if m:
@@ -984,9 +988,10 @@ def done_items(status):
             aid = next((a for a, mm in fam.get("members", {}).items()
                         if mm["col"] == 2), None)
         out.append({"id": iid, "aid": aid, "date": date, "reason": note,
-                    "state": "approved" if st == "approved" else "pending"})
-    # Pending first: those still need watching.
-    return sorted(out, key=lambda r: (r["state"] == "approved", r["aid"] or "",
+                    "state": state.get(st, "pending")})
+    # Pending first: those still need watching. Then approved, then rejected.
+    rank = {"pending": 0, "approved": 1, "rejected": 2}
+    return sorted(out, key=lambda r: (rank[r["state"]], r["aid"] or "",
                                       r["id"]))
 
 
@@ -1409,7 +1414,8 @@ def run_audit(args):
         for r in other[key]:
             print(f"   -. {key:<8} {r['id']}")
     for r in other["done"]:
-        mark = "\u2713 approved" if r["state"] == "approved" else "  in review"
+        mark = {"approved": "\u2713 approved", "rejected": "\u2717 rejected"
+                }.get(r["state"], "  in review")
         print(f"   {mark}  {r['aid'] or '':<8} {r['id']}  {r['date']}")
     print()
 
@@ -1892,7 +1898,19 @@ def submission(items, families, results, refresh, check):
                 d["status"] = status[i][0]
         if len(d["items"]) > 1:
             d["summary"] = summarise(d)
-    return ([drafts[a] for a in sorted(drafts)], new_seqs, other,
+    def priority(d):
+        """Schedule order: a b-file for a family's named sequence -- the
+        record primes themselves -- then other b-files, then a-files, then
+        drafts that only add comments or cross-references."""
+        kinds = {u["kind"] for u in d["uploads"]}
+        _, _, s = member_of(families, d["aid"])
+        if "b-file" in kinds:
+            tier = 0 if s and s["m"]["col"] == 2 else 1
+        else:
+            tier = 2 if "a-file" in kinds else 3
+        return tier, d["aid"]
+
+    return (sorted(drafts.values(), key=priority), new_seqs, other,
             files, cov, hi)
 
 
