@@ -151,6 +151,11 @@ FAMILIES = {
     },
 }
 
+# {A-number: "family: role"}, the friendly name the worklist shows beside
+# each A-number, as in "aloof: the aloof prime".
+NAME_OF = {aid: f"{fam}: {m['role'].split(' (')[0]}"
+           for fam, f in FAMILIES.items() for aid, m in f["members"].items()}
+
 # {A-number: stem} for the members whose b-file is committed under oeis/.
 SNAPSHOT_OF = {aid: m["local"] for f in FAMILIES.values()
                for aid, m in f["members"].items() if m["local"]}
@@ -1414,7 +1419,8 @@ def run_audit(args):
             "run": os.path.basename(os.path.normpath(args.results)),
             "frontier": hi, "check": check[0],
             "check_note": "" if check[0] else (check[1][0] if check[1] else "")}
-    man = oeis_submit.write_all(SUBMIT, drafts, new_seqs, other, meta, files)
+    man = oeis_submit.write_all(SUBMIT, drafts, new_seqs, other, meta, files,
+                                 NAME_OF)
     print(f"  wrote {len(man)} files to {os.path.relpath(SUBMIT)}/")
     print(f"  open  http://localhost:{oeis_submit.PORT}/  "
           f"(make submit)\n")

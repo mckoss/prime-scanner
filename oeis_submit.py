@@ -813,6 +813,7 @@ INDEX_HTML = r"""<!doctype html>
  td.n{color:#999;width:2em;text-align:right}
  a{color:#0969da} code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
  .what{color:#555;font-size:13px}
+ .name{color:#777;font-size:12px;white-space:nowrap}
  .bm{display:inline-block;padding:6px 14px;border:1px solid #0969da;
      border-radius:6px;color:#0969da;text-decoration:none;font-weight:600}
  .box{background:#f6f8fa;border:1px solid #e3e6ea;border-radius:6px;
@@ -849,8 +850,11 @@ INDEX_HTML = r"""<!doctype html>
 """
 
 
-def write_all(out_dir, drafts, new_seqs, other, meta, files):
-    """Write every generated file, and return the manifest."""
+def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None):
+    """Write every generated file, and return the manifest.
+
+    `names` maps an A-number to the friendly name shown beside it.
+    """
     man = {}
     for name, text in sorted(files.items()):
         write(os.path.join(out_dir, name), text, man)
@@ -913,6 +917,21 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
     write(os.path.join(out_dir, "fill.js"), FILL_JS % {"port": PORT}, man)
     write(os.path.join(out_dir, "panel.html"), PANEL_HTML, man)
 
+    names = names or {}
+
+    def seq_cell(aid, edit_url=None):
+        """The A-number, linked to its public page, with its friendly name and,
+        for a draft, the edit form. Both open in a new tab, so the worklist
+        stays put; the bookmarklet runs in whichever tab it is clicked."""
+        if not aid:
+            return ""
+        out = (f'<a href="https://oeis.org/{aid}" target="_blank">{aid}</a>')
+        if edit_url:
+            out += f' &middot; <a href="{edit_url}" target="_blank">edit</a>'
+        if aid in names:
+            out += f'<br><span class="name">{html.escape(names[aid])}</span>'
+        return out
+
     rows = []
     for i, d in enumerate(drafts, 1):
         f = "<br>".join(
@@ -922,7 +941,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
         st = d.get("status") or ("blocked" if d.get("blocked_on") else "")
         rows.append(
             f'<tr><td class="n">{i}</td>'
-            f'<td><a href="{d["url"]}">{d["aid"]}</a></td>'
+            f'<td>{seq_cell(d["aid"], d["url"])}</td>'
             f'<td class="what">{d["what"]}</td>'
             f'<td>{f}</td>'
             f'<td class="warn">{st}</td></tr>')
@@ -930,8 +949,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
     # editor say pending. Both sit under the open drafts, numbered apart.
     for r in other.get("done") or []:
         ok = r["state"] == "approved"
-        seq = (f'<a href="https://oeis.org/{r["aid"]}">{r["aid"]}</a>'
-               if r["aid"] else "")
+        seq = seq_cell(r["aid"])
         rows.append(
             f'<tr class="done"><td class="n {"ok" if ok else "warn"}">'
             f'{"&#10003;" if ok else "&hellip;"}</td>'
@@ -944,7 +962,7 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files):
     if new_seqs:
         extra += "<h2>New sequences</h2><table>" + "".join(
             f'<tr><td class="n">&mdash;</td>'
-            f'<td><a href="{n["url"]}">new</a></td>'
+            f'<td><a href="{n["url"]}" target="_blank">new</a></td>'
             f'<td class="what">{n["role"]}</td><td></td>'
             f'<td class="warn">{n.get("status") or ""}</td></tr>'
             for n in new_seqs) + "</table>"
