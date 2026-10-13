@@ -37,8 +37,10 @@ function makePage(fields, opts) {
   opts = opts || {};
   const els = {};
   for (const k in fields) {
-    els['edit_' + k] = { _t: fields[k],
-      get innerHTML() { return esc(this._t); },
+    // { html } is a field as the page holds it, tags and all, until written.
+    const raw = fields[k] && fields[k].html;
+    els['edit_' + k] = { _t: raw === undefined ? fields[k] : null, _h: raw,
+      get innerHTML() { return this._t === null ? this._h : esc(this._t); },
       set innerHTML(v) { this._t = unesc(v); },
       set textContent(v) { this._t = v; },
       get textContent() { return this._t; } };
@@ -391,6 +393,27 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   v.post({ type: 'READY', draft: null, credit });
   eq(v.sent.filter(m => m.type === 'STATE').pop().credit, null,
      'draft view with the history not flagged');
+}
+
+// A field reopened from a saved draft holds one <p> per line -- A087770's
+// Link field, verbatim. It reads as separate lines, the bare b-file line is
+// flagged, and the fix writes plain lines with no tags turned into text.
+{
+  const credit = { name: 'Mike Koss', text: 'terms 1..29 from Walter ' +
+    'Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta' };
+  const b = 'Mike Koss, <a href="/A087770/b087770_1.txt">Table of n, a(n) ' +
+            'for n = 1..41</a>';
+  const a = 'Mike Koss, <a href="/A087770/a087770.txt">Table of the first 41 ' +
+            'records with both bounding primes and both gaps</a>';
+  const p = makePage({ Link: { html: '<p>' + esc(b) + '</p><p>' + esc(a) +
+                                     '</p>' } }, { seq: 'A087770' });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: null, credit });
+  const st = p.sent.filter(m => m.type === 'STATE').pop();
+  ok(st.credit && st.credit.line === b, '<p> field: bare b-file line flagged');
+  p.post({ type: 'CREDIT_FIX' });
+  eq(p.field('Link'), b + ' (' + credit.text + ')\n' + a,
+     '<p> field: fix writes plain lines');
 }
 
 // Fill all leaves optional edits -- suggested cross-references -- alone;

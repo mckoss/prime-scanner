@@ -6,11 +6,19 @@
   var seqEl = document.querySelector('input[name=seq]');
   var SEQ = seqEl ? seqEl.value : null;
 
+  // A field's text is escaped in its innerHTML, so any real tag is layout: a
+  // field reopened from a saved draft holds one <p> per line. Turn those
+  // into newlines, or the field reads as one line and a write would put the
+  // tags back as literal text.
   function read(f) {
     var d = document.getElementById('edit_' + f);
     if (!d) return null;
+    var h = d.innerHTML
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div)>\s*<(p|div)\b[^>]*>/gi, '\n')
+      .replace(/<[^>]*>/g, '');
     var t = document.createElement('textarea');
-    t.innerHTML = d.innerHTML;
+    t.innerHTML = h;
     return t.value;
   }
   function write(f, v) {
