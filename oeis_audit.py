@@ -889,6 +889,11 @@ REVIEW_STATUSES = ("submitted",)
 CLOSED_STATUSES = ("approved", "declined", "skip")
 STATUSES = REVIEW_STATUSES + CLOSED_STATUSES
 
+# OEIS lets one user hold at most this many sequences in draft at a time;
+# the next save is refused until an editor approves or rejects one. Each
+# sequence edited is its own draft, whatever the edit carries.
+OPEN_DRAFT_LIMIT = 3
+
 # Where a b-file for a sequence no scan can produce comes from. A member not
 # listed here with col=None needs real compute to extend.
 SOURCES = {
@@ -1843,6 +1848,8 @@ def submission(items, families, results, refresh, check):
     # draft or in review, so the panel can flag its %H line until it says so.
     other = {"blocked": [], "pending": [], "review": [],
              "done": done_items({**status, **detected}), "credits": {}}
+    other["open_drafts"] = open_drafts(other["done"], status)
+    other["draft_limit"] = OPEN_DRAFT_LIMIT
 
     def draft(aid, role):
         role = role.split(" (")[0]
@@ -2145,13 +2152,49 @@ def submission(items, families, results, refresh, check):
             return 4, d["aid"]
         _, _, s = member_of(families, d["aid"])
         if "b-file" in kinds:
-            tier = 0 if s and s["m"]["col"] == 2 else 1
+            tier = 0 if s and s["m"]["col"] == 2 else 2
+            if tier and s and beyond_published(families, s):
+                tier = 1
         else:
-            tier = 2 if "a-file" in kinds else 3
+            tier = 3 if "a-file" in kinds else 4
         return tier, d["aid"]
 
-    return (sorted(drafts.values(), key=priority), new_seqs, other,
-            files, cov, hi)
+    ordered = sorted(drafts.values(), key=priority)
+    assign_slots(ordered, other["open_drafts"])
+    return ordered, new_seqs, other, files, cov, hi
+
+
+def beyond_published(families, s):
+    """True when a member's b-file carries records no published sequence in
+    its family has yet -- new data, not a catch-up to a sibling."""
+    for f in families.values():
+        if s in f["seqs"]:
+            return (s.get("scan") or 0) - s["m"]["delta"] > f["deepest"]
+    return False
+
+
+def open_drafts(done, status):
+    """The A-numbers holding one of our open OEIS drafts: an edit recorded as
+    submitted that OEIS has not yet published, or a `draft:` line still at
+    submitted."""
+    aids = {r["aid"] for r in done if r["state"] == "pending" and r["aid"]}
+    aids |= {iid.split(":", 1)[1] for iid, (st, _, _) in status.items()
+             if iid.startswith("draft:") and st in REVIEW_STATUSES}
+    return sorted(aids)
+
+
+def assign_slots(drafts, open_aids):
+    """Mark each draft `next` while OEIS has a draft slot for it, in schedule
+    order, and `waits` once the slots are spoken for. A blocked draft cannot
+    go anyway, so it takes no slot."""
+    free = max(0, OPEN_DRAFT_LIMIT - len(open_aids))
+    for d in drafts:
+        if d["blocked_on"] or d["aid"] in open_aids:
+            d["slot"] = None
+        elif free:
+            d["slot"], free = "next", free - 1
+        else:
+            d["slot"] = "waits"
 
 
 def summarise(d):
