@@ -191,7 +191,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## FRONTIER vs PUBLISHED
 
 ```
-  fresh/frontier.txt = 26,099,160,246,699,733  (2.6099e+16)
+  fresh/frontier.txt = 26,099,160,888,913,361  (2.6099e+16)
 ```
 
 ```
@@ -216,7 +216,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
 
 ```
-  Aloof checkpoints beyond 26,099,160,246,699,733, beating span 1220:
+  Aloof checkpoints beyond 26,099,160,888,913,361, beating span 1220:
   Source: https://sweet.ua.pt/tos/gaps/t0.txt.gz
   From Oliveira e Silva's first-occurrence gap table; adjacent
   primes and all intervening odd integers checked by deterministic
@@ -235,29 +235,25 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## SUBMISSION  --  one draft per sequence
 
 ```
-   1. A087770  b-file +12 terms (29 to 41), a-file 41 rows (no prior a-file), Xref +A096265 (optional)
-      Extend the b-file to 41 terms; optionally add cross-references to A096265.
-   2. A096265  b-file +16 terms (56 to 72), a-file 72 rows (no prior a-file), Xref +A031133 (optional), Xref +A031134 (optional), Xref +A122412 (optional), Xref +A122413 (optional)
-      Extend the b-file to 72 terms; optionally add cross-references to A031133, A031134, A122412, A122413.
-   3. A005669  b-file +3 terms (82 to 85), Xref +A107578 (optional)
+   1. A005669  b-file +3 terms (82 to 85), Xref +A107578 (optional)
       Extend the b-file to 85 terms; optionally add cross-references to A107578.
-   4. A023187  b-file +5 terms (56 to 61)
+   2. A023187  b-file +5 terms (56 to 61)
       Extend the b-file to 61 terms.
-   5. A031132  b-file +4 terms (67 to 71), Xref +A096265 (optional)
+   3. A031132  b-file +4 terms (67 to 71), Xref +A096265 (optional)
       Extend the b-file to 71 terms; optionally add cross-references to A096265.
-   6. A031133  b-file +4 terms (67 to 71)
+   4. A031133  b-file +4 terms (67 to 71)
       Extend the b-file to 71 terms.
-   7. A031134  b-file +4 terms (67 to 71)
+   5. A031134  b-file +4 terms (67 to 71)
       Extend the b-file to 71 terms.
-   8. A058868  b-file +4 terms (30 to 34)
+   6. A058868  b-file +4 terms (30 to 34)
       Extend the b-file to 34 terms.
-   9. A107578  b-file +5 terms (80 to 85)
+   7. A107578  b-file +5 terms (80 to 85)
       Extend the b-file to 85 terms.
-  10. A000101  Xref +A053695 (optional)
+   8. A000101  Xref +A053695 (optional)
       Optionally add the reverse cross-reference.
-  11. A002386  Xref +A053695 (optional), Xref +A087770 (optional), Xref +A107578 (optional)
+   9. A002386  Xref +A053695 (optional), Xref +A087770 (optional), Xref +A107578 (optional)
       Optionally add cross-references to A053695, A087770, A107578.
-  12. A023186  Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update of a023186_1.txt)
+  10. A023186  Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update of a023186_1.txt)
       Optionally add cross-references to A087770, A096265; add an a-file with the bounding primes.
    -. new       balanced-lonely primes
    -. blocked  b-file:A122412
@@ -265,6 +261,8 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
    -. review   review:A120384
    -. review   review:neighbours
      in review  A058867  a-file:equidistant, b-file:A058867, terms:equidistant  2026-10-10
+     in review  A087770  a-file:pairwise, b-file:A087770, terms:pairwise, xref:A087770:A096265  2026-10-13
+     in review  A096265  a-file:aloof, b-file:A096265, terms:aloof, xref:A096265:A031133, xref:A096265:A031134, xref:A096265:A122412, xref:A096265:A122413  2026-10-13
    ✓ approved  A023186  a-file:lonely, terms:lonely  2026-10-06
    ✗ rejected  A000101  a-file:A000101  2026-09-30
    ✗ rejected  A005250  a-file:A005250  2026-09-30

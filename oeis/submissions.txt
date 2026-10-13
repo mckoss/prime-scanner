@@ -33,3 +33,5 @@ draft:A005250   declined   2026-09-30  No open draft: rev 277 reverted at Mike's
 
 terms:equidistant,a-file:equidistant,b-file:A058867  submitted  2026-10-10  A058867 proposed: b058867_1.txt 1..34 crediting Harvey Dubner (1..20) and Dmitry Petukhov (21..30); %E a(31)-a(34) (removed by Michel Marcus 2026-10-10: no extension line with a b-file); no A052187 link; a-file stored as a058867.txt, linked "Table of the first 34 records with bounding primes and gap"
 bound:equidistant     skip       2026-10-10  Not added: the search bound is in the a-file header, not worth a comment on the entry
+terms:pairwise,a-file:pairwise,xref:A087770:A096265,b-file:A087770  submitted  2026-10-13  afile and bfile submitted
+terms:aloof,b-file:A096265,a-file:aloof,xref:A096265:A031133,xref:A096265:A031134,xref:A096265:A122412,xref:A096265:A122413  submitted  2026-10-13  afile and bfile
