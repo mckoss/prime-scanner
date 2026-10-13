@@ -38,11 +38,15 @@
  .up a{font-size:11px;color:#0969da;margin-left:6px}
  .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
  #track .why{color:var(--dim);font-size:11px;margin:0 0 6px;word-break:break-word}
+ #credit{background:#fff0ee;border-bottom:2px solid var(--err)}
+ #credit h2{color:var(--err)}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
   <div class="sub" id="sub"></div>
 </header>
+<section id="credit" hidden><h2>b-file link missing its history</h2>
+  <div id="creditbody"></div></section>
 <div id="fields"></div>
 <section id="uploads" hidden><h2>Uploads</h2><div id="uplist"></div></section>
 <div class="bar">
@@ -122,6 +126,7 @@ function render(msg){
     });
   }
   document.getElementById('fields').innerHTML = out;
+  renderCredit(msg.credit);
   [].forEach.call(document.querySelectorAll('#fields button[data-i]'),
     function(b){ b.onclick=function(){ send({type:'FILL',index:+b.dataset.i}) }});
   renderUploads(msg.uploads||[]);
@@ -129,6 +134,29 @@ function render(msg){
   if(draft && progress()[draft.aid]!=='recorded')
     remember(draft.aid, msg.saved ? 'saved' : liveState(states));
   renderList(states);
+}
+
+// The b-file %H line OEIS wrote on upload, still without the earlier terms'
+// credit that https://oeis.org/SubmitB.html asks for.
+function renderCredit(c){
+  var box = document.getElementById('credit');
+  box.hidden = !c;
+  if(!c) return;
+  var out = '<div class="why">OEIS rewrote the b-file %H line to credit only '
+          + 'you. Editors require the earlier terms\' history after it: '
+          + esc(c.want)+'</div>';
+  if(c.fixed)
+    out += '<pre class="was">'+esc(c.line)+'</pre><pre>'+esc(c.fixed)+'</pre>'
+         + '<button class="p" id="creditfix">Fix %H line</button> '
+         + '<span class="why">then Save Changes.</span>';
+  else
+    out += '<button class="p" id="creditedit">Open the edit form</button>';
+  document.getElementById('creditbody').innerHTML = out;
+  var f = document.getElementById('creditfix'),
+      e = document.getElementById('creditedit');
+  if(f) f.onclick = function(){ send({type:'CREDIT_FIX'}) };
+  if(e) e.onclick = function(){
+    send({type:'NAVIGATE', url: OEIS+'/edit?seq='+SEQ}) };
 }
 
 // One card per file: what it is for, which upload box holds it, and the file
@@ -238,5 +266,7 @@ window.addEventListener('message', function(ev){
 document.getElementById('all').onclick=function(){ send({type:'FILL_ALL'}) };
 document.getElementById('re').onclick =function(){ send({type:'RESCAN'}) };
 renderList([]);
-send({type:'READY', draft: draft});
+var credit = (P.credits||{})[SEQ];
+send({type:'READY', draft: draft,
+      credit: credit ? {name: P.meta.name, text: credit} : null});
 </script>

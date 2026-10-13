@@ -1839,8 +1839,10 @@ def submission(items, families, results, refresh, check):
     # What OEIS has published outright beats a hand-kept line: an item left
     # at `submitted` turns approved as soon as the files show it.
     detected = detect_approved(families, refresh)
+    # credits: {aid: "terms 1..50 from ..."} for each extended b-file, in a
+    # draft or in review, so the panel can flag its %H line until it says so.
     other = {"blocked": [], "pending": [], "review": [],
-             "done": done_items({**status, **detected})}
+             "done": done_items({**status, **detected}), "credits": {}}
 
     def draft(aid, role):
         role = role.split(" (")[0]
@@ -1877,6 +1879,8 @@ def submission(items, families, results, refresh, check):
         """
         if not upload(d, "b-file", name, n):
             return
+        if credit:
+            other["credits"][aid] = credit
         d["what"].append(f"b-file +{n - prior} terms ({prior} to {n})")
         d["edits"].append(op(
             "Link", "credit_bfile_link",
@@ -1894,6 +1898,7 @@ def submission(items, families, results, refresh, check):
         pub = bfile_terms_list(aid, refresh)
         n_pub = len(pub) + f["info"]["extent"][1]
         credit = prior_credit(aid, len(pub), refresh)
+        other["credits"][aid] = credit
         if ("b", aid) not in built:
             name = f"b{aid[1:]}.txt"
             files[name] = oeis_submit.bfile(

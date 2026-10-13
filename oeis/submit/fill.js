@@ -158,7 +158,33 @@
     return { ok: true, slot: k };
   }
 
-  var draft = null, panel = null;
+  var draft = null, panel = null, credit = null;
+
+  // An extended b-file's %H line must credit whoever computed the earlier
+  // terms: "Name, <a>Table ...</a> (terms 1..50 from Ken Takusagawa)". The
+  // line OEIS writes on upload names only the uploader, so it stays flagged
+  // until it carries the credit -- whether or not a draft for it is still
+  // in this batch. On the edit form it comes with the corrected Link field;
+  // on a page without one (the draft view) it can only be flagged.
+  function creditCheck() {
+    if (!credit) return null;
+    var want = '(' + credit.text + ')', cur = read('Link');
+    if (cur === null) {
+      var t = (document.body && document.body.innerText) || '';
+      return t.indexOf(credit.name + ', <a href="/' + SEQ + '/b') >= 0
+             && t.indexOf(want) < 0 ? { want: want } : null;
+    }
+    var re = new RegExp('href="/' + SEQ + '/b\\d{6}(_\\d+)?\\.txt"');
+    var lines = cur.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].trim();
+      if (!re.test(l) || l.indexOf(credit.name + ',') !== 0) continue;
+      if (l.indexOf(want) >= 0) return null;
+      lines[i] = l.replace(/<\/a>.*$/, '</a> ' + want);
+      return { want: want, line: l, fixed: lines[i], val: lines.join('\n') };
+    }
+    return null;
+  }
 
   function states() {
     if (!draft) return [];
@@ -188,7 +214,7 @@
   }
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
-           uploads: uploadStates(), xref: xrefText(),
+           uploads: uploadStates(), xref: xrefText(), credit: creditCheck(),
            saved: /\/draft\//.test(location.pathname) });
   }
 
@@ -197,6 +223,11 @@
     var m = ev.data || {};
     if (m.type === 'READY') {
       draft = m.draft || null;
+      credit = m.credit || null;
+      report();
+    } else if (m.type === 'CREDIT_FIX') {
+      var c = creditCheck();
+      if (c && c.val) write('Link', c.val);
       report();
     } else if (m.type === 'FILL') {
       var e = draft.edits[m.index], p = plan(e);

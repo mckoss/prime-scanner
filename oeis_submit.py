@@ -570,7 +570,33 @@ FILL_JS = r"""
     return { ok: true, slot: k };
   }
 
-  var draft = null, panel = null;
+  var draft = null, panel = null, credit = null;
+
+  // An extended b-file's %%H line must credit whoever computed the earlier
+  // terms: "Name, <a>Table ...</a> (terms 1..50 from Ken Takusagawa)". The
+  // line OEIS writes on upload names only the uploader, so it stays flagged
+  // until it carries the credit -- whether or not a draft for it is still
+  // in this batch. On the edit form it comes with the corrected Link field;
+  // on a page without one (the draft view) it can only be flagged.
+  function creditCheck() {
+    if (!credit) return null;
+    var want = '(' + credit.text + ')', cur = read('Link');
+    if (cur === null) {
+      var t = (document.body && document.body.innerText) || '';
+      return t.indexOf(credit.name + ', <a href="/' + SEQ + '/b') >= 0
+             && t.indexOf(want) < 0 ? { want: want } : null;
+    }
+    var re = new RegExp('href="/' + SEQ + '/b\\d{6}(_\\d+)?\\.txt"');
+    var lines = cur.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].trim();
+      if (!re.test(l) || l.indexOf(credit.name + ',') !== 0) continue;
+      if (l.indexOf(want) >= 0) return null;
+      lines[i] = l.replace(/<\/a>.*$/, '</a> ' + want);
+      return { want: want, line: l, fixed: lines[i], val: lines.join('\n') };
+    }
+    return null;
+  }
 
   function states() {
     if (!draft) return [];
@@ -600,7 +626,7 @@ FILL_JS = r"""
   }
   function report() {
     post({ type: 'STATE', seq: SEQ, states: states(),
-           uploads: uploadStates(), xref: xrefText(),
+           uploads: uploadStates(), xref: xrefText(), credit: creditCheck(),
            saved: /\/draft\//.test(location.pathname) });
   }
 
@@ -609,6 +635,11 @@ FILL_JS = r"""
     var m = ev.data || {};
     if (m.type === 'READY') {
       draft = m.draft || null;
+      credit = m.credit || null;
+      report();
+    } else if (m.type === 'CREDIT_FIX') {
+      var c = creditCheck();
+      if (c && c.val) write('Link', c.val);
       report();
     } else if (m.type === 'FILL') {
       var e = draft.edits[m.index], p = plan(e);
@@ -739,11 +770,15 @@ PANEL_HTML = r"""<!doctype html>
  .up a{font-size:11px;color:#0969da;margin-left:6px}
  .steps{margin:0;padding-left:18px;font-size:11px;color:var(--dim)}
  #track .why{color:var(--dim);font-size:11px;margin:0 0 6px;word-break:break-word}
+ #credit{background:#fff0ee;border-bottom:2px solid var(--err)}
+ #credit h2{color:var(--err)}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
   <div class="sub" id="sub"></div>
 </header>
+<section id="credit" hidden><h2>b-file link missing its history</h2>
+  <div id="creditbody"></div></section>
 <div id="fields"></div>
 <section id="uploads" hidden><h2>Uploads</h2><div id="uplist"></div></section>
 <div class="bar">
@@ -823,6 +858,7 @@ function render(msg){
     });
   }
   document.getElementById('fields').innerHTML = out;
+  renderCredit(msg.credit);
   [].forEach.call(document.querySelectorAll('#fields button[data-i]'),
     function(b){ b.onclick=function(){ send({type:'FILL',index:+b.dataset.i}) }});
   renderUploads(msg.uploads||[]);
@@ -830,6 +866,29 @@ function render(msg){
   if(draft && progress()[draft.aid]!=='recorded')
     remember(draft.aid, msg.saved ? 'saved' : liveState(states));
   renderList(states);
+}
+
+// The b-file %H line OEIS wrote on upload, still without the earlier terms'
+// credit that https://oeis.org/SubmitB.html asks for.
+function renderCredit(c){
+  var box = document.getElementById('credit');
+  box.hidden = !c;
+  if(!c) return;
+  var out = '<div class="why">OEIS rewrote the b-file %H line to credit only '
+          + 'you. Editors require the earlier terms\' history after it: '
+          + esc(c.want)+'</div>';
+  if(c.fixed)
+    out += '<pre class="was">'+esc(c.line)+'</pre><pre>'+esc(c.fixed)+'</pre>'
+         + '<button class="p" id="creditfix">Fix %H line</button> '
+         + '<span class="why">then Save Changes.</span>';
+  else
+    out += '<button class="p" id="creditedit">Open the edit form</button>';
+  document.getElementById('creditbody').innerHTML = out;
+  var f = document.getElementById('creditfix'),
+      e = document.getElementById('creditedit');
+  if(f) f.onclick = function(){ send({type:'CREDIT_FIX'}) };
+  if(e) e.onclick = function(){
+    send({type:'NAVIGATE', url: OEIS+'/edit?seq='+SEQ}) };
 }
 
 // One card per file: what it is for, which upload box holds it, and the file
@@ -939,7 +998,9 @@ window.addEventListener('message', function(ev){
 document.getElementById('all').onclick=function(){ send({type:'FILL_ALL'}) };
 document.getElementById('re').onclick =function(){ send({type:'RESCAN'}) };
 renderList([]);
-send({type:'READY', draft: draft});
+var credit = (P.credits||{})[SEQ];
+send({type:'READY', draft: draft,
+      credit: credit ? {name: P.meta.name, text: credit} : null});
 </script>
 """
 
@@ -1103,7 +1164,8 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
                    "Replaces the file the existing %H line already links."))
 
     payload = {
-        "meta": meta,
+        "meta": {**meta, "name": ATTRIB["name"]},
+        "credits": other.get("credits") or {},
         "drafts": [{
             "aid": d["aid"], "role": d["role"], "what": d["what"],
             "items": d["items"],

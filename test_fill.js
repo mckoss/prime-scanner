@@ -61,7 +61,7 @@ function makePage(fields, opts) {
   const iframe = { style: {}, contentWindow: {
     postMessage(m) { sent.push(m); } } };
   const doc = {
-    body: { style: {}, appendChild() {} },
+    body: { style: {}, appendChild() {}, innerText: opts.text || '' },
     head: { appendChild() {} },
     getElementById(id) { return els[id] || null; },
     addEventListener(t, fn) { if (t === 'submit') page.submit = fn; },
@@ -345,6 +345,52 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
      'other link lines untouched');
   st = q.sent.filter(m => m.type === 'STATE').pop();
   ok(st.states[0].done, 'credit reported as applied');
+}
+
+// The panel flags a b-file %H line that credits only the uploader, with no
+// draft in the batch -- the A096265 case, already submitted -- and fixes it
+// on the edit form by appending the earlier terms' history.
+{
+  const credit = { name: 'Mike Koss',
+    text: 'terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner' };
+  const bare = 'Mike Koss, <a href="/A096265/b096265_2.txt">Table of n, a(n) ' +
+               'for n = 1..72</a>';
+  const fixed = bare + ' (' + credit.text + ')';
+  const p = makePage({ Link: bare + '\nOther, <a href="/x">x</a>' },
+                     { seq: 'A096265' });
+  p.run(SRC);
+  p.post({ type: 'READY', draft: null, credit });
+  let st = p.sent.filter(m => m.type === 'STATE').pop();
+  ok(st.credit && st.credit.line === bare, 'bare b-file line flagged');
+  eq(st.credit.fixed, fixed, 'fix appends the history');
+  p.post({ type: 'CREDIT_FIX' });
+  eq(p.field('Link'), fixed + '\nOther, <a href="/x">x</a>',
+     'fix writes the Link field, other lines untouched');
+  st = p.sent.filter(m => m.type === 'STATE').pop();
+  eq(st.credit, null, 'flag clears once credited');
+
+  // Before the upload the published line is someone else's: not flagged.
+  const q = makePage({ Link: 'Hugo Pfoertner, <a href="/A096265/b096265.txt">' +
+                       'Table of n, a(n) for n = 1..55</a>, terms 1..50 from ' +
+                       'Ken Takusagawa.' }, { seq: 'A096265' });
+  q.run(SRC);
+  q.post({ type: 'READY', draft: null, credit });
+  eq(q.sent.filter(m => m.type === 'STATE').pop().credit, null,
+     'published line before upload not flagged');
+
+  // The draft view has no Link field: flag from the page text alone.
+  const r = makePage({}, { seq: 'A096265', pathname: '/draft/A096265',
+                           text: 'LINKS\n' + bare + '\n' });
+  r.run(SRC);
+  r.post({ type: 'READY', draft: null, credit });
+  st = r.sent.filter(m => m.type === 'STATE').pop();
+  ok(st.credit && !st.credit.fixed, 'draft view flags without a fix');
+  const v = makePage({}, { seq: 'A096265', pathname: '/draft/A096265',
+                           text: 'LINKS\n' + fixed + '\n' });
+  v.run(SRC);
+  v.post({ type: 'READY', draft: null, credit });
+  eq(v.sent.filter(m => m.type === 'STATE').pop().credit, null,
+     'draft view with the history not flagged');
 }
 
 // Fill all leaves optional edits -- suggested cross-references -- alone;
