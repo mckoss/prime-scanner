@@ -21,10 +21,17 @@
     t.innerHTML = h;
     return t.value;
   }
+  // Written back in the field's own layout: one <p> per line if it was in
+  // paragraphs, where a bare newline would show as a space and join lines.
   function write(f, v) {
     var d = document.getElementById('edit_' + f);
     if (!d) return false;
-    d.textContent = v;
+    if (/<p\b/i.test(d.innerHTML)) {
+      d.innerHTML = v.split('\n').map(function (l) {
+        return '<p>' + (l ? l.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                             .replace(/>/g, '&gt;') : '<br>') + '</p>';
+      }).join('');
+    } else d.textContent = v;
     return true;
   }
 

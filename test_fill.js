@@ -41,7 +41,7 @@ function makePage(fields, opts) {
     const raw = fields[k] && fields[k].html;
     els['edit_' + k] = { _t: raw === undefined ? fields[k] : null, _h: raw,
       get innerHTML() { return this._t === null ? this._h : esc(this._t); },
-      set innerHTML(v) { this._t = unesc(v); },
+      set innerHTML(v) { this._t = null; this._h = v; },
       set textContent(v) { this._t = v; },
       get textContent() { return this._t; } };
   }
@@ -397,7 +397,8 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
 
 // A field reopened from a saved draft holds one <p> per line -- A087770's
 // Link field, verbatim. It reads as separate lines, the bare b-file line is
-// flagged, and the fix writes plain lines with no tags turned into text.
+// flagged, and the fix writes it back a <p> per line -- a bare newline there
+// shows as a space and joins the lines.
 {
   const credit = { name: 'Mike Koss', text: 'terms 1..29 from Walter ' +
     'Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta' };
@@ -412,8 +413,8 @@ const SRC = fs.readFileSync(path.join(DIR, 'fill.js'), 'utf8');
   const st = p.sent.filter(m => m.type === 'STATE').pop();
   ok(st.credit && st.credit.line === b, '<p> field: bare b-file line flagged');
   p.post({ type: 'CREDIT_FIX' });
-  eq(p.field('Link'), b + ' (' + credit.text + ')\n' + a,
-     '<p> field: fix writes plain lines');
+  eq(p.els.edit_Link.innerHTML, '<p>' + esc(b + ' (' + credit.text + ')') +
+     '</p><p>' + esc(a) + '</p>', '<p> field: fix keeps one <p> per line');
 }
 
 // Fill all leaves optional edits -- suggested cross-references -- alone;
