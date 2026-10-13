@@ -193,6 +193,41 @@ class SubmissionsTests(unittest.TestCase):
         self.assertEqual(merged[0]["files"], [("b000001.txt", "b000001.txt")])
 
 
+class DraftSlotTests(unittest.TestCase):
+    """OEIS holds a user to OPEN_DRAFT_LIMIT open drafts at once."""
+
+    def test_open_drafts_are_pending_edits_and_open_draft_lines(self):
+        done = [{"aid": "A058867", "state": "pending"},
+                {"aid": "A058867", "state": "pending"},
+                {"aid": "A005250", "state": "rejected"},
+                {"aid": "A000101", "state": "approved"}]
+        status = {"draft:A023186": ("submitted", "", ""),
+                  "draft:A005250": ("declined", "", "")}
+        self.assertEqual(audit.open_drafts(done, status),
+                         ["A023186", "A058867"])
+
+    def test_free_slots_go_in_schedule_order_past_blocked_drafts(self):
+        def d(aid, blocked=()):
+            return {"aid": aid, "blocked_on": list(blocked)}
+        drafts = [d("A1"), d("A2", ["open OEIS draft"]), d("A3"), d("A4")]
+        audit.assign_slots(drafts, ["A9"])
+        self.assertEqual([x["slot"] for x in drafts],
+                         ["next", None, "next", "waits"])
+        audit.assign_slots(drafts, ["A7", "A8", "A9"])
+        self.assertEqual([x["slot"] for x in drafts],
+                         ["waits", None, "waits", "waits"])
+
+    def test_new_records_rank_above_catching_up_to_a_sibling(self):
+        new = {"m": {"delta": 0}, "scan": 71}
+        catch_up = {"m": {"delta": 0}, "scan": 61}
+        offset = {"m": {"delta": 1}, "scan": 72}
+        families = {"aloof": {"deepest": 68, "seqs": [new, offset]},
+                    "lonely": {"deepest": 61, "seqs": [catch_up]}}
+        self.assertTrue(audit.beyond_published(families, new))
+        self.assertTrue(audit.beyond_published(families, offset))
+        self.assertFalse(audit.beyond_published(families, catch_up))
+
+
 class MarkdownTests(unittest.TestCase):
     def test_report_becomes_headings_prose_and_fenced_tables(self):
         text = "\n".join([

@@ -283,6 +283,11 @@ def render_yaml(drafts, new_seqs, other, meta):
          f"  license:   {q(ATTRIB['license'])}",
          ""]
 
+    if other.get("draft_limit"):
+        opened = other.get("open_drafts") or []
+        o.append(f"open_drafts: [{', '.join(opened)}]"
+                 f"          # OEIS allows {other['draft_limit']} at a time")
+        o.append("")
     if drafts:
         o.append("order: [" + ", ".join(d["aid"] for d in drafts) + "]")
         o += ["", "drafts:", ""]
@@ -294,6 +299,10 @@ def render_yaml(drafts, new_seqs, other, meta):
                  + ", ".join('"%s"' % i for i in d["items"]) + "]")
         if d.get("status"):
             o.append(f"  status: {d['status']}")
+        if d.get("slot"):
+            o.append(f"  slot:  {d['slot']}"
+                     + ("          # no free OEIS draft slot"
+                        if d["slot"] == "waits" else ""))
         if d.get("blocked_on"):
             o.append("  blocked_on:")
             o += [f"  - {q(b)}" for b in d["blocked_on"]]
@@ -418,17 +427,32 @@ FILL_JS = r"""
   var seqEl = document.querySelector('input[name=seq]');
   var SEQ = seqEl ? seqEl.value : null;
 
+  // A field's text is escaped in its innerHTML, so any real tag is layout: a
+  // field reopened from a saved draft holds one <p> per line. Turn those
+  // into newlines, or the field reads as one line and a write would put the
+  // tags back as literal text.
   function read(f) {
     var d = document.getElementById('edit_' + f);
     if (!d) return null;
+    var h = d.innerHTML
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div)>\s*<(p|div)\b[^>]*>/gi, '\n')
+      .replace(/<[^>]*>/g, '');
     var t = document.createElement('textarea');
-    t.innerHTML = d.innerHTML;
+    t.innerHTML = h;
     return t.value;
   }
+  // Written back in the field's own layout: one <p> per line if it was in
+  // paragraphs, where a bare newline would show as a space and join lines.
   function write(f, v) {
     var d = document.getElementById('edit_' + f);
     if (!d) return false;
-    d.textContent = v;
+    if (/<p\b/i.test(d.innerHTML)) {
+      d.innerHTML = v.split('\n').map(function (l) {
+        return '<p>' + (l ? l.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                             .replace(/>/g, '&gt;') : '<br>') + '</p>';
+      }).join('');
+    } else d.textContent = v;
     return true;
   }
 
@@ -772,6 +796,10 @@ PANEL_HTML = r"""<!doctype html>
  #track .why{color:var(--dim);font-size:11px;margin:0 0 6px;word-break:break-word}
  #credit{background:#fff0ee;border-bottom:2px solid var(--err)}
  #credit h2{color:var(--err)}
+ #slots{background:#fff8e1;border-bottom:2px solid var(--warn)}
+ #slots h2{color:var(--warn)}
+ #slots .why{font-size:11px}
+ .next{color:#0969da}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
@@ -779,6 +807,8 @@ PANEL_HTML = r"""<!doctype html>
 </header>
 <section id="credit" hidden><h2>b-file link missing its history</h2>
   <div id="creditbody"></div></section>
+<section id="slots" hidden><h2>No free draft slot</h2>
+  <div class="why" id="slotsbody"></div></section>
 <div id="fields"></div>
 <section id="uploads" hidden><h2>Uploads</h2><div id="uplist"></div></section>
 <div class="bar">
@@ -807,7 +837,21 @@ function send(m){ parent.postMessage(m, OEIS) }
 document.getElementById('title').textContent =
   draft ? draft.aid + ' — ' + draft.role : 'No draft for ' + (SEQ||'this page');
 document.getElementById('sub').textContent =
-  draft ? draft.summary : P.drafts.length + ' drafts in this batch';
+  (draft ? draft.summary : P.drafts.length + ' drafts in this batch')
+  + (P.draft_limit ? ' · open on OEIS ' + P.open_drafts.length + '/'
+     + P.draft_limit : '');
+
+// OEIS holds one user to P.draft_limit open drafts; a save past that is
+// refused. Say so before the form is filled, not after.
+(function(){
+  if(!draft || draft.slot!=='waits') return;
+  document.getElementById('slots').hidden = false;
+  document.getElementById('slotsbody').textContent =
+    'OEIS allows '+P.draft_limit+' open drafts and '
+    + P.open_drafts.length+' are open ('+P.open_drafts.join(', ')+'). '
+    + 'This one waits until an editor approves one of them; until then a '
+    + 'save will be refused.';
+})();
 
 function renderList(states){
   var p = progress(), out = '';
@@ -817,6 +861,9 @@ function renderList(states){
              : st==='saved' ? '<span class="st done">● saved</span>'
              : st==='filled' ? '<span class="st part">◐ filled</span>'
              : d.blocked_on ? '<span class="st err">⊘ blocked</span>'
+             : d.slot==='next' ? '<span class="st next">▶ next</span>'
+             : d.slot==='waits' ? '<span class="st" style="color:#aaa">'
+                                  + '⧗ waits</span>'
              : '<span class="st" style="color:#aaa">○</span>';
     out += '<div class="row'+(d.aid===SEQ?' cur':'')+'" data-aid="'+d.aid+'">'
          + '<span class="n">'+(i+1)+'</span>'
@@ -1038,10 +1085,11 @@ INDEX_HTML = r"""<!doctype html>
  .track button{font:inherit;font-size:11px;padding:1px 8px;margin-right:4px;
       border:1px solid #bbb;border-radius:4px;background:#fff;cursor:pointer}
  .track button:hover{background:#f0f0f0}
+ .next{color:#0969da;font-size:12px;white-space:nowrap}
 </style>
 <h1>OEIS submissions</h1>
 <p class="sub">%(n)d drafts &middot; generated %(date)s from <code>%(run)s/</code>
- &middot; check_oeis.py: <strong>%(check)s</strong></p>
+ &middot; check_oeis.py: <strong>%(check)s</strong>%(slots)s</p>
 
 <div class="box">
   <p style="margin:0 0 .6em"><strong>1.</strong> Drag this to your bookmarks bar
@@ -1165,12 +1213,15 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
 
     payload = {
         "meta": {**meta, "name": ATTRIB["name"]},
+        "open_drafts": other.get("open_drafts") or [],
+        "draft_limit": other.get("draft_limit"),
         "credits": other.get("credits") or {},
         "drafts": [{
             "aid": d["aid"], "role": d["role"], "what": d["what"],
             "items": d["items"],
             "summary": d["summary"],
             "blocked_on": d.get("blocked_on") or None,
+            "slot": d.get("slot"),
             "edits": for_js(d["edits"]),
             "uploads": [{"kind": u["kind"],
                          "name": os.path.basename(u["path"]),
@@ -1253,12 +1304,15 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
         if not any(u["kind"] == "b-file" for u in d.get("uploads") or []):
             f = "<br>".join(x for x in (f, published_bfile(d["aid"])) if x)
         st = d.get("status") or ("blocked" if d.get("blocked_on") else "")
+        slot = {"next": '<div class="next">next: a draft slot is free</div>',
+                "waits": '<div class="name">waits for a free draft slot'
+                         '</div>'}.get(d.get("slot"), "")
         rows.append(
             f'<tr><td class="n">{i}</td>'
             f'<td>{seq_cell(d["aid"], d["url"])}</td>'
             f'<td class="what">{linked(d["what"])}</td>'
             f'<td>{f}</td>'
-            f'<td class="warn">{st}'
+            f'<td class="warn">{st}{slot}'
             + ("" if st else track_buttons(d["items"], d["aid"],
                                            ("submitted",)))
             + '</td></tr>')
@@ -1310,7 +1364,11 @@ def write_all(out_dir, drafts, new_seqs, other, meta, files, names=None,
         "n": len(drafts), "date": meta["date"], "run": meta["run"],
         "check": "pass" if meta["check"] else "FAILING",
         "bm": bookmarklet().replace('"', "&quot;"),
-        "port": PORT, "rows": "\n".join(rows), "extra": extra}, man)
+        "port": PORT, "rows": "\n".join(rows), "extra": extra,
+        "slots": (f' &middot; open on OEIS: <strong>'
+                  f'{len(other.get("open_drafts") or [])}/'
+                  f'{other["draft_limit"]}</strong>'
+                  if other.get("draft_limit") else "")}, man)
 
     write(os.path.join(out_dir, "edits.yaml"),
           render_yaml(drafts, new_seqs, other, meta), man)
