@@ -1,8 +1,8 @@
 # Each sequence's frontier: scanned contiguously from zero to
 # here. Equal in a settled run; a sequence added later sits
 # behind until the scan catches it up.
-gap 26,099,160,888,913,361
-lonely 26,099,160,888,913,361
-aloof 26,099,160,888,913,361
-equidistant 26,099,160,888,913,361
-pairwise 26,099,160,888,913,361
+gap 26,288,834,504,054,846
+lonely 26,288,834,504,054,846
+aloof 26,288,834,504,054,846
+equidistant 26,288,834,504,054,846
+pairwise 26,288,834,504,054,846
