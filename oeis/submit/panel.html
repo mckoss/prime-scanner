@@ -40,6 +40,10 @@
  #track .why{color:var(--dim);font-size:11px;margin:0 0 6px;word-break:break-word}
  #credit{background:#fff0ee;border-bottom:2px solid var(--err)}
  #credit h2{color:var(--err)}
+ #slots{background:#fff8e1;border-bottom:2px solid var(--warn)}
+ #slots h2{color:var(--warn)}
+ #slots .why{font-size:11px}
+ .next{color:#0969da}
 </style>
 <header>
   <h1 id="title">OEIS submit</h1>
@@ -47,6 +51,8 @@
 </header>
 <section id="credit" hidden><h2>b-file link missing its history</h2>
   <div id="creditbody"></div></section>
+<section id="slots" hidden><h2>No free draft slot</h2>
+  <div class="why" id="slotsbody"></div></section>
 <div id="fields"></div>
 <section id="uploads" hidden><h2>Uploads</h2><div id="uplist"></div></section>
 <div class="bar">
@@ -75,7 +81,21 @@ function send(m){ parent.postMessage(m, OEIS) }
 document.getElementById('title').textContent =
   draft ? draft.aid + ' — ' + draft.role : 'No draft for ' + (SEQ||'this page');
 document.getElementById('sub').textContent =
-  draft ? draft.summary : P.drafts.length + ' drafts in this batch';
+  (draft ? draft.summary : P.drafts.length + ' drafts in this batch')
+  + (P.draft_limit ? ' · open on OEIS ' + P.open_drafts.length + '/'
+     + P.draft_limit : '');
+
+// OEIS holds one user to P.draft_limit open drafts; a save past that is
+// refused. Say so before the form is filled, not after.
+(function(){
+  if(!draft || draft.slot!=='waits') return;
+  document.getElementById('slots').hidden = false;
+  document.getElementById('slotsbody').textContent =
+    'OEIS allows '+P.draft_limit+' open drafts and '
+    + P.open_drafts.length+' are open ('+P.open_drafts.join(', ')+'). '
+    + 'This one waits until an editor approves one of them; until then a '
+    + 'save will be refused.';
+})();
 
 function renderList(states){
   var p = progress(), out = '';
@@ -85,6 +105,9 @@ function renderList(states){
              : st==='saved' ? '<span class="st done">● saved</span>'
              : st==='filled' ? '<span class="st part">◐ filled</span>'
              : d.blocked_on ? '<span class="st err">⊘ blocked</span>'
+             : d.slot==='next' ? '<span class="st next">▶ next</span>'
+             : d.slot==='waits' ? '<span class="st" style="color:#aaa">'
+                                  + '⧗ waits</span>'
              : '<span class="st" style="color:#aaa">○</span>';
     out += '<div class="row'+(d.aid===SEQ?' cur':'')+'" data-aid="'+d.aid+'">'
          + '<span class="n">'+(i+1)+'</span>'

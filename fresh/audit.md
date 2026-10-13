@@ -191,7 +191,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## FRONTIER vs PUBLISHED
 
 ```
-  fresh/frontier.txt = 26,099,160,888,913,361  (2.6099e+16)
+  fresh/frontier.txt = 26,306,285,568,359,759  (2.6306e+16)
 ```
 
 ```
@@ -216,7 +216,7 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
 
 ```
-  Aloof checkpoints beyond 26,099,160,888,913,361, beating span 1220:
+  Aloof checkpoints beyond 26,306,285,568,359,759, beating span 1220:
   Source: https://sweet.ua.pt/tos/gaps/t0.txt.gz
   From Oliveira e Silva's first-occurrence gap table; adjacent
   primes and all intervening odd integers checked by deterministic
@@ -235,18 +235,18 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## SUBMISSION  --  one draft per sequence
 
 ```
-   1. A005669  b-file +3 terms (82 to 85), Xref +A107578 (optional)
-      Extend the b-file to 85 terms; optionally add cross-references to A107578.
-   2. A023187  b-file +5 terms (56 to 61)
-      Extend the b-file to 61 terms.
-   3. A031132  b-file +4 terms (67 to 71), Xref +A096265 (optional)
+   1. A031132  b-file +4 terms (67 to 71), Xref +A096265 (optional)
       Extend the b-file to 71 terms; optionally add cross-references to A096265.
-   4. A031133  b-file +4 terms (67 to 71)
+   2. A031133  b-file +4 terms (67 to 71)
       Extend the b-file to 71 terms.
-   5. A031134  b-file +4 terms (67 to 71)
+   3. A031134  b-file +4 terms (67 to 71)
       Extend the b-file to 71 terms.
-   6. A058868  b-file +4 terms (30 to 34)
+   4. A058868  b-file +4 terms (30 to 34)
       Extend the b-file to 34 terms.
+   5. A005669  b-file +3 terms (82 to 85), Xref +A107578 (optional)
+      Extend the b-file to 85 terms; optionally add cross-references to A107578.
+   6. A023187  b-file +5 terms (56 to 61)
+      Extend the b-file to 61 terms.
    7. A107578  b-file +5 terms (80 to 85)
       Extend the b-file to 85 terms.
    8. A000101  Xref +A053695 (optional)

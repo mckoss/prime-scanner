@@ -6,7 +6,7 @@
 # as column 3 of its equidistant records.
 #
 # Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,099,160,888,913,361: every record up to that
+# Searched all below 26,306,285,568,359,759: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
