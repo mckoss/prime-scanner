@@ -932,6 +932,14 @@ def read_submissions():
     return status
 
 
+def extent_offset(f, aid):
+    """Rows the family holds ahead of aid's b-file. The family's extent names
+    the offset for its own sequence only -- A031134 starts a row late, while
+    A096265, the primary it stands in for, lines up row for row."""
+    aid0, off = f["info"]["extent"]
+    return off if aid == aid0 else 0
+
+
 def detect_approved(families, refresh, status):
     """{item id: (status, date, note)} for our edits OEIS has published.
 
@@ -1927,7 +1935,7 @@ def submission(items, families, results, refresh, check):
         primary = [s["aid"] for s in f["seqs"] if s["m"]["col"] == 2]
         aid = primary[0] if primary else f["info"]["extent"][0]
         pub = bfile_terms_list(aid, refresh)
-        n_pub = len(pub) + f["info"]["extent"][1]
+        n_pub = len(pub) + extent_offset(f, aid)
         credit = prior_credit(aid, len(pub), refresh)
         other["credits"][aid] = credit
         if ("b", aid) not in built:
@@ -1952,10 +1960,18 @@ def submission(items, families, results, refresh, check):
         if st in REVIEW_STATUSES and fam in families and families[fam]["rows"]:
             build_terms_bfile(fam)
 
+    # An item OEIS has published that this run still raises is new work --
+    # the scan has passed what went in -- so its old line no longer closes it.
+    # Declined and skipped items stay closed, as do those still in review.
+    reopened = {it["id"] for it in items
+                if it["id"] in detected or status.get(it["id"], ("",))[0]
+                == "approved"}
+
     for it in items:
         gid, iid = it["group"], it["id"]
         st = status.get(iid)
-        if st and st[0] in REVIEW_STATUSES + CLOSED_STATUSES:
+        if (st and st[0] in REVIEW_STATUSES + CLOSED_STATUSES
+                and iid not in reopened):
             continue
         kind = iid.split(":")[0]
 
@@ -1982,7 +1998,7 @@ def submission(items, families, results, refresh, check):
             primary = [s["aid"] for s in f["seqs"] if s["m"]["col"] == 2]
             aid = primary[0] if primary else aid
             pub = bfile_terms_list(aid, refresh)
-            n_pub = len(pub) + f["info"]["extent"][1]
+            n_pub = len(pub) + extent_offset(f, aid)
             new = f["rows"][n_pub:]
             _, _, s = member_of(families, aid)
             d = draft(aid, s["m"]["role"] if s else fam)
@@ -2158,7 +2174,7 @@ def submission(items, families, results, refresh, check):
         d["what"] = ", ".join(dict.fromkeys(d["what"]))
         d["notes"] = any(i in notes for i in d["items"])
         for i in d["items"]:
-            if status.get(i):
+            if status.get(i) and i not in reopened:
                 d["status"] = status[i][0]
         if len(d["items"]) > 1:
             d["summary"] = summarise(d)
