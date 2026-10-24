@@ -932,31 +932,45 @@ def read_submissions():
     return status
 
 
-def detect_approved(families, refresh):
+def detect_approved(families, refresh, status):
     """{item id: (status, date, note)} for our edits OEIS has published.
 
     A b-file counts once its link credits us and it holds every term this run
-    has; an a-file once its header names us and it holds every record prime.
-    Anything less is someone else's work, or ours from an earlier frontier
-    that a newer run has passed. The date is the entry's last revision, the
-    nearest the JSON gets to the approval itself.
+    has; an a-file once its header names us and it holds every record prime;
+    an xref once the entry names the sequence. Anything less is someone
+    else's work, or ours from an earlier frontier that a newer run has passed
+    -- unless the item is at `submitted` and the entry was revised on or after
+    that date: then it is the edit we sent, and the scan has simply found
+    more since. The date is the entry's last revision, the nearest the JSON
+    gets to the approval itself.
     """
     name = oeis_submit.ATTRIB["name"]
-    found = {}
+    sent = {iid: d for iid, (st, d, _) in status.items()
+            if st in REVIEW_STATUSES}
+
+    def landed(iid, date):
+        return iid in sent and date >= sent[iid]
+
+    found, recs = {}, {}
     for fam, f in families.items():
         primes = {str(r[1]) for r in f["rows"]}
         for s in f["seqs"]:
             if s.get("gone") or "rec" not in s:
                 continue
             aid, rec, m = s["aid"], s["rec"], s["m"]
+            recs[aid] = rec
             date = (rec.get("time") or "")[:10]
             own_b = re.compile(rf"/{aid}/b{aid[1:]}\.txt")
-            if s["b"] and s["scan"] and s["b"] >= s["scan"] and any(
-                    l.startswith(name) and own_b.search(l)
-                    for l in rec.get("link") or []):
-                iid = f"terms:{fam}" if m["col"] == 2 else f"b-file:{aid}"
-                found[iid] = ("approved", date,
-                              f"{aid} b-file of {s['b']} terms credits {name}")
+            if s["b"] and any(l.startswith(name) and own_b.search(l)
+                              for l in rec.get("link") or []):
+                # A family's terms column is one b-file under either id.
+                ids = [f"b-file:{aid}"] + ([f"terms:{fam}"]
+                                           if m["col"] == 2 else [])
+                for iid in ids:
+                    if (s["scan"] and s["b"] >= s["scan"]) or landed(iid, date):
+                        found[iid] = ("approved", date,
+                                      f"{aid} b-file of {s['b']} terms "
+                                      f"credits {name}")
             url = afile_url(s["af"][0]) if s["af"] else None
             if not url or not primes:
                 continue
@@ -965,11 +979,21 @@ def detect_approved(families, refresh):
                 continue
             text = open(path, errors="replace").read()
             head = "".join(l for l in text.splitlines(True) if l.startswith("#"))
-            if name in head and primes <= set(re.findall(r"\d+", text)):
-                found[f"a-file:{fam}"] = (
+            held = primes & set(re.findall(r"\d+", text))
+            iid = f"a-file:{fam}"
+            if name in head and (held == primes or landed(iid, date)):
+                found[iid] = (
                     "approved", date,
-                    f"{aid} a-file {url.rsplit('/', 1)[1]} holds all "
-                    f"{len(primes)} records")
+                    f"{aid} a-file {url.rsplit('/', 1)[1]} holds "
+                    f"{len(held)} of {len(primes)} records")
+    for iid in sent:
+        if not iid.startswith("xref:"):
+            continue
+        x, y = iid.split(":")[1:3]
+        rec = recs.get(x)
+        date = (rec.get("time") or "")[:10] if rec else ""
+        if rec and y in cited(rec) and landed(iid, date):
+            found[iid] = ("approved", date, f"{x} cites {y}")
     return found
 
 
@@ -1843,7 +1867,7 @@ def submission(items, families, results, refresh, check):
     drafts, new_seqs = {}, []
     # What OEIS has published outright beats a hand-kept line: an item left
     # at `submitted` turns approved as soon as the files show it.
-    detected = detect_approved(families, refresh)
+    detected = detect_approved(families, refresh, status)
     # credits: {aid: "terms 1..50 from ..."} for each extended b-file, in a
     # draft or in review, so the panel can flag its %H line until it says so.
     other = {"blocked": [], "pending": [], "review": [],
