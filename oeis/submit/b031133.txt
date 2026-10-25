@@ -1,12 +1,12 @@
-# A031133, 71 terms.
+# A031133, 72 terms.
 #
 # Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.
-# Terms 68..71 are new.
+# Terms 68..72 are new.
 # Every term independently rederived by an exhaustive scan from 0,
 # as column 6 of its aloof records.
 #
-# Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,306,285,568,359,759: every record up to that
+# Mike Koss. Data as of 2026-10-24, when the scan last advanced.
+# Searched all below 44,254,828,557,661,947: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -82,3 +82,4 @@
 69 12568891238649583
 70 14878430907698447
 71 16020873778856279
+72 29835422457878281

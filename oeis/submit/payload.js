@@ -1,24 +1,24 @@
 window.OEIS_SUBMIT = {
  "meta": {
-  "date": "2026-10-13",
+  "date": "2026-10-24",
   "run": "fresh",
-  "frontier": 26306285568359759,
+  "frontier": 44254828557661947,
   "check": true,
   "check_note": "",
   "name": "Mike Koss"
  },
  "open_drafts": [
-  "A058867",
   "A087770",
   "A096265"
  ],
  "draft_limit": 3,
  "credits": {
-  "A058867": "terms 1..20 from Harvey Dubner, terms 21..30 from Dmitry Petukhov",
-  "A087770": "terms 1..29 from Walter Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta",
-  "A096265": "terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner",
+  "A058867": "terms 1..34 from Mike Koss",
+  "A087770": "terms 1..41 from Mike Koss",
+  "A096265": "terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner, terms 56..72 from Mike Koss",
   "A005669": "terms 1..77 from Charles R Greathouse IV, terms 78..82 from John W. Nicholson",
   "A107578": "terms 1..80 from John W. Nicholson; terms 1..75 from Jens Kruse Andersen; further terms coming from Thomas R. Nicely site",
+  "A023186": "terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni Resta, terms 53..56 from Dmitry Petukhov, terms 57..61 from Mike Koss",
   "A023187": "terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov",
   "A031133": "terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova",
   "A031134": "terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova",
@@ -27,22 +27,24 @@ window.OEIS_SUBMIT = {
  },
  "drafts": [
   {
-   "aid": "A031132",
-   "role": "the span between them",
-   "what": "b-file +4 terms (67 to 71), Xref +A096265 (optional)",
+   "aid": "A023186",
+   "role": "the lonely prime",
+   "what": "b-file +2 terms (61 to 63), Xref +A087770 (optional), Xref +A096265 (optional), a-file 63 rows (minor update of a023186_1.txt)",
    "items": [
-    "b-file:A031132",
-    "xref:A031132:A096265"
+    "terms:lonely",
+    "xref:A023186:A087770",
+    "xref:A023186:A096265",
+    "a-file:update:lonely"
    ],
-   "summary": "Extend the b-file to 71 terms; optionally add cross-references to A096265.",
+   "summary": "Extend the b-file to 63 terms; optionally add cross-references to A087770, A096265; add an a-file with the bounding primes.",
    "blocked_on": null,
-   "slot": "waits",
+   "slot": "next",
    "edits": [
     {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A031132/b031132_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
+     "text": "Mike Koss, <a href=\"/A023186/b023186_k.txt\">Table of n, a(n) for n = 1..63</a> (terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni Resta, terms 53..56 from Dmitry Petukhov, terms 57..61 from Mike Koss)"
     },
     {
      "field": "Xref",
@@ -50,120 +52,177 @@ window.OEIS_SUBMIT = {
      "action": "add",
      "add": [
       [
+       "A087770",
+       "the pairwise lonely prime"
+      ],
+      [
        "A096265",
        "the aloof prime"
       ]
      ],
      "optional": true
-    }
-   ],
-   "uploads": [
-    {
-     "kind": "b-file",
-     "name": "b031132.txt",
-     "replaces": null,
-     "slot": 0,
-     "rows": 71,
-     "published": false,
-     "purpose": "The b-file: 71 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
-     "desc": "",
-     "content": "# A031132, 71 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-13, when the scan last advanced.\n# Searched all below 26,306,285,568,359,759: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 3\n2 4\n3 6\n4 10\n5 12\n6 14\n7 18\n8 24\n9 28\n10 40\n11 42\n12 44\n13 48\n14 50\n15 56\n16 58\n17 72\n18 76\n19 80\n20 82\n21 100\n22 114\n23 116\n24 126\n25 138\n26 140\n27 160\n28 190\n29 200\n30 234\n31 236\n32 246\n33 248\n34 270\n35 306\n36 328\n37 330\n38 336\n39 340\n40 372\n41 376\n42 410\n43 436\n44 438\n45 450\n46 476\n47 502\n48 506\n49 524\n50 540\n51 546\n52 594\n53 600\n54 624\n55 678\n56 690\n57 700\n58 760\n59 780\n60 838\n61 900\n62 944\n63 972\n64 1014\n65 1016\n66 1032\n67 1152\n68 1168\n69 1170\n70 1182\n71 1220\n"
-    }
-   ]
-  },
-  {
-   "aid": "A031133",
-   "role": "the lower neighbour",
-   "what": "b-file +4 terms (67 to 71)",
-   "items": [
-    "b-file:A031133"
-   ],
-   "summary": "Extend the b-file to 71 terms.",
-   "blocked_on": null,
-   "slot": "waits",
-   "edits": [
+    },
     {
      "field": "Link",
      "code": "%H",
-     "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A031133/b031133_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
+     "action": "remove",
+     "find": "href=\"/A023186/a023186_1.txt\""
     }
    ],
    "uploads": [
     {
      "kind": "b-file",
-     "name": "b031133.txt",
+     "name": "b023186.txt",
      "replaces": null,
      "slot": 0,
-     "rows": 71,
+     "rows": 63,
      "published": true,
-     "purpose": "The b-file: 71 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "purpose": "The b-file: 63 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A031133, 71 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 6 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-13, when the scan last advanced.\n# Searched all below 26,306,285,568,359,759: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 5\n4 19\n5 47\n6 83\n7 109\n8 199\n9 1123\n10 1321\n11 2161\n12 2477\n13 5591\n14 9551\n15 14087\n16 19603\n17 19609\n18 31393\n19 31397\n20 38461\n21 58789\n22 155893\n23 360653\n24 370247\n25 396733\n26 1357193\n27 1561891\n28 4652317\n29 8917463\n30 20831299\n31 38089217\n32 70396343\n33 72546143\n34 102765577\n35 142414553\n36 325737649\n37 436272961\n38 476956801\n39 1346350651\n40 1453168061\n41 2949346891\n42 3367207667\n43 9085929037\n44 10726904659\n45 20678048297\n46 25056082067\n47 31587561139\n48 42652618301\n49 50949283109\n50 122787888679\n51 215686840157\n52 220578149899\n53 724200190201\n54 929156727013\n55 1032148488143\n56 3605572653481\n57 4079970755221\n58 5061226833427\n59 12772332382321\n60 19535748742639\n61 21185697626083\n62 117102787055687\n63 471911699384771\n64 528459528876289\n65 543684371469023\n66 811782668945159\n67 1693182318746351\n68 12099132127786609\n69 12568891238649583\n70 14878430907698447\n71 16020873778856279\n"
-    }
-   ]
-  },
-  {
-   "aid": "A031134",
-   "role": "the upper neighbour",
-   "what": "b-file +4 terms (67 to 71)",
-   "items": [
-    "b-file:A031134"
-   ],
-   "summary": "Extend the b-file to 71 terms.",
-   "blocked_on": null,
-   "slot": "waits",
-   "edits": [
+     "content": "# A023186, 63 terms.\n#\n# Terms 1..40 from Ken Takusagawa, terms 41..52 from Giovanni Resta, terms 53..56 from Dmitry Petukhov, terms 57..61 from Mike Koss.\n# Terms 62..63 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 5\n3 23\n4 53\n5 211\n6 1847\n7 2179\n8 3967\n9 16033\n10 24281\n11 38501\n12 58831\n13 203713\n14 206699\n15 413353\n16 1272749\n17 2198981\n18 5102953\n19 10938023\n20 12623189\n21 72546283\n22 142414669\n23 162821917\n24 163710121\n25 325737821\n26 1131241763\n27 1791752797\n28 3173306951\n29 4841337887\n30 6021542119\n31 6807940367\n32 7174208683\n33 8835528511\n34 11179888193\n35 15318488291\n36 26329105043\n37 31587561361\n38 45241670743\n39 113482615613\n40 138465682247\n41 307608752579\n42 313455525683\n43 343834606051\n44 491856414677\n45 1362810282439\n46 1480975873513\n47 5551890283531\n48 9156364643509\n49 16303344721399\n50 25328423597831\n51 26923643849953\n52 92299530249323\n53 187891466722913\n54 342540487510231\n55 475963705368391\n56 941114429467073\n57 2662972908869401\n58 4685407635944059\n59 4911417538051463\n60 10991084454046573\n61 23771684406473771\n62 26457341888890091\n63 43191199134800263\n"
+    },
     {
-     "field": "Link",
-     "code": "%H",
-     "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A031134/b031134_k.txt\">Table of n, a(n) for n = 1..71</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
-    }
-   ],
-   "uploads": [
-    {
-     "kind": "b-file",
-     "name": "b031134.txt",
-     "replaces": null,
-     "slot": 0,
-     "rows": 71,
-     "published": true,
-     "purpose": "The b-file: 71 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
-     "desc": "",
-     "content": "# A031134, 71 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..71 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 7 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-13, when the scan last advanced.\n# Searched all below 26,306,285,568,359,759: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 5\n2 7\n3 11\n4 29\n5 59\n6 97\n7 127\n8 223\n9 1151\n10 1361\n11 2203\n12 2521\n13 5639\n14 9601\n15 14143\n16 19661\n17 19681\n18 31469\n19 31477\n20 38543\n21 58889\n22 156007\n23 360769\n24 370373\n25 396871\n26 1357333\n27 1562051\n28 4652507\n29 8917663\n30 20831533\n31 38089453\n32 70396589\n33 72546391\n34 102765847\n35 142414859\n36 325737977\n37 436273291\n38 476957137\n39 1346350991\n40 1453168433\n41 2949347267\n42 3367208077\n43 9085929473\n44 10726905097\n45 20678048747\n46 25056082543\n47 31587561641\n48 42652618807\n49 50949283633\n50 122787889219\n51 215686840703\n52 220578150493\n53 724200190801\n54 929156727637\n55 1032148488821\n56 3605572654171\n57 4079970755921\n58 5061226834187\n59 12772332383101\n60 19535748743477\n61 21185697626983\n62 117102787056631\n63 471911699385743\n64 528459528877303\n65 543684371470039\n66 811782668946191\n67 1693182318747503\n68 12099132127787777\n69 12568891238650753\n70 14878430907699629\n71 16020873778857499\n"
-    }
-   ]
-  },
-  {
-   "aid": "A058868",
-   "role": "the distance to each neighbour",
-   "what": "b-file +4 terms (30 to 34)",
-   "items": [
-    "b-file:A058868"
-   ],
-   "summary": "Extend the b-file to 34 terms.",
-   "blocked_on": null,
-   "slot": "waits",
-   "edits": [
-    {
-     "field": "Link",
-     "code": "%H",
-     "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A058868/b058868_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov)"
-    }
-   ],
-   "uploads": [
-    {
-     "kind": "b-file",
-     "name": "b058868.txt",
-     "replaces": null,
-     "slot": 0,
-     "rows": 34,
+     "kind": "a-file",
+     "name": "a023186.txt",
+     "replaces": "a023186_1.txt",
+     "slot": 1,
+     "rows": 63,
      "published": false,
-     "purpose": "The b-file: 34 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "purpose": "The a-file update: 63 rows, replacing a023186_1.txt. Its link text fills the upload box, so OEIS writes the new %H line itself; the Link card drops the old one.",
+     "desc": "Mike Koss, <a>Table of the first 63 records with both bounding primes and both gaps</a>",
+     "content": "# a023186.txt -- lonely prime records with bounding primes\n#\n# n    index\n# p    the lonely prime (A023186)\n# d    min(p-pp, np-p), the record (A023187)\n# pp   previous prime\n# np   next prime\n# -    none: p = 2 has no previous prime\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n#\n#  n                  p    d                 pp                 np\n   1                  2    1                  -                  3\n   2                  5    2                  3                  7\n   3                 23    4                 19                 29\n   4                 53    6                 47                 59\n   5                211   12                199                223\n   6               1847   14               1831               1861\n   7               2179   18               2161               2203\n   8               3967   20               3947               3989\n   9              16033   24              16007              16057\n  10              24281   30              24251              24317\n  11              38501   40              38461              38543\n  12              58831   42              58789              58889\n  13             203713   44             203669             203761\n  14             206699   48             206651             206749\n  15             413353   54             413299             413411\n  16            1272749   62            1272679            1272811\n  17            2198981   72            2198909            2199061\n  18            5102953   76            5102863            5103029\n  19           10938023   96           10937921           10938119\n  20           12623189   98           12623089           12623287\n  21           72546283  108           72546143           72546391\n  22          142414669  116          142414553          142414859\n  23          162821917  124          162821753          162822041\n  24          163710121  136          163709971          163710257\n  25          325737821  156          325737649          325737977\n  26         1131241763  160         1131241603         1131241933\n  27         1791752797  162         1791752629         1791752959\n  28         3173306951  168         3173306777         3173307119\n  29         4841337887  174         4841337713         4841338063\n  30         6021542119  176         6021541943         6021542299\n  31         6807940367  178         6807940189         6807940567\n  32         7174208683  180         7174208477         7174208863\n  33         8835528511  186         8835528307         8835528697\n  34        11179888193  194        11179887967        11179888387\n  35        15318488291  210        15318488071        15318488501\n  36        26329105043  214        26329104829        26329105267\n  37        31587561361  222        31587561139        31587561641\n  38        45241670743  242        45241670501        45241670987\n  39       113482615613  244       113482615369       113482615867\n  40       138465682247  246       138465682001       138465682513\n  41       307608752579  250       307608752329       307608752833\n  42       313455525683  258       313455525373       313455525941\n  43       343834606051  268       343834605773       343834606319\n  44       491856414677  284       491856414391       491856414961\n  45      1362810282439  300      1362810282139      1362810282781\n  46      1480975873513  324      1480975873189      1480975873847\n  47      5551890283531  328      5551890283183      5551890283859\n  48      9156364643509  340      9156364643137      9156364643849\n  49     16303344721399  348     16303344721051     16303344721777\n  50     25328423597831  352     25328423597479     25328423598209\n  51     26923643849953  390     26923643849563     26923643850343\n  52     92299530249323  396     92299530248927     92299530249733\n  53    187891466722913  420    187891466722493    187891466723333\n  54    342540487510231  432    342540487509799    342540487510673\n  55    475963705368391  452    475963705367939    475963705368871\n  56    941114429467073  480    941114429466593    941114429467567\n  57   2662972908869401  508   2662972908868891   2662972908869909\n  58   4685407635944059  510   4685407635943549   4685407635944569\n  59   4911417538051463  520   4911417538050943   4911417538052029\n  60  10991084454046573  546  10991084454046027  10991084454047143\n  61  23771684406473771  550  23771684406473221  23771684406474373\n  62  26457341888890091  576  26457341888889487  26457341888890667\n  63  43191199134800263  614  43191199134799649  43191199134800881\n"
+    }
+   ]
+  },
+  {
+   "aid": "A087770",
+   "role": "the pairwise lonely prime",
+   "what": "b-file +1 terms (41 to 42), a-file 42 rows (minor update of a087770.txt)",
+   "items": [
+    "terms:pairwise",
+    "a-file:update:pairwise"
+   ],
+   "summary": "Extend the b-file to 42 terms; add an a-file with the bounding primes.",
+   "blocked_on": null,
+   "slot": null,
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A087770/b087770_k.txt\">Table of n, a(n) for n = 1..42</a> (terms 1..41 from Mike Koss)"
+    },
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "remove",
+     "find": "href=\"/A087770/a087770.txt\""
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b087770.txt",
+     "replaces": null,
+     "slot": 0,
+     "rows": 42,
+     "published": true,
+     "purpose": "The b-file: 42 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A058868, 34 terms.\n#\n# Terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov.\n# Terms 30..33 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its equidistant records.\n#\n# Mike Koss. Data as of 2026-10-13, when the scan last advanced.\n# Searched all below 26,306,285,568,359,759: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n0 2\n1 6\n2 12\n3 24\n4 30\n5 42\n6 48\n7 60\n8 66\n9 72\n10 84\n11 90\n12 96\n13 144\n14 150\n15 156\n16 168\n17 186\n18 198\n19 204\n20 210\n21 228\n22 240\n23 258\n24 276\n25 300\n26 306\n27 348\n28 390\n29 420\n30 426\n31 438\n32 468\n33 510\n"
+     "content": "# A087770, 42 terms.\n#\n# Terms 1..41 from Mike Koss.\n# Terms 42..42 are new.\n# Every term independently rederived by an exhaustive scan from 0.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 7\n4 23\n5 89\n6 211\n7 1847\n8 2179\n9 14107\n10 33247\n11 38501\n12 58831\n13 268343\n14 1272749\n15 2198981\n16 10938023\n17 72546283\n18 162821917\n19 325737821\n20 2888688863\n21 6613941601\n22 11179888193\n23 24016237123\n24 96155166493\n25 179474021633\n26 215686840471\n27 633880576177\n28 1480975873513\n29 9156364643509\n30 26459479056379\n31 64293760159177\n32 201355244997631\n33 203521339456733\n34 366981966368659\n35 630279877844621\n36 1244134359040121\n37 1527008871568883\n38 2662972908869401\n39 4911417538051463\n40 10991084454046573\n41 23771684406473771\n42 34073418089963887\n"
+    },
+    {
+     "kind": "a-file",
+     "name": "a087770.txt",
+     "replaces": "a087770.txt",
+     "slot": 1,
+     "rows": 42,
+     "published": true,
+     "purpose": "The a-file update: 42 rows, replacing a087770.txt. Its link text fills the upload box, so OEIS writes the new %H line itself; the Link card drops the old one.",
+     "desc": "Mike Koss, <a>Table of the first 42 records with both bounding primes and both gaps</a>",
+     "content": "# a087770.txt -- pairwise lonely prime records with bounding primes\n#\n# n    index\n# p    the pairwise lonely prime (A087770)\n# gb   p - pp\n# ga   np - p\n# pp   previous prime\n# np   next prime\n# -    none: p = 2 has no previous prime\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n#\n#  n                  p   gb   ga                 pp                 np\n   1                  2    -    1                  -                  3\n   2                  3    1    2                  2                  5\n   3                  7    2    4                  5                 11\n   4                 23    4    6                 19                 29\n   5                 89    6    8                 83                 97\n   6                211   12   12                199                223\n   7               1847   16   14               1831               1861\n   8               2179   18   24               2161               2203\n   9              14107   20   36              14087              14143\n  10              33247   24   40              33223              33287\n  11              38501   40   42              38461              38543\n  12              58831   42   58              58789              58889\n  13             268343   46   60             268297             268403\n  14            1272749   70   62            1272679            1272811\n  15            2198981   72   80            2198909            2199061\n  16           10938023  102   96           10937921           10938119\n  17           72546283  140  108           72546143           72546391\n  18          162821917  164  124          162821753          162822041\n  19          325737821  172  156          325737649          325737977\n  20         2888688863  204  158         2888688659         2888689021\n  21         6613941601  224  166         6613941377         6613941767\n  22        11179888193  226  194        11179887967        11179888387\n  23        24016237123  246  196        24016236877        24016237319\n  24        96155166493  272  198        96155166221        96155166691\n  25       179474021633  274  200       179474021359       179474021833\n  26       215686840471  314  232       215686840157       215686840703\n  27       633880576177  318  270       633880575859       633880576447\n  28      1480975873513  324  334      1480975873189      1480975873847\n  29      9156364643509  372  340      9156364643137      9156364643849\n  30     26459479056379  426  348     26459479055953     26459479056727\n  31     64293760159177  434  372     64293760158743     64293760159549\n  32    201355244997631  440  390    201355244997191    201355244998021\n  33    203521339456733  456  398    203521339456277    203521339457131\n  34    366981966368659  458  412    366981966368201    366981966369071\n  35    630279877844621  490  422    630279877844131    630279877845043\n  36   1244134359040121  502  462   1244134359039619   1244134359040583\n  37   1527008871568883  504  470   1527008871568379   1527008871569353\n  38   2662972908869401  510  508   2662972908868891   2662972908869909\n  39   4911417538051463  520  566   4911417538050943   4911417538052029\n  40  10991084454046573  546  570  10991084454046027  10991084454047143\n  41  23771684406473771  550  602  23771684406473221  23771684406474373\n  42  34073418089963887  564  622  34073418089963323  34073418089964509\n"
+    }
+   ]
+  },
+  {
+   "aid": "A096265",
+   "role": "the aloof prime",
+   "what": "b-file +1 terms (72 to 73), a-file 73 rows (minor update of a096265.txt)",
+   "items": [
+    "terms:aloof",
+    "a-file:update:aloof"
+   ],
+   "summary": "Extend the b-file to 73 terms; add an a-file with the bounding primes.",
+   "blocked_on": null,
+   "slot": null,
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A096265/b096265_k.txt\">Table of n, a(n) for n = 1..73</a> (terms 1..50 from Ken Takusagawa, terms 51..55 from Hugo Pfoertner, terms 56..72 from Mike Koss)"
+    },
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "remove",
+     "find": "href=\"/A096265/a096265.txt\""
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b096265.txt",
+     "replaces": null,
+     "slot": 0,
+     "rows": 73,
+     "published": true,
+     "purpose": "The b-file: 73 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "desc": "",
+     "content": "# A096265, 73 terms.\n#\n# Terms 1..55 as previously published.\n# Terms 56..68 are the prime between A031133(k) and A031134(k),\n# whose b-files reach 67 terms (A096265 index 68).\n# Every term independently rederived by an exhaustive scan.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 5\n4 7\n5 23\n6 53\n7 89\n8 113\n9 211\n10 1129\n11 1327\n12 2179\n13 2503\n14 5623\n15 9587\n16 14107\n17 19609\n18 19661\n19 31397\n20 31469\n21 38501\n22 58831\n23 155921\n24 360749\n25 370261\n26 396833\n27 1357201\n28 1561919\n29 4652353\n30 8917523\n31 20831323\n32 38089277\n33 70396393\n34 72546283\n35 102765683\n36 142414669\n37 325737821\n38 436273009\n39 476956933\n40 1346350763\n41 1453168141\n42 2949347131\n43 3367207801\n44 9085929179\n45 10726905041\n46 20678048681\n47 25056082087\n48 31587561361\n49 42652618343\n50 50949283459\n51 122787888851\n52 215686840471\n53 220578150113\n54 724200190631\n55 929156727137\n56 1032148488557\n57 3605572653889\n58 4079970755417\n59 5061226833937\n60 12772332382939\n61 19535748743177\n62 21185697626267\n63 117102787055963\n64 471911699384963\n65 528459528876647\n66 543684371469929\n67 811782668945987\n68 1693182318746371\n69 12099132127787501\n70 12568891238650091\n71 14878430907698893\n72 16020873778857163\n73 29835422457878441\n"
+    },
+    {
+     "kind": "a-file",
+     "name": "a096265.txt",
+     "replaces": "a096265.txt",
+     "slot": 1,
+     "rows": 73,
+     "published": true,
+     "purpose": "The a-file update: 73 rows, replacing a096265.txt. Its link text fills the upload box, so OEIS writes the new %H line itself; the Link card drops the old one.",
+     "desc": "Mike Koss, <a>Table of the first 73 records with both bounding primes and both gaps</a>",
+     "content": "# a096265.txt -- aloof prime records with bounding primes\n#\n# n    index\n# p    the aloof prime (A096265)\n# span np - pp, the record (A031132)\n# pp   previous prime (A031133)\n# np   next prime (A031134)\n# -    none: p = 2 has no previous prime\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n#\n#  n                  p  span                 pp                 np\n   1                  2     -                  -                  3\n   2                  3     3                  2                  5\n   3                  5     4                  3                  7\n   4                  7     6                  5                 11\n   5                 23    10                 19                 29\n   6                 53    12                 47                 59\n   7                 89    14                 83                 97\n   8                113    18                109                127\n   9                211    24                199                223\n  10               1129    28               1123               1151\n  11               1327    40               1321               1361\n  12               2179    42               2161               2203\n  13               2503    44               2477               2521\n  14               5623    48               5591               5639\n  15               9587    50               9551               9601\n  16              14107    56              14087              14143\n  17              19609    58              19603              19661\n  18              19661    72              19609              19681\n  19              31397    76              31393              31469\n  20              31469    80              31397              31477\n  21              38501    82              38461              38543\n  22              58831   100              58789              58889\n  23             155921   114             155893             156007\n  24             360749   116             360653             360769\n  25             370261   126             370247             370373\n  26             396833   138             396733             396871\n  27            1357201   140            1357193            1357333\n  28            1561919   160            1561891            1562051\n  29            4652353   190            4652317            4652507\n  30            8917523   200            8917463            8917663\n  31           20831323   234           20831299           20831533\n  32           38089277   236           38089217           38089453\n  33           70396393   246           70396343           70396589\n  34           72546283   248           72546143           72546391\n  35          102765683   270          102765577          102765847\n  36          142414669   306          142414553          142414859\n  37          325737821   328          325737649          325737977\n  38          436273009   330          436272961          436273291\n  39          476956933   336          476956801          476957137\n  40         1346350763   340         1346350651         1346350991\n  41         1453168141   372         1453168061         1453168433\n  42         2949347131   376         2949346891         2949347267\n  43         3367207801   410         3367207667         3367208077\n  44         9085929179   436         9085929037         9085929473\n  45        10726905041   438        10726904659        10726905097\n  46        20678048681   450        20678048297        20678048747\n  47        25056082087   476        25056082067        25056082543\n  48        31587561361   502        31587561139        31587561641\n  49        42652618343   506        42652618301        42652618807\n  50        50949283459   524        50949283109        50949283633\n  51       122787888851   540       122787888679       122787889219\n  52       215686840471   546       215686840157       215686840703\n  53       220578150113   594       220578149899       220578150493\n  54       724200190631   600       724200190201       724200190801\n  55       929156727137   624       929156727013       929156727637\n  56      1032148488557   678      1032148488143      1032148488821\n  57      3605572653889   690      3605572653481      3605572654171\n  58      4079970755417   700      4079970755221      4079970755921\n  59      5061226833937   760      5061226833427      5061226834187\n  60     12772332382939   780     12772332382321     12772332383101\n  61     19535748743177   838     19535748742639     19535748743477\n  62     21185697626267   900     21185697626083     21185697626983\n  63    117102787055963   944    117102787055687    117102787056631\n  64    471911699384963   972    471911699384771    471911699385743\n  65    528459528876647  1014    528459528876289    528459528877303\n  66    543684371469929  1016    543684371469023    543684371470039\n  67    811782668945987  1032    811782668945159    811782668946191\n  68   1693182318746371  1152   1693182318746351   1693182318747503\n  69  12099132127787501  1168  12099132127786609  12099132127787777\n  70  12568891238650091  1170  12568891238649583  12568891238650753\n  71  14878430907698893  1182  14878430907698447  14878430907699629\n  72  16020873778857163  1220  16020873778856279  16020873778857499\n  73  29835422457878441  1266  29835422457878281  29835422457879547\n"
+    }
+   ]
+  },
+  {
+   "aid": "A023187",
+   "role": "distance to the nearer neighbour",
+   "what": "b-file +7 terms (56 to 63)",
+   "items": [
+    "b-file:A023187"
+   ],
+   "summary": "Extend the b-file to 63 terms.",
+   "blocked_on": null,
+   "slot": "waits",
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A023187/b023187_k.txt\">Table of n, a(n) for n = 1..63</a> (terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov)"
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b023187.txt",
+     "replaces": null,
+     "slot": 0,
+     "rows": 63,
+     "published": false,
+     "purpose": "The b-file: 63 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "desc": "",
+     "content": "# A023187, 63 terms.\n#\n# Terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov.\n# Terms 57..63 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its lonely records.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 1\n2 2\n3 4\n4 6\n5 12\n6 14\n7 18\n8 20\n9 24\n10 30\n11 40\n12 42\n13 44\n14 48\n15 54\n16 62\n17 72\n18 76\n19 96\n20 98\n21 108\n22 116\n23 124\n24 136\n25 156\n26 160\n27 162\n28 168\n29 174\n30 176\n31 178\n32 180\n33 186\n34 194\n35 210\n36 214\n37 222\n38 242\n39 244\n40 246\n41 250\n42 258\n43 268\n44 284\n45 300\n46 324\n47 328\n48 340\n49 348\n50 352\n51 390\n52 396\n53 420\n54 432\n55 452\n56 480\n57 508\n58 510\n59 520\n60 546\n61 550\n62 576\n63 614\n"
     }
    ]
   },
@@ -213,13 +272,14 @@ window.OEIS_SUBMIT = {
    ]
   },
   {
-   "aid": "A023187",
-   "role": "distance to the nearer neighbour",
-   "what": "b-file +5 terms (56 to 61)",
+   "aid": "A031132",
+   "role": "the span between them",
+   "what": "b-file +5 terms (67 to 72), Xref +A096265 (optional)",
    "items": [
-    "b-file:A023187"
+    "b-file:A031132",
+    "xref:A031132:A096265"
    ],
-   "summary": "Extend the b-file to 61 terms.",
+   "summary": "Extend the b-file to 72 terms; optionally add cross-references to A096265.",
    "blocked_on": null,
    "slot": "waits",
    "edits": [
@@ -227,20 +287,128 @@ window.OEIS_SUBMIT = {
      "field": "Link",
      "code": "%H",
      "action": "credit_bfile_link",
-     "text": "Mike Koss, <a href=\"/A023187/b023187_k.txt\">Table of n, a(n) for n = 1..61</a> (terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov)"
+     "text": "Mike Koss, <a href=\"/A031132/b031132_k.txt\">Table of n, a(n) for n = 1..72</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
+    },
+    {
+     "field": "Xref",
+     "code": "%Y",
+     "action": "add",
+     "add": [
+      [
+       "A096265",
+       "the aloof prime"
+      ]
+     ],
+     "optional": true
     }
    ],
    "uploads": [
     {
      "kind": "b-file",
-     "name": "b023187.txt",
+     "name": "b031132.txt",
      "replaces": null,
      "slot": 0,
-     "rows": 61,
+     "rows": 72,
      "published": false,
-     "purpose": "The b-file: 61 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "purpose": "The b-file: 72 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
      "desc": "",
-     "content": "# A023187, 61 terms.\n#\n# Terms 1..56 from David W. Wilson, Jud McCranie, T. D. Noe and Dmitry Petukhov.\n# Terms 57..61 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its lonely records.\n#\n# Mike Koss. Data as of 2026-10-13, when the scan last advanced.\n# Searched all below 26,306,285,568,359,759: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 1\n2 2\n3 4\n4 6\n5 12\n6 14\n7 18\n8 20\n9 24\n10 30\n11 40\n12 42\n13 44\n14 48\n15 54\n16 62\n17 72\n18 76\n19 96\n20 98\n21 108\n22 116\n23 124\n24 136\n25 156\n26 160\n27 162\n28 168\n29 174\n30 176\n31 178\n32 180\n33 186\n34 194\n35 210\n36 214\n37 222\n38 242\n39 244\n40 246\n41 250\n42 258\n43 268\n44 284\n45 300\n46 324\n47 328\n48 340\n49 348\n50 352\n51 390\n52 396\n53 420\n54 432\n55 452\n56 480\n57 508\n58 510\n59 520\n60 546\n61 550\n"
+     "content": "# A031132, 72 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..72 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 3\n2 4\n3 6\n4 10\n5 12\n6 14\n7 18\n8 24\n9 28\n10 40\n11 42\n12 44\n13 48\n14 50\n15 56\n16 58\n17 72\n18 76\n19 80\n20 82\n21 100\n22 114\n23 116\n24 126\n25 138\n26 140\n27 160\n28 190\n29 200\n30 234\n31 236\n32 246\n33 248\n34 270\n35 306\n36 328\n37 330\n38 336\n39 340\n40 372\n41 376\n42 410\n43 436\n44 438\n45 450\n46 476\n47 502\n48 506\n49 524\n50 540\n51 546\n52 594\n53 600\n54 624\n55 678\n56 690\n57 700\n58 760\n59 780\n60 838\n61 900\n62 944\n63 972\n64 1014\n65 1016\n66 1032\n67 1152\n68 1168\n69 1170\n70 1182\n71 1220\n72 1266\n"
+    }
+   ]
+  },
+  {
+   "aid": "A031133",
+   "role": "the lower neighbour",
+   "what": "b-file +5 terms (67 to 72)",
+   "items": [
+    "b-file:A031133"
+   ],
+   "summary": "Extend the b-file to 72 terms.",
+   "blocked_on": null,
+   "slot": "waits",
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A031133/b031133_k.txt\">Table of n, a(n) for n = 1..72</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b031133.txt",
+     "replaces": null,
+     "slot": 0,
+     "rows": 72,
+     "published": true,
+     "purpose": "The b-file: 72 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "desc": "",
+     "content": "# A031133, 72 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..72 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 6 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 2\n2 3\n3 5\n4 19\n5 47\n6 83\n7 109\n8 199\n9 1123\n10 1321\n11 2161\n12 2477\n13 5591\n14 9551\n15 14087\n16 19603\n17 19609\n18 31393\n19 31397\n20 38461\n21 58789\n22 155893\n23 360653\n24 370247\n25 396733\n26 1357193\n27 1561891\n28 4652317\n29 8917463\n30 20831299\n31 38089217\n32 70396343\n33 72546143\n34 102765577\n35 142414553\n36 325737649\n37 436272961\n38 476956801\n39 1346350651\n40 1453168061\n41 2949346891\n42 3367207667\n43 9085929037\n44 10726904659\n45 20678048297\n46 25056082067\n47 31587561139\n48 42652618301\n49 50949283109\n50 122787888679\n51 215686840157\n52 220578149899\n53 724200190201\n54 929156727013\n55 1032148488143\n56 3605572653481\n57 4079970755221\n58 5061226833427\n59 12772332382321\n60 19535748742639\n61 21185697626083\n62 117102787055687\n63 471911699384771\n64 528459528876289\n65 543684371469023\n66 811782668945159\n67 1693182318746351\n68 12099132127786609\n69 12568891238649583\n70 14878430907698447\n71 16020873778856279\n72 29835422457878281\n"
+    }
+   ]
+  },
+  {
+   "aid": "A031134",
+   "role": "the upper neighbour",
+   "what": "b-file +5 terms (67 to 72)",
+   "items": [
+    "b-file:A031134"
+   ],
+   "summary": "Extend the b-file to 72 terms.",
+   "blocked_on": null,
+   "slot": "waits",
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A031134/b031134_k.txt\">Table of n, a(n) for n = 1..72</a> (terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova)"
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b031134.txt",
+     "replaces": null,
+     "slot": 0,
+     "rows": 72,
+     "published": true,
+     "purpose": "The b-file: 72 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "desc": "",
+     "content": "# A031134, 72 terms.\n#\n# Terms 1..67 from Jeff Burch, Patrick De Geest, Jud McCranie, Jon E. Schoenfield, Dmitry Kamenetsky, Dmitry Petukhov, Vladimir Chirkov and Natalia Makarova.\n# Terms 68..72 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 7 of its aloof records.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n1 5\n2 7\n3 11\n4 29\n5 59\n6 97\n7 127\n8 223\n9 1151\n10 1361\n11 2203\n12 2521\n13 5639\n14 9601\n15 14143\n16 19661\n17 19681\n18 31469\n19 31477\n20 38543\n21 58889\n22 156007\n23 360769\n24 370373\n25 396871\n26 1357333\n27 1562051\n28 4652507\n29 8917663\n30 20831533\n31 38089453\n32 70396589\n33 72546391\n34 102765847\n35 142414859\n36 325737977\n37 436273291\n38 476957137\n39 1346350991\n40 1453168433\n41 2949347267\n42 3367208077\n43 9085929473\n44 10726905097\n45 20678048747\n46 25056082543\n47 31587561641\n48 42652618807\n49 50949283633\n50 122787889219\n51 215686840703\n52 220578150493\n53 724200190801\n54 929156727637\n55 1032148488821\n56 3605572654171\n57 4079970755921\n58 5061226834187\n59 12772332383101\n60 19535748743477\n61 21185697626983\n62 117102787056631\n63 471911699385743\n64 528459528877303\n65 543684371470039\n66 811782668946191\n67 1693182318747503\n68 12099132127787777\n69 12568891238650753\n70 14878430907699629\n71 16020873778857499\n72 29835422457879547\n"
+    }
+   ]
+  },
+  {
+   "aid": "A058868",
+   "role": "the distance to each neighbour",
+   "what": "b-file +4 terms (30 to 34)",
+   "items": [
+    "b-file:A058868"
+   ],
+   "summary": "Extend the b-file to 34 terms.",
+   "blocked_on": null,
+   "slot": "waits",
+   "edits": [
+    {
+     "field": "Link",
+     "code": "%H",
+     "action": "credit_bfile_link",
+     "text": "Mike Koss, <a href=\"/A058868/b058868_k.txt\">Table of n, a(n) for n = 1..34</a> (terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov)"
+    }
+   ],
+   "uploads": [
+    {
+     "kind": "b-file",
+     "name": "b058868.txt",
+     "replaces": null,
+     "slot": 0,
+     "rows": 34,
+     "published": false,
+     "purpose": "The b-file: 34 terms, uploaded with the b-file box ticked. OEIS then rewrites the b-file %H line to credit only you; once saved, the Link card puts the earlier contributors back.",
+     "desc": "",
+     "content": "# A058868, 34 terms.\n#\n# Terms 0..19 from Harvey Dubner, terms 20..29 from Dmitry Petukhov.\n# Terms 30..33 are new.\n# Every term independently rederived by an exhaustive scan from 0,\n# as column 3 of its equidistant records.\n#\n# Mike Koss. Data as of 2026-10-24, when the scan last advanced.\n# Searched all below 44,254,828,557,661,947: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n0 2\n1 6\n2 12\n3 24\n4 30\n5 42\n6 48\n7 60\n8 66\n9 72\n10 84\n11 90\n12 96\n13 144\n14 150\n15 156\n16 168\n17 186\n18 198\n19 204\n20 210\n21 228\n22 240\n23 258\n24 276\n25 300\n26 306\n27 348\n28 390\n29 420\n30 426\n31 438\n32 468\n33 510\n"
     }
    ]
   },
@@ -337,56 +505,6 @@ window.OEIS_SUBMIT = {
     }
    ],
    "uploads": []
-  },
-  {
-   "aid": "A023186",
-   "role": "the lonely prime",
-   "what": "Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update of a023186_1.txt)",
-   "items": [
-    "xref:A023186:A087770",
-    "xref:A023186:A096265",
-    "a-file:update:lonely"
-   ],
-   "summary": "Optionally add cross-references to A087770, A096265; add an a-file with the bounding primes.",
-   "blocked_on": null,
-   "slot": "waits",
-   "edits": [
-    {
-     "field": "Xref",
-     "code": "%Y",
-     "action": "add",
-     "add": [
-      [
-       "A087770",
-       "the pairwise lonely prime"
-      ],
-      [
-       "A096265",
-       "the aloof prime"
-      ]
-     ],
-     "optional": true
-    },
-    {
-     "field": "Link",
-     "code": "%H",
-     "action": "remove",
-     "find": "href=\"/A023186/a023186_1.txt\""
-    }
-   ],
-   "uploads": [
-    {
-     "kind": "a-file",
-     "name": "a023186.txt",
-     "replaces": "a023186_1.txt",
-     "slot": 0,
-     "rows": 61,
-     "published": false,
-     "purpose": "The a-file update: 61 rows, replacing a023186_1.txt. Its link text fills the upload box, so OEIS writes the new %H line itself; the Link card drops the old one.",
-     "desc": "Mike Koss, <a>Table of the first 61 records with both bounding primes and both gaps</a>",
-     "content": "# a023186.txt -- lonely prime records with bounding primes\n#\n# n    index\n# p    the lonely prime (A023186)\n# d    min(p-pp, np-p), the record (A023187)\n# pp   previous prime\n# np   next prime\n# -    none: p = 2 has no previous prime\n#\n# Mike Koss. Data as of 2026-10-13, when the scan last advanced.\n# Searched all below 26,306,285,568,359,759: every record up to that\n# bound is present, and there is no further one below it.\n# Independently confirmed by an exhaustive scan; check_oeis.py passes.\n# Source: https://github.com/mckoss/prime-scanner\n# OEIS data CC BY-SA 4.0\n#\n#  n                  p    d                 pp                 np\n   1                  2    1                  -                  3\n   2                  5    2                  3                  7\n   3                 23    4                 19                 29\n   4                 53    6                 47                 59\n   5                211   12                199                223\n   6               1847   14               1831               1861\n   7               2179   18               2161               2203\n   8               3967   20               3947               3989\n   9              16033   24              16007              16057\n  10              24281   30              24251              24317\n  11              38501   40              38461              38543\n  12              58831   42              58789              58889\n  13             203713   44             203669             203761\n  14             206699   48             206651             206749\n  15             413353   54             413299             413411\n  16            1272749   62            1272679            1272811\n  17            2198981   72            2198909            2199061\n  18            5102953   76            5102863            5103029\n  19           10938023   96           10937921           10938119\n  20           12623189   98           12623089           12623287\n  21           72546283  108           72546143           72546391\n  22          142414669  116          142414553          142414859\n  23          162821917  124          162821753          162822041\n  24          163710121  136          163709971          163710257\n  25          325737821  156          325737649          325737977\n  26         1131241763  160         1131241603         1131241933\n  27         1791752797  162         1791752629         1791752959\n  28         3173306951  168         3173306777         3173307119\n  29         4841337887  174         4841337713         4841338063\n  30         6021542119  176         6021541943         6021542299\n  31         6807940367  178         6807940189         6807940567\n  32         7174208683  180         7174208477         7174208863\n  33         8835528511  186         8835528307         8835528697\n  34        11179888193  194        11179887967        11179888387\n  35        15318488291  210        15318488071        15318488501\n  36        26329105043  214        26329104829        26329105267\n  37        31587561361  222        31587561139        31587561641\n  38        45241670743  242        45241670501        45241670987\n  39       113482615613  244       113482615369       113482615867\n  40       138465682247  246       138465682001       138465682513\n  41       307608752579  250       307608752329       307608752833\n  42       313455525683  258       313455525373       313455525941\n  43       343834606051  268       343834605773       343834606319\n  44       491856414677  284       491856414391       491856414961\n  45      1362810282439  300      1362810282139      1362810282781\n  46      1480975873513  324      1480975873189      1480975873847\n  47      5551890283531  328      5551890283183      5551890283859\n  48      9156364643509  340      9156364643137      9156364643849\n  49     16303344721399  348     16303344721051     16303344721777\n  50     25328423597831  352     25328423597479     25328423598209\n  51     26923643849953  390     26923643849563     26923643850343\n  52     92299530249323  396     92299530248927     92299530249733\n  53    187891466722913  420    187891466722493    187891466723333\n  54    342540487510231  432    342540487509799    342540487510673\n  55    475963705368391  452    475963705367939    475963705368871\n  56    941114429467073  480    941114429466593    941114429467567\n  57   2662972908869401  508   2662972908868891   2662972908869909\n  58   4685407635944059  510   4685407635943549   4685407635944569\n  59   4911417538051463  520   4911417538050943   4911417538052029\n  60  10991084454046573  546  10991084454046027  10991084454047143\n  61  23771684406473771  550  23771684406473221  23771684406474373\n"
-    }
-   ]
   }
  ]
 };

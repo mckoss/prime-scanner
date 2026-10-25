@@ -1,12 +1,12 @@
-# A096265, 72 terms.
+# A096265, 73 terms.
 #
 # Terms 1..55 as previously published.
 # Terms 56..68 are the prime between A031133(k) and A031134(k),
 # whose b-files reach 67 terms (A096265 index 68).
 # Every term independently rederived by an exhaustive scan.
 #
-# Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,306,285,568,359,759: every record up to that
+# Mike Koss. Data as of 2026-10-24, when the scan last advanced.
+# Searched all below 44,254,828,557,661,947: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -83,3 +83,4 @@
 70 12568891238650091
 71 14878430907698893
 72 16020873778857163
+73 29835422457878441

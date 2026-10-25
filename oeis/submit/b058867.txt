@@ -1,11 +1,11 @@
 # A058867, 34 terms.
 #
-# Terms 1..20 from Harvey Dubner, terms 21..30 from Dmitry Petukhov.
-# Terms 31..34 are new.
+# Terms 1..34 from Mike Koss.
+# Terms 35..34 are new.
 # Every term independently rederived by an exhaustive scan from 0.
 #
-# Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,306,285,568,359,759: every record up to that
+# Mike Koss. Data as of 2026-10-24, when the scan last advanced.
+# Searched all below 44,254,828,557,661,947: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner

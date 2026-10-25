@@ -1,4 +1,16 @@
-# A096265, b-file computed by Ken Takusagawa (terms 1-50) and Hugo Pfoertner 2019-12-19
+# A096265, 72 terms.
+#
+# Terms 1..55 as previously published.
+# Terms 56..68 are the prime between A031133(k) and A031134(k),
+# whose b-files reach 67 terms (A096265 index 68).
+# Every term independently rederived by an exhaustive scan.
+#
+# Mike Koss. Data as of 2026-10-06, when the scan last advanced.
+# Searched all below 26,099,160,246,699,733: every record up to that
+# bound is present, and there is no further one below it.
+# Independently confirmed by an exhaustive scan; check_oeis.py passes.
+# Source: https://github.com/mckoss/prime-scanner
+# OEIS data CC BY-SA 4.0
 1 2
 2 3
 3 5
@@ -54,3 +66,20 @@
 53 220578150113
 54 724200190631
 55 929156727137
+56 1032148488557
+57 3605572653889
+58 4079970755417
+59 5061226833937
+60 12772332382939
+61 19535748743177
+62 21185697626267
+63 117102787055963
+64 471911699384963
+65 528459528876647
+66 543684371469929
+67 811782668945987
+68 1693182318746371
+69 12099132127787501
+70 12568891238650091
+71 14878430907698893
+72 16020873778857163

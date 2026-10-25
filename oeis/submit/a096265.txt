@@ -7,8 +7,8 @@
 # np   next prime (A031134)
 # -    none: p = 2 has no previous prime
 #
-# Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,306,285,568,359,759: every record up to that
+# Mike Koss. Data as of 2026-10-24, when the scan last advanced.
+# Searched all below 44,254,828,557,661,947: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -87,3 +87,4 @@
   70  12568891238650091  1170  12568891238649583  12568891238650753
   71  14878430907698893  1182  14878430907698447  14878430907699629
   72  16020873778857163  1220  16020873778856279  16020873778857499
+  73  29835422457878441  1266  29835422457878281  29835422457879547

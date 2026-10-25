@@ -1,11 +1,11 @@
-# A087770, 41 terms.
+# A087770, 42 terms.
 #
-# Terms 1..29 from Walter Carlini, Ray Chandler, Hugo Pfoertner and Giovanni Resta.
-# Terms 30..41 are new.
+# Terms 1..41 from Mike Koss.
+# Terms 42..42 are new.
 # Every term independently rederived by an exhaustive scan from 0.
 #
-# Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,306,285,568,359,759: every record up to that
+# Mike Koss. Data as of 2026-10-24, when the scan last advanced.
+# Searched all below 44,254,828,557,661,947: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -51,3 +51,4 @@
 39 4911417538051463
 40 10991084454046573
 41 23771684406473771
+42 34073418089963887

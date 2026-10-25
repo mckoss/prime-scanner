@@ -8,8 +8,8 @@
 # np   next prime
 # -    none: p = 2 has no previous prime
 #
-# Mike Koss. Data as of 2026-10-13, when the scan last advanced.
-# Searched all below 26,306,285,568,359,759: every record up to that
+# Mike Koss. Data as of 2026-10-24, when the scan last advanced.
+# Searched all below 44,254,828,557,661,947: every record up to that
 # bound is present, and there is no further one below it.
 # Independently confirmed by an exhaustive scan; check_oeis.py passes.
 # Source: https://github.com/mckoss/prime-scanner
@@ -57,3 +57,4 @@
   39   4911417538051463  520  566   4911417538050943   4911417538052029
   40  10991084454046573  546  570  10991084454046027  10991084454047143
   41  23771684406473771  550  602  23771684406473221  23771684406474373
+  42  34073418089963887  564  622  34073418089963323  34073418089964509

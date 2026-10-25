@@ -22,12 +22,12 @@ siblings already carry have not been written down in that place.
 
 ```
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-  A002386      31      85       -     85      64  prime at the lower end
-  A000101      31      85     yes      -      64  prime at the upper end
-  A005250      54      85     yes      -      64  the gap size
+  A002386      31      85       -     85      65  prime at the lower end
+  A000101      31      85     yes      -      65  prime at the upper end
+  A005250      54      85     yes      -      65  the gap size
 ! A005669      36      82       -      -       -  index of the lower prime (needs pi(p))
 ! A107578      32      80     yes      -       -  index of the upper prime (needs pi(p))
-  A053695      76      84       -      -      63  successive record-gap differences
+  A053695      76      84       -      -      64  successive record-gap differences
 ----------------------------------------------------------------------------------------
   deepest member: 85 terms.  behind: A005669 -3, A107578 -5
 ```
@@ -36,8 +36,8 @@ siblings already carry have not been written down in that place.
 
 ```
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-  A023186      38      61     yes     61      61  the lonely prime
-! A023187      56       -       -      -      61  distance to the nearer neighbour
+  A023186      38      61     yes     61      63  the lonely prime
+! A023187      56       -       -      -      63  distance to the nearer neighbour
 ----------------------------------------------------------------------------------
   deepest member: 61 terms.  behind: A023187 -5
 ```
@@ -46,33 +46,33 @@ siblings already carry have not been written down in that place.
 
 ```
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-! A096265      35      55       -     55      72  the aloof prime
-  A031133      34      67       -     67      71  the lower neighbour
-  A031134      34      67       -     67      71  the upper neighbour
-! A031132      67       -       -     67      71  the span between them
+  A096265      38      72     yes     72      73  the aloof prime
+! A031133      34      67       -     67      72  the lower neighbour
+! A031134      34      67       -     67      72  the upper neighbour
+! A031132      67       -       -     67      72  the span between them
 ! A122412      38      52       -      -       -  index of the lower prime (needs pi(p))
 ! A122413      38      52       -      -       -  index of the upper prime (needs pi(p))
 ----------------------------------------------------------------------------------------
-  deepest member: 67 terms.  behind: A096265 -12, A122412 -15, A122413 -15
+  deepest member: 72 terms.  behind: A031133 -5, A031134 -5, A031132 -5, A122412 -20, A122413 -20
 ```
 
 ### equidistant -- equidistant primes -- record distance among the BALANCED primes only
 
 ```
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-! A058867      30       -       -     30      34  the balanced prime
+  A058867      30      34     yes     34      34  the balanced prime
 ! A058868      30       -       -      -      34  the distance to each neighbour
 -----------------------------------------------------------------------------------
-  deepest member: 30 terms
+  deepest member: 34 terms.  behind: A058868 -4
 ```
 
 ### pairwise -- pairwise lonely primes -- BOTH gaps beat the previous term's, a chain rather than a maximum
 
 ```
   sequence   DATA  b-file  a-file  oeis/  fresh/  role
-! A087770      29       -       -     29      41  the pairwise lonely prime
+  A087770      29      41     yes     41      42  the pairwise lonely prime
 -------------------------------------------------------------------------------------------------------
-  deepest member: 29 terms
+  deepest member: 41 terms
 ```
 
 ### balanced -- balanced-lonely primes -- lonely records whose two neighbours are equidistant
@@ -81,7 +81,7 @@ siblings already carry have not been written down in that place.
   not in OEIS.  draft: oeis/submit/edits.yaml, under new_sequences
   fresh/ holds 6 terms, the last 4,685,407,635,944,059 at distance 510
   complete below the frontier: it filters the lonely records, so no term can be missing
-  related: A058867, 30 terms to 1.8789e+14
+  related: A058867, 34 terms to 4.6854e+15
            records among balanced primes -- contains every balanced-lonely term, and many that are not lonely records
 ```
 
@@ -149,8 +149,6 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
                     least prime starting a gap >= 2n: the gap records re-indexed by size, not a new sequence [last term past the frontier]
         7  A102723  out+in     479  941,114,429,467,073        Smallest prime a(n) such that a(n)-x and a(n)+x, for x=1 ...
                     least prime with every integer within n composite; its b-file ends at lonely(56), so lonely(57) extends it [last term below the run's frontier]
-!       6  A268140  in          11  1,693,182,318,746,371      Smallest prime followed by at least 2^n nonprimes.
-                    not reviewed [last term below the run's frontier]
         5  A051652  out+in     229  25,056,082,315             Smallest number at distance n from nearest prime.
                     over all integers, not primes [last term below the run's frontier]
 !       5  A058193  in         240  4,253,027,105,513,399,527  Smallest prime p such that there is a gap of 6n between p ...
@@ -191,16 +189,16 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## FRONTIER vs PUBLISHED
 
 ```
-  fresh/frontier.txt = 26,306,285,568,359,759  (2.6306e+16)
+  fresh/frontier.txt = 44,254,828,557,661,947  (4.4255e+16)
 ```
 
 ```
   family       ours   published to   terms  via       what is left
-  gap            64   1.0141e+20        85  A002386   21 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
-  lonely         61   2.3772e+16        61  A023186   all 61 published terms, none new yet
-  aloof          72   1.6932e+15        68  A031134   4 term(s) beyond A031134  <-- SUBMITTABLE
-  equidistant    34   1.8789e+14        30  A058867   4 term(s) beyond A058867  <-- SUBMITTABLE; 1 already tabulated in A052187
-  pairwise       41   9.1564e+12        29  A087770   12 term(s) beyond A087770  <-- SUBMITTABLE
+  gap            65   1.0141e+20        85  A002386   20 term(s) short -- unreachable, past our 2^64 ceiling, 1.845e+19
+  lonely         63   2.3772e+16        61  A023186   2 term(s) beyond A023186  <-- SUBMITTABLE
+  aloof          73   1.6932e+15        68  A031134   5 term(s) beyond A031134  <-- SUBMITTABLE
+  equidistant    34   4.6854e+15        34  A058867   all 34 published terms, none new yet
+  pairwise       42   2.3772e+16        41  A087770   1 term(s) beyond A087770  <-- SUBMITTABLE
 ```
 
 ## PUBLISHED SOURCES -- prior values and future checkpoints
@@ -208,7 +206,6 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
   Committed source tables: oeis/sources/README.md
   A052187: 72 first-occurrence triples; 31 match scanned equidistant records.
-    a(31) = A052187(72) + 426; the prime triple was already tabulated in A052187 (table credited to Jerry M. Lagrou and earlier contributors), and is independently confirmed by this scan.
   Source: https://oeis.org/A052187/b052187.txt
   Missing from A058867 is not the same as previously unpublished.
   A052187 is not a complete equidistant-record list; its unmatched
@@ -216,18 +213,18 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ```
 
 ```
-  Aloof checkpoints beyond 26,306,285,568,359,759, beating span 1220:
+  Aloof checkpoints beyond 44,254,828,557,661,947, beating span 1266:
   Source: https://sweet.ua.pt/tos/gaps/t0.txt.gz
   From Oliveira e Silva's first-occurrence gap table; adjacent
   primes and all intervening odd integers checked by deterministic
   Miller-Rabin. These are witnesses, NOT confirmed next records.
-    p=29,835,422,457,878,441  gaps=(160, 1,106)  span=1,266  source gap=1,106  other: B. Nyman
-      29,835,422,457,878,281 < p < 29,835,422,457,879,547
     p=55,350,776,431,903,243  gaps=(92, 1,198)  span=1,290  source gap=1,198  tos
       55,350,776,431,903,151 < p < 55,350,776,431,904,441
     p=55,350,776,431,904,441  gaps=(1,198, 230)  span=1,428  source gap=1,198  tos
       55,350,776,431,903,243 < p < 55,350,776,431,904,671
-  At least one new aloof record occurs by 29,835,422,457,878,441;
+    p=61,499,427,052,410,467  gaps=(160, 1,166)  span=1,326  source gap=1,166  other: J. Fry
+      61,499,427,052,410,307 < p < 61,499,427,052,411,633
+  At least one new aloof record occurs by 55,350,776,431,903,243;
   an earlier stronger record may supersede any of these witnesses.
   No scan terms, frontiers, or submission DATA come from these checkpoints.
 ```
@@ -235,41 +232,46 @@ primes. ! marks one nobody has reviewed, or one reviewed and still open.
 ## SUBMISSION  --  one draft per sequence
 
 ```
-   1. A031132  b-file +4 terms (67 to 71), Xref +A096265 (optional)
-      Extend the b-file to 71 terms; optionally add cross-references to A096265.
-   2. A031133  b-file +4 terms (67 to 71)
-      Extend the b-file to 71 terms.
-   3. A031134  b-file +4 terms (67 to 71)
-      Extend the b-file to 71 terms.
-   4. A058868  b-file +4 terms (30 to 34)
-      Extend the b-file to 34 terms.
+   1. A023186  b-file +2 terms (61 to 63), Xref +A087770 (optional), Xref +A096265 (optional), a-file 63 rows (minor update of a023186_1.txt)
+      Extend the b-file to 63 terms; optionally add cross-references to A087770, A096265; add an a-file with the bounding primes.
+   2. A087770  b-file +1 terms (41 to 42), a-file 42 rows (minor update of a087770.txt)
+      Extend the b-file to 42 terms; add an a-file with the bounding primes.
+   3. A096265  b-file +1 terms (72 to 73), a-file 73 rows (minor update of a096265.txt)
+      Extend the b-file to 73 terms; add an a-file with the bounding primes.
+   4. A023187  b-file +7 terms (56 to 63)
+      Extend the b-file to 63 terms.
    5. A005669  b-file +3 terms (82 to 85), Xref +A107578 (optional)
       Extend the b-file to 85 terms; optionally add cross-references to A107578.
-   6. A023187  b-file +5 terms (56 to 61)
-      Extend the b-file to 61 terms.
-   7. A107578  b-file +5 terms (80 to 85)
+   6. A031132  b-file +5 terms (67 to 72), Xref +A096265 (optional)
+      Extend the b-file to 72 terms; optionally add cross-references to A096265.
+   7. A031133  b-file +5 terms (67 to 72)
+      Extend the b-file to 72 terms.
+   8. A031134  b-file +5 terms (67 to 72)
+      Extend the b-file to 72 terms.
+   9. A058868  b-file +4 terms (30 to 34)
+      Extend the b-file to 34 terms.
+  10. A107578  b-file +5 terms (80 to 85)
       Extend the b-file to 85 terms.
-   8. A000101  Xref +A053695 (optional)
+  11. A000101  Xref +A053695 (optional)
       Optionally add the reverse cross-reference.
-   9. A002386  Xref +A053695 (optional), Xref +A087770 (optional), Xref +A107578 (optional)
+  12. A002386  Xref +A053695 (optional), Xref +A087770 (optional), Xref +A107578 (optional)
       Optionally add cross-references to A053695, A087770, A107578.
-  10. A023186  Xref +A087770 (optional), Xref +A096265 (optional), a-file 61 rows (minor update of a023186_1.txt)
-      Optionally add cross-references to A087770, A096265; add an a-file with the bounding primes.
    -. new       balanced-lonely primes
    -. blocked  b-file:A122412
    -. blocked  b-file:A122413
    -. review   review:A120384
    -. review   review:neighbours
-     in review  A058867  a-file:equidistant, b-file:A058867, terms:equidistant  2026-10-10
-     in review  A087770  a-file:pairwise, b-file:A087770, terms:pairwise, xref:A087770:A096265  2026-10-13
-     in review  A096265  a-file:aloof, b-file:A096265, terms:aloof, xref:A096265:A031133, xref:A096265:A031134, xref:A096265:A122412, xref:A096265:A122413  2026-10-13
-   ✓ approved  A023186  a-file:lonely, terms:lonely  2026-10-06
+     in review  A087770  xref:A087770:A096265  2026-10-13
+     in review  A096265  xref:A096265:A031133, xref:A096265:A031134, xref:A096265:A122412, xref:A096265:A122413  2026-10-13
+   ✓ approved  A058867  a-file:equidistant, b-file:A058867, terms:equidistant  2026-10-14
+   ✓ approved  A087770  a-file:pairwise, b-file:A087770, terms:pairwise  2026-10-18
+   ✓ approved  A096265  a-file:aloof, b-file:A096265, terms:aloof  2026-10-16
    ✗ rejected  A000101  a-file:A000101  2026-09-30
    ✗ rejected  A005250  a-file:A005250  2026-09-30
    ✗ rejected  A107578  a-file:A107578  2026-09-30
 ```
 
 ```
-  wrote 20 files to oeis/submit/
+  wrote 21 files to oeis/submit/
   open  http://localhost:8017/  (make submit)
 ```
