@@ -7,7 +7,7 @@ python3 pgaps.py --all-cores --out fresh     # or: make pgaps
 ```
 
 It ran on 8 workers on an M1 Max to 2.17e15, then on 30 workers on a Mac
-Studio (M5 Ultra) to the current frontier of 2.61e16.
+Studio (M5 Ultra) to the current frontier of 4.43e16.
 
 Unlike [`results/`](../results/README.md), this search was **not seeded**. It
 started at 0 with every threshold at zero and re-derived every sequence

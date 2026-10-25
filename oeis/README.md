@@ -44,13 +44,13 @@ Published counts come from the committed snapshots in this directory.
 
 | family | published | published to | ours | shared terms | scan frontier |
 |--------|----------:|-------------:|-----:|-------------:|--------------:|
-| gap, [A002386](https://oeis.org/A002386) | 85 | 1.014e+20 | 65 | 65 | 44,254,828,557,661,947 |
-| lonely, [A023186](https://oeis.org/A023186) | 61 | 2.377e+16 | 63 | 61 | 44,254,828,557,661,947 |
-| aloof, [A031133](https://oeis.org/A031133)/[4](https://oeis.org/A031134)/[2](https://oeis.org/A031132) | 68 | 1.693e+15 | 73 | 68 | 44,254,828,557,661,947 |
-| aloof, [A096265](https://oeis.org/A096265) | 72 | 1.602e+16 | 73 | 72 | 44,254,828,557,661,947 |
-| equidistant, [A058867](https://oeis.org/A058867) | 34 | 4.685e+15 | 34 | 34 | 44,254,828,557,661,947 |
-| pairwise, [A087770](https://oeis.org/A087770) | 41 | 2.377e+16 | 42 | 41 | 44,254,828,557,661,947 |
-| balanced-lonely (proposed) | — | — | 6 | — | 44,254,828,557,661,947 |
+| gap, [A002386](https://oeis.org/A002386) | 85 | 1.014e+20 | 65 | 65 | 44,269,524,411,688,224 |
+| lonely, [A023186](https://oeis.org/A023186) | 61 | 2.377e+16 | 63 | 61 | 44,269,524,411,688,224 |
+| aloof, [A031133](https://oeis.org/A031133)/[4](https://oeis.org/A031134)/[2](https://oeis.org/A031132) | 68 | 1.693e+15 | 73 | 68 | 44,269,524,411,688,224 |
+| aloof, [A096265](https://oeis.org/A096265) | 72 | 1.602e+16 | 73 | 72 | 44,269,524,411,688,224 |
+| equidistant, [A058867](https://oeis.org/A058867) | 34 | 4.685e+15 | 34 | 34 | 44,269,524,411,688,224 |
+| pairwise, [A087770](https://oeis.org/A087770) | 41 | 2.377e+16 | 42 | 41 | 44,269,524,411,688,224 |
+| balanced-lonely (proposed) | — | — | 6 | — | 44,269,524,411,688,224 |
 
 The aloof family has 67 published triples, corresponding to
 A096265 indices 2–68; the table counts its extra first term.
